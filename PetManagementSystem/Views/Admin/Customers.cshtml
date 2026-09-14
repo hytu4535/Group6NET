@@ -1,0 +1,105 @@
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card-panel">
+    <div class="card-panel-header">
+        <h5>Danh sách Khách hàng</h5>
+        <button class="btn btn-warning text-white" type="button" data-bs-toggle="modal" data-bs-target="#customerModal">
+            <i class="bi bi-plus-lg"></i> Thêm khách hàng
+        </button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-admin table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Họ tên</th>
+                    <th>Số điện thoại</th>
+                    <th>Email</th>
+                    <th>Địa chỉ</th>
+                    <th>Số thú cưng</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>Nguyễn Văn A</td>
+                    <td>0912 345 678</td>
+                    <td>vana@gmail.com</td>
+                    <td>Quận 1, TP.HCM</td>
+                    <td>2</td>
+                    <td><span class="badge badge-status-active">Hoạt động</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Trần Thị B</td>
+                    <td>0987 654 321</td>
+                    <td>tranb@gmail.com</td>
+                    <td>Quận 3, TP.HCM</td>
+                    <td>1</td>
+                    <td><span class="badge badge-status-active">Hoạt động</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>Lê Văn C</td>
+                    <td>0903 456 789</td>
+                    <td>levanc@gmail.com</td>
+                    <td>Thủ Đức, TP.HCM</td>
+                    <td>3</td>
+                    <td><span class="badge badge-status-inactive">Ngưng hoạt động</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal thêm/sửa khách hàng -->
+<div class="modal fade" id="customerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm khách hàng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label">Họ tên</label>
+                        <input type="text" class="form-control" placeholder="Nhập họ tên" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Số điện thoại</label>
+                        <input type="text" class="form-control" placeholder="Nhập số điện thoại" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" placeholder="Nhập email" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Địa chỉ</label>
+                        <textarea class="form-control" rows="2" placeholder="Nhập địa chỉ"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-warning text-white">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>

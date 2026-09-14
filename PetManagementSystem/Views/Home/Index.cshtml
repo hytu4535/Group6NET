@@ -1,8 +1,31 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Trang chủ";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<section class="hero-section p-5 rounded-4 mb-4 text-center">
+    <h1 class="display-5 fw-bold">Chăm sóc thú cưng của bạn toàn diện</h1>
+    <p class="lead text-muted">Đặt lịch khám, spa, tiêm phòng và mua sản phẩm cho thú cưng chỉ trong vài bước.</p>
+    <a class="btn btn-warning text-white btn-lg me-2" asp-action="Booking">Đặt lịch ngay</a>
+    <a class="btn btn-outline-secondary btn-lg" asp-action="Services">Xem dịch vụ</a>
+</section>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="feature-card h-100">
+            <h5>Khám thú y</h5>
+            <p class="text-muted mb-0">Đội ngũ bác sĩ nhiều kinh nghiệm, kiểm tra sức khỏe định kỳ.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="feature-card h-100">
+            <h5>Spa & Grooming</h5>
+            <p class="text-muted mb-0">Tắm, cắt tỉa lông, vệ sinh tai móng chuyên nghiệp.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="feature-card h-100">
+            <h5>Phụ kiện & Thức ăn</h5>
+            <p class="text-muted mb-0">Sản phẩm chính hãng phù hợp cho từng giống chó mèo.</p>
+        </div>
+    </div>
 </div>

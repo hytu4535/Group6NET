@@ -1,0 +1,50 @@
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card-panel">
+    <div class="card-panel-header">
+        <h5>Danh sách Đơn hàng</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-admin table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Mã đơn</th>
+                    <th>Khách hàng</th>
+                    <th>Ngày đặt</th>
+                    <th>Tổng tiền</th>
+                    <th>Thanh toán</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>#DH001</td>
+                    <td>Nguyễn Văn A</td>
+                    <td>10/06/2026</td>
+                    <td>405.000đ</td>
+                    <td>Tiền mặt</td>
+                    <td><span class="badge badge-status-pending">Đang xử lý</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle"></i></button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>#DH002</td>
+                    <td>Trần Thị B</td>
+                    <td>09/06/2026</td>
+                    <td>120.000đ</td>
+                    <td>Chuyển khoản</td>
+                    <td><span class="badge badge-status-active">Đã giao</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button>
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle"></i></button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

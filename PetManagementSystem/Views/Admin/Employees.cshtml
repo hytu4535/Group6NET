@@ -1,0 +1,95 @@
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card-panel">
+    <div class="card-panel-header">
+        <h5>Danh sách Nhân viên</h5>
+        <button class="btn btn-warning text-white" type="button" data-bs-toggle="modal" data-bs-target="#employeeModal">
+            <i class="bi bi-plus-lg"></i> Thêm nhân viên
+        </button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-admin table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Họ tên</th>
+                    <th>Chức vụ</th>
+                    <th>Số điện thoại</th>
+                    <th>Email</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>BS. Phạm Thị D</td>
+                    <td>Bác sĩ thú y</td>
+                    <td>0911 222 333</td>
+                    <td>bsd@petcare.vn</td>
+                    <td><span class="badge badge-status-active">Đang làm việc</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Hoàng Văn E</td>
+                    <td>Nhân viên chăm sóc</td>
+                    <td>0933 444 555</td>
+                    <td>hoange@petcare.vn</td>
+                    <td><span class="badge badge-status-active">Đang làm việc</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal thêm/sửa nhân viên -->
+<div class="modal fade" id="employeeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm nhân viên</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label">Họ tên</label>
+                        <input type="text" class="form-control" placeholder="Nhập họ tên" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Chức vụ</label>
+                        <select class="form-select">
+                            <option>Bác sĩ thú y</option>
+                            <option>Nhân viên chăm sóc</option>
+                            <option>Lễ tân</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Số điện thoại</label>
+                            <input type="text" class="form-control" placeholder="Nhập số điện thoại" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" placeholder="Nhập email" />
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-warning text-white">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>

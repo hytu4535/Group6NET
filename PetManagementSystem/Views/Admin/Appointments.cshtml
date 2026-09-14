@@ -1,0 +1,107 @@
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card-panel">
+    <div class="card-panel-header">
+        <h5>Lịch hẹn</h5>
+        <button class="btn btn-warning text-white" type="button" data-bs-toggle="modal" data-bs-target="#appointmentModal">
+            <i class="bi bi-plus-lg"></i> Đặt lịch mới
+        </button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-admin table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Thú cưng</th>
+                    <th>Chủ nuôi</th>
+                    <th>Dịch vụ</th>
+                    <th>Nhân viên phụ trách</th>
+                    <th>Thời gian</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>Milo</td>
+                    <td>Nguyễn Văn A</td>
+                    <td>Tắm &amp; cắt tỉa lông</td>
+                    <td>Hoàng Văn E</td>
+                    <td>10:00 - 15/06/2026</td>
+                    <td><span class="badge badge-status-active">Đã xác nhận</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Kitty</td>
+                    <td>Trần Thị B</td>
+                    <td>Khám định kỳ</td>
+                    <td>BS. Phạm Thị D</td>
+                    <td>14:30 - 15/06/2026</td>
+                    <td><span class="badge badge-status-pending">Chờ xác nhận</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal đặt lịch -->
+<div class="modal fade" id="appointmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Đặt lịch hẹn mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label">Thú cưng</label>
+                        <select class="form-select">
+                            <option>Milo</option>
+                            <option>Kitty</option>
+                            <option>Lucky</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Dịch vụ</label>
+                        <select class="form-select">
+                            <option>Gói Cơ bản</option>
+                            <option>Gói Spa Cao cấp</option>
+                            <option>Khám sức khỏe định kỳ</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nhân viên phụ trách</label>
+                        <select class="form-select">
+                            <option>BS. Phạm Thị D</option>
+                            <option>Hoàng Văn E</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Thời gian hẹn</label>
+                        <input type="datetime-local" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ghi chú</label>
+                        <textarea class="form-control" rows="2" placeholder="Ghi chú thêm"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-warning text-white">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>

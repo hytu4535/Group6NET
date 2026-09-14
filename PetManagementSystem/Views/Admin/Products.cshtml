@@ -1,0 +1,117 @@
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card-panel">
+    <div class="card-panel-header">
+        <h5>Danh sách Sản phẩm</h5>
+        <button class="btn btn-warning text-white" type="button" data-bs-toggle="modal" data-bs-target="#productModal">
+            <i class="bi bi-plus-lg"></i> Thêm sản phẩm
+        </button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-admin table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Tên sản phẩm</th>
+                    <th>Danh mục</th>
+                    <th>Đơn vị</th>
+                    <th>Tồn kho</th>
+                    <th>Giá bán</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>Thức ăn hạt Royal Canin</td>
+                    <td>Thức ăn</td>
+                    <td>Bao 2kg</td>
+                    <td>35</td>
+                    <td>320.000đ</td>
+                    <td><span class="badge badge-status-active">Còn hàng</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>Vòng cổ chống ve</td>
+                    <td>Phụ kiện</td>
+                    <td>Cái</td>
+                    <td>12</td>
+                    <td>85.000đ</td>
+                    <td><span class="badge badge-status-active">Còn hàng</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>Sữa tắm cho chó mèo</td>
+                    <td>Chăm sóc</td>
+                    <td>Chai 500ml</td>
+                    <td>0</td>
+                    <td>120.000đ</td>
+                    <td><span class="badge badge-status-inactive">Hết hàng</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
+                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal thêm/sửa sản phẩm -->
+<div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm sản phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label">Tên sản phẩm</label>
+                        <input type="text" class="form-control" placeholder="Nhập tên sản phẩm" />
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Danh mục</label>
+                            <select class="form-select">
+                                <option>Thức ăn</option>
+                                <option>Phụ kiện</option>
+                                <option>Chăm sóc</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Đơn vị tính</label>
+                            <input type="text" class="form-control" placeholder="Cái, hộp, chai..." />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Số lượng tồn</label>
+                            <input type="number" class="form-control" placeholder="0" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Giá bán</label>
+                            <input type="number" class="form-control" placeholder="0" />
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-warning text-white">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
