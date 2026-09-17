@@ -1,0 +1,46 @@
+@model PetManagementSystem.ViewModels.Identity.StaffUpsertViewModel
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white"><h5 class="mb-0">Cập nhật staff</h5></div>
+    <div class="card-body">
+        <form asp-action="EditStaff" method="post" novalidate>
+            @Html.AntiForgeryToken()
+            <input asp-for="Id" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="UserId" class="form-label">User</label>
+                    <select asp-for="UserId" asp-items="Model.UserOptions" class="form-select"></select>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Position" class="form-label">Chức vụ</label>
+                    <input asp-for="Position" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="HireDate" class="form-label">Ngày tuyển</label>
+                    <input asp-for="HireDate" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Status" class="form-label">Trạng thái</label>
+                    <select asp-for="Status" class="form-select">
+                        <option value="active">active</option>
+                        <option value="inactive">inactive</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                <a class="btn btn-outline-secondary" asp-action="Staff">Quay lại</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -2,6 +2,14 @@
     Layout = "_AdminLayout";
 }
 
+<partial name="~/Views/Admin/Partials/Shared/_ModuleSummary.cshtml"
+         view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+         {
+             ["SummaryTitle"] = "Service & Medical: Services / Packages",
+             ["SummaryDescription"] = "Bảng liên quan: services, service_packages, pet_packages.",
+             ["SummaryThemeClass"] = "module-summary-service"
+         }' />
+
 <div class="row g-3">
     <div class="col-md-4">
         <div class="card-panel h-100">

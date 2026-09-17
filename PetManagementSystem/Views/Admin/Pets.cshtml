@@ -2,11 +2,19 @@
     Layout = "_AdminLayout";
 }
 
+<partial name="~/Views/Admin/Partials/Shared/_ModuleSummary.cshtml"
+         view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+         {
+             ["SummaryTitle"] = "PetCare: Pets / Pet Images",
+             ["SummaryDescription"] = "Bảng liên quan: pets, pet_images (notifications/chat/feedback quản lý ở trang Feedback).",
+             ["SummaryThemeClass"] = "module-summary-petcare"
+         }' />
+
 <div class="card-panel">
     <div class="card-panel-header">
-        <h5>Danh sách Thú cưng</h5>
+        <h5>Danh sách Pets (mock)</h5>
         <button class="btn btn-warning text-white" type="button" data-bs-toggle="modal" data-bs-target="#petModal">
-            <i class="bi bi-plus-lg"></i> Thêm thú cưng
+            <i class="bi bi-plus-lg"></i> Thêm pet
         </button>
     </div>
     <div class="table-responsive">

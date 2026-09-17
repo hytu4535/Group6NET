@@ -1,0 +1,12 @@
+@{
+    var title = ViewData["SummaryTitle"] as string ?? string.Empty;
+    var description = ViewData["SummaryDescription"] as string ?? string.Empty;
+    var themeClass = ViewData["SummaryThemeClass"] as string ?? string.Empty;
+}
+
+<div class="card-panel module-summary @themeClass">
+    <div>
+        <h5 class="mb-1">@title</h5>
+        <p class="text-muted mb-0">@description</p>
+    </div>
+</div>

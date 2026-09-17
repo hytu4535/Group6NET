@@ -1,0 +1,62 @@
+@model List<PetManagementSystem.Models.Role>
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">Phân quyền</h5>
+            <small class="text-muted">Danh sách vai trò</small>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert alert-success">@success</div>
+        }
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped align-middle">
+                <thead class="table-light text-center">
+                    <tr>
+                        <th style="width: 80px;">ID</th>
+                        <th class="text-start">Tên vai trò</th>
+                        <th class="text-start">Mô tả</th>
+                        <th style="width: 120px;">Trạng thái</th>
+                        <th style="width: 140px;">Số quyền</th>
+                        <th style="width: 180px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Chưa có vai trò nào</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var role in Model.Where(x => string.Equals(x.Status, "active", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            <tr>
+                                <td class="text-center">@role.Id</td>
+                                <td class="fw-semibold">@role.Name</td>
+                                <td>@(role.Description ?? "-")</td>
+                                <td class="text-center">
+                                    <span class="badge text-bg-success">@role.Status</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge text-bg-info">@role.RolePermissions.Count</span>
+                                </td>
+                                <td class="text-center">
+                                    <a class="btn btn-sm btn-primary" asp-action="RolePermissions" asp-route-id="@role.Id">Phân quyền</a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

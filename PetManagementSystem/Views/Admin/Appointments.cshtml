@@ -2,11 +2,19 @@
     Layout = "_AdminLayout";
 }
 
+<partial name="~/Views/Admin/Partials/Shared/_ModuleSummary.cshtml"
+         view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+         {
+             ["SummaryTitle"] = "Service & Medical: Appointments / Health Records",
+             ["SummaryDescription"] = "Bảng liên quan: appointments, appointment_services, pet_health_records, vaccination_records, medical_prescriptions.",
+             ["SummaryThemeClass"] = "module-summary-service"
+         }' />
+
 <div class="card-panel">
     <div class="card-panel-header">
-        <h5>Lịch hẹn</h5>
+        <h5>Lịch hẹn điều trị (mock)</h5>
         <button class="btn btn-warning text-white" type="button" data-bs-toggle="modal" data-bs-target="#appointmentModal">
-            <i class="bi bi-plus-lg"></i> Đặt lịch mới
+            <i class="bi bi-plus-lg"></i> Tạo lịch hẹn
         </button>
     </div>
     <div class="table-responsive">

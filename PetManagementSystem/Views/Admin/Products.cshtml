@@ -2,9 +2,17 @@
     Layout = "_AdminLayout";
 }
 
+<partial name="~/Views/Admin/Partials/Shared/_ModuleSummary.cshtml"
+         view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+         {
+             ["SummaryTitle"] = "Commerce: Suppliers / Categories / Products",
+             ["SummaryDescription"] = "Bảng liên quan: suppliers, import_receipts, import_details, categories, products.",
+             ["SummaryThemeClass"] = "module-summary-commerce"
+         }' />
+
 <div class="card-panel">
     <div class="card-panel-header">
-        <h5>Danh sách Sản phẩm</h5>
+        <h5>Danh sách Products (mock)</h5>
         <button class="btn btn-warning text-white" type="button" data-bs-toggle="modal" data-bs-target="#productModal">
             <i class="bi bi-plus-lg"></i> Thêm sản phẩm
         </button>

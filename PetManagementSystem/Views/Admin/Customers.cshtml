@@ -2,11 +2,19 @@
     Layout = "_AdminLayout";
 }
 
+<partial name="~/Views/Admin/Partials/Shared/_ModuleSummary.cshtml"
+         view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+         {
+             ["SummaryTitle"] = "Identity: Users / Roles / Permissions",
+             ["SummaryDescription"] = "Bảng liên quan: users, roles, permissions, role_permissions.",
+             ["SummaryThemeClass"] = "module-summary-identity"
+         }' />
+
 <div class="card-panel">
     <div class="card-panel-header">
-        <h5>Danh sách Khách hàng</h5>
+        <h5>Danh sách Users (mock)</h5>
         <button class="btn btn-warning text-white" type="button" data-bs-toggle="modal" data-bs-target="#customerModal">
-            <i class="bi bi-plus-lg"></i> Thêm khách hàng
+            <i class="bi bi-plus-lg"></i> Thêm user
         </button>
     </div>
     <div class="table-responsive">

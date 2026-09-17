@@ -1,105 +1,71 @@
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
 @{
     Layout = "_AdminLayout";
 }
 
+
 <div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="stat-card bg-warm">
-            <div>
-                <div class="stat-value">128</div>
-                <div>Khách hàng</div>
-            </div>
-            <i class="bi bi-people-fill stat-icon"></i>
-        </div>
+    <div class="col-lg-6">
+        <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
+                 view-data='new ViewDataDictionary(ViewData)
+                 {
+                     ["CardTitle"] = "Identity",
+                     ["CardIcon"] = "bi bi-shield-lock",
+                     ["CardDescription"] = "Quản lý tài khoản, phân quyền và nhân sự nội bộ.",
+                     ["CardLinkUrl"] = Url.Action("Customers", "Admin"),
+                     ["CardLinkText"] = "Mở module",
+                     ["CardThemeClass"] = "module-identity",
+                     ["CardTags"] = new[] { "users", "roles", "permissions", "role_permissions", "staff", "veterinarians" }
+                 }' />
     </div>
-    <div class="col-md-3">
-        <div class="stat-card bg-teal">
-            <div>
-                <div class="stat-value">156</div>
-                <div>Thú cưng</div>
-            </div>
-            <i class="bi bi-heart-fill stat-icon"></i>
-        </div>
+    <div class="col-lg-6">
+        <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
+                 view-data='new ViewDataDictionary(ViewData)
+                 {
+                     ["CardTitle"] = "PetCare",
+                     ["CardIcon"] = "bi bi-heart",
+                     ["CardDescription"] = "Hồ sơ thú cưng, hình ảnh, thông báo và trao đổi khách hàng.",
+                     ["CardLinkUrl"] = Url.Action("Pets", "Admin"),
+                     ["CardLinkText"] = "Mở module",
+                     ["CardThemeClass"] = "module-petcare",
+                     ["CardTags"] = new[] { "pets", "pet_images", "notifications", "feedbacks", "chat_conversations" }
+                 }' />
     </div>
-    <div class="col-md-3">
-        <div class="stat-card bg-blue">
-            <div>
-                <div class="stat-value">24</div>
-                <div>Lịch hẹn hôm nay</div>
-            </div>
-            <i class="bi bi-calendar-check-fill stat-icon"></i>
-        </div>
+    <div class="col-lg-6">
+        <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
+                 view-data='new ViewDataDictionary(ViewData)
+                 {
+                     ["CardTitle"] = "Service & Medical",
+                     ["CardIcon"] = "bi bi-clipboard2-pulse",
+                     ["CardDescription"] = "Dịch vụ, lịch hẹn và hồ sơ y tế thú cưng.",
+                     ["CardLinkUrl"] = Url.Action("Appointments", "Admin"),
+                     ["CardLinkText"] = "Mở module",
+                     ["CardThemeClass"] = "module-service",
+                     ["CardTags"] = new[] { "services", "appointments", "appointment_services", "pet_health_records", "vaccination_records", "medical_prescriptions", "service_packages", "pet_packages" }
+                 }' />
     </div>
-    <div class="col-md-3">
-        <div class="stat-card bg-pink">
-            <div>
-                <div class="stat-value">12</div>
-                <div>Đơn hàng mới</div>
-            </div>
-            <i class="bi bi-receipt stat-icon"></i>
-        </div>
+    <div class="col-lg-6">
+        <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
+                 view-data='new ViewDataDictionary(ViewData)
+                 {
+                     ["CardTitle"] = "Commerce",
+                     ["CardIcon"] = "bi bi-cart3",
+                     ["CardDescription"] = "Quản lý kho, nhập hàng, bán hàng và thanh toán.",
+                     ["CardLinkUrl"] = Url.Action("Orders", "Admin"),
+                     ["CardLinkText"] = "Mở module",
+                     ["CardThemeClass"] = "module-commerce",
+                     ["CardTags"] = new[] { "suppliers", "import_receipts", "import_details", "categories", "products", "carts", "cart_items", "orders", "order_items", "payments", "invoices" }
+                 }' />
     </div>
 </div>
 
-<div class="row g-3">
-    <div class="col-md-7">
-        <div class="card-panel">
-            <div class="card-panel-header">
-                <h5>Lịch hẹn gần đây</h5>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-admin table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Thú cưng</th>
-                            <th>Chủ nuôi</th>
-                            <th>Dịch vụ</th>
-                            <th>Thời gian</th>
-                            <th>Trạng thái</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Milo (Chó Poodle)</td>
-                            <td>Nguyễn Văn A</td>
-                            <td>Tắm &amp; cắt tỉa lông</td>
-                            <td>10:00 - 15/06</td>
-                            <td><span class="badge badge-status-active">Đã xác nhận</span></td>
-                        </tr>
-                        <tr>
-                            <td>Kitty (Mèo Anh lông ngắn)</td>
-                            <td>Trần Thị B</td>
-                            <td>Khám định kỳ</td>
-                            <td>14:30 - 15/06</td>
-                            <td><span class="badge badge-status-pending">Chờ xác nhận</span></td>
-                        </tr>
-                        <tr>
-                            <td>Lucky (Chó Corgi)</td>
-                            <td>Lê Văn C</td>
-                            <td>Tiêm phòng</td>
-                            <td>09:00 - 16/06</td>
-                            <td><span class="badge badge-status-active">Đã xác nhận</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+<div class="card-panel">
+    <div class="card-panel-header">
+        <h5>AI Module (chuẩn bị)</h5>
     </div>
-    <div class="col-md-5">
-        <div class="card-panel">
-            <div class="card-panel-header">
-                <h5>Phản hồi mới nhất</h5>
-            </div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item">
-                    <strong>Nguyễn Văn A</strong> <span class="text-warning">★★★★★</span>
-                    <p class="mb-0 text-muted small">Dịch vụ tắm cho bé Milo rất tốt, nhân viên thân thiện.</p>
-                </li>
-                <li class="list-group-item">
-                    <strong>Trần Thị B</strong> <span class="text-warning">★★★★</span>
-                    <p class="mb-0 text-muted small">Đặt lịch dễ dàng, mong có thêm ưu đãi.</p>
-                </li>
-            </ul>
-        </div>
+    <div class="d-flex flex-wrap gap-2">
+        <span class="table-tag">breed_predictions</span>
+        <span class="table-tag">pet_images</span>
+        <span class="table-tag">custom tables (member 5)</span>
     </div>
 </div>

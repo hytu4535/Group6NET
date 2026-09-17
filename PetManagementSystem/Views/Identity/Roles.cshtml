@@ -1,0 +1,73 @@
+@model List<PetManagementSystem.Models.Role>
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">Quản lý Roles</h5>
+            <small class="text-muted">Danh sách vai trò và phân quyền</small>
+        </div>
+        <a class="btn btn-primary" asp-action="CreateRole"><i class="bi bi-plus-circle me-1"></i>Thêm Role</a>
+    </div>
+    <div class="card-body">
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert alert-success">@success</div>
+        }
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped align-middle data-table">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 90px;">ID</th>
+                        <th>Tên Role</th>
+                        <th>Mô tả</th>
+                        <th>Trạng thái</th>
+                        <th>Permissions</th>
+                        <th class="text-end" style="width: 220px;">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Chưa có role nào</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.Id</td>
+                                <td>@item.Name</td>
+                                <td>@(item.Description ?? "-")</td>
+                                <td>
+                                    <span class="badge @(item.Status == "active" ? "text-bg-success" : "text-bg-secondary")">
+                                        @item.Status
+                                    </span>
+                                </td>
+                                <td>@item.RolePermissions.Count</td>
+                                <td class="text-end">
+                                    <a class="btn btn-info btn-sm" asp-action="EditRole" asp-route-id="@item.Id">
+                                        <i class="bi bi-eye me-1"></i>Xem/Sửa
+                                    </a>
+                                    <form asp-action="ToggleRoleStatus" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="submit" class="btn btn-@(item.Status == "active" ? "warning" : "success") btn-sm">
+                                            <i class="bi bi-@(item.Status == "active" ? "lock-fill" : "unlock-fill") me-1"></i>
+                                            @(item.Status == "active" ? "Khóa" : "Kích hoạt")
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

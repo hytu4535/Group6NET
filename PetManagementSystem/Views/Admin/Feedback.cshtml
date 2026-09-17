@@ -2,9 +2,17 @@
     Layout = "_AdminLayout";
 }
 
+<partial name="~/Views/Admin/Partials/Shared/_ModuleSummary.cshtml"
+         view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+         {
+             ["SummaryTitle"] = "PetCare: Feedback / Notifications / Chat",
+             ["SummaryDescription"] = "Bảng liên quan: feedbacks, notifications, chat_conversations.",
+             ["SummaryThemeClass"] = "module-summary-petcare"
+         }' />
+
 <div class="card-panel">
     <div class="card-panel-header">
-        <h5>Phản hồi từ khách hàng</h5>
+        <h5>Phản hồi từ khách hàng (mock)</h5>
     </div>
     <div class="table-responsive">
         <table class="table table-admin table-hover align-middle">

@@ -10,7 +10,6 @@
 </head>
 <body class="admin-body">
     <div class="admin-wrapper">
-        <!-- Sidebar -->
         <aside class="admin-sidebar">
             <a href="@Url.Action("Dashboard", "Admin")" class="brand-link">
                 <i class="bi bi-heart-pulse-fill brand-icon"></i>
@@ -23,48 +22,113 @@
             <nav class="sidebar-nav">
                 <ul class="nav-list">
                     <li class="@(ViewData["Active"] as string == "Dashboard" ? "active" : "")">
-                        <a href="@Url.Action("Dashboard", "Admin")"><i class="bi bi-speedometer2"></i><span>Dashboard</span></a>
+                        <a href="@Url.Action("Dashboard", "Admin")"><i class="bi bi-speedometer2"></i><span>Tổng quan</span></a>
                     </li>
-                    <li class="nav-section">Quản lý hội viên</li>
-                    <li class="@(ViewData["Active"] as string == "Customers" ? "active" : "")">
-                        <a href="@Url.Action("Customers", "Admin")"><i class="bi bi-people-fill"></i><span>Khách hàng</span></a>
+
+                    <li class="nav-section">Identity</li>
+                    <li class="menu-group @((ViewData["ActiveParent"] as string) == "Identity" ? "menu-open" : "")">
+                        <a href="#" class="menu-toggle" data-menu-target="identity-menu">
+                            <span class="menu-title"><i class="bi bi-shield-lock-fill"></i><span>Quản lý thông tin/ vai trò</span></span>
+                            <i class="bi bi-chevron-right menu-arrow"></i>
+                        </a>
+                        <ul id="identity-menu" class="submenu">
+                            <li class="@(ViewData["Active"] as string == "Users" ? "active" : "")"><a href="@Url.Action("Users", "Identity")">Người dùng</a></li>
+                            <li class="@(ViewData["Active"] as string == "Roles" ? "active" : "")"><a href="@Url.Action("Roles", "Identity")">Vai trò</a></li>
+                            <li class="@(ViewData["Active"] as string == "Permissions" ? "active" : "")"><a href="@Url.Action("Permissions", "Identity")">Phân quyền</a></li>
+                            <li class="@(ViewData["Active"] as string == "Staff" ? "active" : "")"><a href="@Url.Action("Staff", "Identity")">Nhân viên</a></li>
+                            <li class="@(ViewData["Active"] as string == "Veterinarians" ? "active" : "")"><a href="@Url.Action("Veterinarians", "Identity")">Bác sĩ thú y</a></li>
+                        </ul>
                     </li>
-                    <li class="@(ViewData["Active"] as string == "Pets" ? "active" : "")">
-                        <a href="@Url.Action("Pets", "Admin")"><i class="bi bi-heart-fill"></i><span>Thú cưng</span></a>
+
+                    <li class="nav-section">PetCare</li>
+                    <li class="menu-group @((ViewData["ActiveParent"] as string) == "PetCare" ? "menu-open" : "")">
+                        <a href="#" class="menu-toggle" data-menu-target="petcare-menu">
+                            <span class="menu-title"><i class="bi bi-heart-fill"></i><span>Chăm sóc thú cưng</span></span>
+                            <i class="bi bi-chevron-right menu-arrow"></i>
+                        </a>
+                        <ul id="petcare-menu" class="submenu">
+                            <li class="@(ViewData["Active"] as string == "Pets" ? "active" : "")"><a href="@Url.Action("Pets", "Admin")">Thú cưng</a></li>
+                            <li class="@(ViewData["Active"] as string == "PetImages" ? "active" : "")"><a href="@Url.Action("PetImages", "Admin")">Hình ảnh thú cưng</a></li>
+                        </ul>
                     </li>
-                    <li class="nav-section">Nhân sự & Dịch vụ</li>
-                    <li class="@(ViewData["Active"] as string == "Employees" ? "active" : "")">
-                        <a href="@Url.Action("Employees", "Admin")"><i class="bi bi-person-badge-fill"></i><span>Nhân viên</span></a>
+
+                    <li class="nav-section">Service &amp; Medical</li>
+                    <li class="menu-group @((ViewData["ActiveParent"] as string) == "ServiceMedical" ? "menu-open" : "")">
+                        <a href="#" class="menu-toggle" data-menu-target="service-menu">
+                            <span class="menu-title"><i class="bi bi-clipboard2-pulse-fill"></i><span>Dịch vụ & Khám bệnh</span></span>
+                            <i class="bi bi-chevron-right menu-arrow"></i>
+                        </a>
+                        <ul id="service-menu" class="submenu">
+                            <li class="@(ViewData["Active"] as string == "Services" ? "active" : "")"><a href="@Url.Action("Services", "Admin")">Dịch vụ</a></li>
+                            <li class="@(ViewData["Active"] as string == "ServicePackages" ? "active" : "")"><a href="@Url.Action("ServicePackages", "Admin")">Gói dịch vụ</a></li>
+                            <li class="@(ViewData["Active"] as string == "PetPackages" ? "active" : "")"><a href="@Url.Action("PetPackages", "Admin")">Gói dịch vụ của thú cưng</a></li>
+                            <li class="@(ViewData["Active"] as string == "Appointments" ? "active" : "")"><a href="@Url.Action("Appointments", "Admin")">Lịch hẹn</a></li>
+                            <li class="@(ViewData["Active"] as string == "AppointmentServices" ? "active" : "")"><a href="@Url.Action("AppointmentServices", "Admin")">Dịch vụ theo lịch hẹn</a></li>
+                            <li class="@(ViewData["Active"] as string == "PetHealthRecords" ? "active" : "")"><a href="@Url.Action("PetHealthRecords", "Admin")">Hồ sơ sức khỏe thú cưng</a></li>
+                            <li class="@(ViewData["Active"] as string == "VaccinationRecords" ? "active" : "")"><a href="@Url.Action("VaccinationRecords", "Admin")">Lịch sử tiêm phòng thú cưng</a></li>
+                            <li class="@(ViewData["Active"] as string == "MedicalPrescriptions" ? "active" : "")"><a href="@Url.Action("MedicalPrescriptions", "Admin")">Đơn thuốc</a></li>
+                        </ul>
                     </li>
-                    <li class="@(ViewData["Active"] as string == "Services" ? "active" : "")">
-                        <a href="@Url.Action("Services", "Admin")"><i class="bi bi-box-seam-fill"></i><span>Gói dịch vụ</span></a>
+
+                    <li class="nav-section">Commerce</li>
+                    <li class="menu-group @((ViewData["ActiveParent"] as string) == "Commerce" ? "menu-open" : "")">
+                        <a href="#" class="menu-toggle" data-menu-target="commerce-menu">
+                            <span class="menu-title"><i class="bi bi-cart-fill"></i><span>Thương mại</span></span>
+                            <i class="bi bi-chevron-right menu-arrow"></i>
+                        </a>
+                        <ul id="commerce-menu" class="submenu">
+                            <li class="@(ViewData["Active"] as string == "Suppliers" ? "active" : "")"><a href="@Url.Action("Suppliers", "Admin")">Nhà cung cấp</a></li>
+                            <li class="@(ViewData["Active"] as string == "ImportReceipts" ? "active" : "")"><a href="@Url.Action("ImportReceipts", "Admin")">Phiếu nhập kho</a></li>
+                            <li class="@(ViewData["Active"] as string == "ImportDetails" ? "active" : "")"><a href="@Url.Action("ImportDetails", "Admin")">Chi tiết phiếu nhập</a></li>
+                            <li class="@(ViewData["Active"] as string == "Categories" ? "active" : "")"><a href="@Url.Action("Categories", "Admin")">Danh mục</a></li>
+                            <li class="@(ViewData["Active"] as string == "Products" ? "active" : "")"><a href="@Url.Action("Products", "Admin")">Sản phẩm</a></li>
+                            <li class="@(ViewData["Active"] as string == "Carts" ? "active" : "")"><a href="@Url.Action("Carts", "Admin")">Giỏ hàng</a></li>
+                            <li class="@(ViewData["Active"] as string == "CartItems" ? "active" : "")"><a href="@Url.Action("CartItems", "Admin")">Chi tiết giỏ hàng</a></li>
+                            <li class="@(ViewData["Active"] as string == "Orders" ? "active" : "")"><a href="@Url.Action("Orders", "Admin")">Đơn hàng</a></li>
+                            <li class="@(ViewData["Active"] as string == "OrderItems" ? "active" : "")"><a href="@Url.Action("OrderItems", "Admin")">Chi tiết đơn hàng</a></li>
+                            <li class="@(ViewData["Active"] as string == "Payments" ? "active" : "")"><a href="@Url.Action("Payments", "Admin")">Thanh toán</a></li>
+                            <li class="@(ViewData["Active"] as string == "Invoices" ? "active" : "")"><a href="@Url.Action("Invoices", "Admin")">Hóa đơn</a></li>
+                        </ul>
                     </li>
-                    <li class="@(ViewData["Active"] as string == "Appointments" ? "active" : "")">
-                        <a href="@Url.Action("Appointments", "Admin")"><i class="bi bi-calendar-check-fill"></i><span>Lịch hẹn</span></a>
+
+                    <li class="nav-section">Chăm sóc khách hàng</li>
+                    <li class="menu-group @((ViewData["ActiveParent"] as string) == "CustomerCare" ? "menu-open" : "")">
+                        <a href="#" class="menu-toggle" data-menu-target="care-menu">
+                            <span class="menu-title"><i class="bi bi-chat-left-text-fill"></i><span>Phản hồi/ thông báo/ chat</span></span>
+                            <i class="bi bi-chevron-right menu-arrow"></i>
+                        </a>
+                        <ul id="care-menu" class="submenu">
+                            <li class="@(ViewData["Active"] as string == "Feedbacks" ? "active" : "")"><a href="@Url.Action("Feedbacks", "Admin")">Phản hồi</a></li>
+                            <li class="@(ViewData["Active"] as string == "Notifications" ? "active" : "")"><a href="@Url.Action("Notifications", "Admin")">Thông báo</a></li>
+                            <li class="@(ViewData["Active"] as string == "Chats" ? "active" : "")"><a href="@Url.Action("Chats", "Admin")">Chats</a></li>
+                        </ul>
                     </li>
-                    <li class="nav-section">Bán hàng</li>
-                    <li class="@(ViewData["Active"] as string == "Products" ? "active" : "")">
-                        <a href="@Url.Action("Products", "Admin")"><i class="bi bi-basket-fill"></i><span>Sản phẩm</span></a>
-                    </li>
-                    <li class="@(ViewData["Active"] as string == "Orders" ? "active" : "")">
-                        <a href="@Url.Action("Orders", "Admin")"><i class="bi bi-receipt"></i><span>Đơn hàng</span></a>
-                    </li>
-                    <li class="nav-section">Khác</li>
-                    <li class="@(ViewData["Active"] as string == "Feedback" ? "active" : "")">
-                        <a href="@Url.Action("Feedback", "Admin")"><i class="bi bi-chat-left-text-fill"></i><span>Phản hồi</span></a>
+
+                    <li class="nav-section">AI</li>
+                    <li>
+                        <span class="nav-note"><i class="bi bi-robot"></i><span>Dự đoán giống thú cưng</span></span>
                     </li>
                 </ul>
             </nav>
+
+            <div class="sidebar-footer">
+                <form asp-controller="Auth" asp-action="LogoutAdmin" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Đăng xuất</span>
+                    </button>
+                </form>
+            </div>
         </aside>
 
-        <!-- Main content -->
         <div class="admin-main">
             <nav class="admin-topbar">
                 <button class="btn-toggle-sidebar" type="button" aria-label="Toggle sidebar">
                     <i class="bi bi-list"></i>
                 </button>
                 <ol class="breadcrumb-custom">
-                    <li><a href="@Url.Action("Dashboard", "Admin")">Trang chủ</a></li>
+                    <li><a href="@Url.Action("Dashboard", "Admin")">Admin</a></li>
                     <li class="active">@ViewData["Title"]</li>
                 </ol>
             </nav>

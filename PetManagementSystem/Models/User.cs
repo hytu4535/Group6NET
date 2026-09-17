@@ -1,0 +1,20 @@
+namespace PetManagementSystem.Models;
+
+public class User
+{
+    public int Id { get; set; }
+    public int RoleId { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public string PasswordHash { get; set; } = string.Empty;
+    public string? FullName { get; set; }
+    public string? Email { get; set; }
+    public string? PhoneNumber { get; set; }
+    public string? Address { get; set; }
+    public string Status { get; set; } = "active";
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+
+    public Role? Role { get; set; }
+    public Staff? Staff { get; set; }
+    public Veterinarian? Veterinarian { get; set; }
+}

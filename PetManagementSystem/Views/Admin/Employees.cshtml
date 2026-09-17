@@ -2,11 +2,19 @@
     Layout = "_AdminLayout";
 }
 
+<partial name="~/Views/Admin/Partials/Shared/_ModuleSummary.cshtml"
+         view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+         {
+             ["SummaryTitle"] = "Identity: Staff / Veterinarians",
+             ["SummaryDescription"] = "Bảng liên quan: staff, veterinarians.",
+             ["SummaryThemeClass"] = "module-summary-identity"
+         }' />
+
 <div class="card-panel">
     <div class="card-panel-header">
-        <h5>Danh sách Nhân viên</h5>
+        <h5>Danh sách Staff & Veterinarians (mock)</h5>
         <button class="btn btn-warning text-white" type="button" data-bs-toggle="modal" data-bs-target="#employeeModal">
-            <i class="bi bi-plus-lg"></i> Thêm nhân viên
+            <i class="bi bi-plus-lg"></i> Thêm nhân sự
         </button>
     </div>
     <div class="table-responsive">

@@ -2,9 +2,17 @@
     Layout = "_AdminLayout";
 }
 
+<partial name="~/Views/Admin/Partials/Shared/_ModuleSummary.cshtml"
+         view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+         {
+             ["SummaryTitle"] = "Commerce: Orders / Payments / Invoices",
+             ["SummaryDescription"] = "Bảng liên quan: carts, cart_items, orders, order_items, payments, invoices.",
+             ["SummaryThemeClass"] = "module-summary-commerce"
+         }' />
+
 <div class="card-panel">
     <div class="card-panel-header">
-        <h5>Danh sách Đơn hàng</h5>
+        <h5>Danh sách Orders (mock)</h5>
     </div>
     <div class="table-responsive">
         <table class="table table-admin table-hover align-middle">

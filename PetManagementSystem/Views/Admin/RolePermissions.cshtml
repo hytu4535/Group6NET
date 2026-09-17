@@ -1,0 +1,111 @@
+@model PetManagementSystem.ViewModels.Identity.RolePermissionsViewModel
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <style>
+        .permission-cell {
+            min-width: 150px;
+            height: 78px;
+            background: #f8fafc;
+        }
+
+        .permission-checkbox {
+            width: 1.35rem;
+            height: 1.35rem;
+            accent-color: #0d6efd;
+            cursor: pointer;
+        }
+
+        .permission-checkbox:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+        }
+
+        .permission-missing {
+            display: inline-flex;
+            width: 1.35rem;
+            height: 1.35rem;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #adb5bd;
+            border-radius: .25rem;
+            background: #e9ecef;
+            color: #6c757d;
+            font-weight: 700;
+        }
+    </style>
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">Phân quyền vai trò: @Model.RoleName</h5>
+            <small class="text-muted">Chọn quyền theo chức năng (Xem / Thêm / Sửa / Xóa)</small>
+        </div>
+        <a class="btn btn-outline-secondary" asp-action="Permissions">Quay lại</a>
+    </div>
+
+    <div class="card-body">
+        <form asp-action="RolePermissions" method="post">
+            @Html.AntiForgeryToken()
+            <input asp-for="RoleId" type="hidden" />
+
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th class="text-start" style="min-width: 240px;">Tên chức năng</th>
+                            <th style="width: 150px;">Xem</th>
+                            <th style="width: 150px;">Thêm</th>
+                            <th style="width: 150px;">Sửa</th>
+                            <th style="width: 150px;">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Rows)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">@row.DisplayName</div>
+                                    <small class="text-muted">@row.Module</small>
+                                </td>
+                                <td class="permission-cell text-center">
+                                    @if (row.View.PermissionId > 0)
+                                    {
+                                        <input class="form-check-input permission-checkbox" type="checkbox" name="SelectedPermissionIds" value="@row.View.PermissionId" checked="@row.View.IsGranted" />
+                                    }
+                                    else { <span class="permission-missing" title="Chưa có quyền">-</span> }
+                                </td>
+                                <td class="permission-cell text-center">
+                                    @if (row.Create.PermissionId > 0)
+                                    {
+                                        <input class="form-check-input permission-checkbox" type="checkbox" name="SelectedPermissionIds" value="@row.Create.PermissionId" checked="@row.Create.IsGranted" />
+                                    }
+                                    else { <span class="permission-missing" title="Chưa có quyền">-</span> }
+                                </td>
+                                <td class="permission-cell text-center">
+                                    @if (row.Update.PermissionId > 0)
+                                    {
+                                        <input class="form-check-input permission-checkbox" type="checkbox" name="SelectedPermissionIds" value="@row.Update.PermissionId" checked="@row.Update.IsGranted" />
+                                    }
+                                    else { <span class="permission-missing" title="Chưa có quyền">-</span> }
+                                </td>
+                                <td class="permission-cell text-center">
+                                    @if (row.Delete.PermissionId > 0)
+                                    {
+                                        <input class="form-check-input permission-checkbox" type="checkbox" name="SelectedPermissionIds" value="@row.Delete.PermissionId" checked="@row.Delete.IsGranted" />
+                                    }
+                                    else { <span class="permission-missing" title="Chưa có quyền">-</span> }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Lưu phân quyền</button>
+                <a class="btn btn-outline-secondary" asp-action="Permissions">Hủy</a>
+            </div>
+        </form>
+    </div>
+</div>

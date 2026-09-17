@@ -1,0 +1,54 @@
+@model PetManagementSystem.ViewModels.Identity.VeterinarianUpsertViewModel
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white"><h5 class="mb-0">Tạo bác sĩ thú y</h5></div>
+    <div class="card-body">
+        <form asp-action="CreateVeterinarian" method="post" novalidate>
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="UserId" class="form-label">User</label>
+                    <select asp-for="UserId" asp-items="Model.UserOptions" class="form-select"></select>
+                    <span asp-validation-for="UserId" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Specialty" class="form-label">Chuyên môn</label>
+                    <input asp-for="Specialty" class="form-control" />
+                    <span asp-validation-for="Specialty" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="LicenseNo" class="form-label">Số chứng chỉ</label>
+                    <input asp-for="LicenseNo" class="form-control" />
+                    <span asp-validation-for="LicenseNo" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="YearsOfExperience" class="form-label">Số năm kinh nghiệm</label>
+                    <input asp-for="YearsOfExperience" class="form-control" />
+                    <span asp-validation-for="YearsOfExperience" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Status" class="form-label">Trạng thái</label>
+                    <select asp-for="Status" class="form-select">
+                        <option value="active">active</option>
+                        <option value="inactive">inactive</option>
+                    </select>
+                    <span asp-validation-for="Status" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Lưu</button>
+                <a class="btn btn-outline-secondary" asp-action="Veterinarians">Quay lại</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
