@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+// Test comment to verify Edit works
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -22,6 +23,7 @@ public class IdentityController(
     {
         SetNav("Quản lý người dùng", "Users", "Identity");
         var users = await userRepository.GetAllWithRoleAsync();
+        users = users.Where(u => u.Status != "deleted").ToList();
         return View(users);
     }
 
@@ -157,11 +159,76 @@ public class IdentityController(
         return RedirectToAction(nameof(Users));
     }
 
-    [Authorize(Policy = "roles.view")]
+    [Authorize(Policy = "users.view")]
+    [HttpGet]
+    public async Task<IActionResult> DetailsUser(int id)
+    {
+        SetNav("Chi tiết người dùng", "Users", "Identity");
+        var user = await userRepository.GetByIdAsync(id);
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        return View(user);
+    }
+
+    [Authorize(Policy = "users.update")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> LockUser(int id)
+    {
+        var user = await userRepository.GetByIdAsync(id);
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        if (string.Equals(user.Status, "inactive", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Info"] = "Người dùng đã đang trong trạng thái khóa";
+            return RedirectToAction(nameof(Users));
+        }
+
+        user.Status = "inactive";
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await userRepository.UpdateAsync(user);
+        TempData["Success"] = "Đã khóa người dùng";
+        return RedirectToAction(nameof(Users));
+    }
+
+    [Authorize(Policy = "users.update")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SoftDeleteUser(int id)
+    {
+        var user = await userRepository.GetByIdAsync(id);
+        if (user is null)
+        {
+            return NotFound();
+        }
+
+        if (string.Equals(user.Status, "deleted", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Info"] = "Người dùng đã được xóa mềm trước đó";
+            return RedirectToAction(nameof(Users));
+        }
+
+        user.Status = "deleted";
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await userRepository.UpdateAsync(user);
+        TempData["Success"] = "Đã xóa mềm người dùng";
+        return RedirectToAction(nameof(Users));
+    }
+
+[Authorize(Policy = "roles.view")]
     public async Task<IActionResult> Roles()
     {
         SetNav("Quản lý vai trò", "Roles", "Identity");
         var roles = await roleRepository.GetAllAsync();
+        roles = roles.Where(r => r.Status != "deleted").ToList();
         return View(roles);
     }
 
@@ -260,10 +327,24 @@ public class IdentityController(
         return RedirectToAction(nameof(Roles));
     }
 
+    [Authorize(Policy = "roles.view")]
+    [HttpGet]
+    public async Task<IActionResult> DetailsRole(int id)
+    {
+        SetNav("Chi tiết vai trò", "Roles", "Identity");
+        var role = await roleRepository.GetByIdAsync(id);
+        if (role is null)
+        {
+            return NotFound();
+        }
+
+        return View(role);
+    }
+
     [Authorize(Policy = "roles.update")]
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ToggleRoleStatus(int id)
+    public async Task<IActionResult> LockRole(int id)
     {
         var role = await roleRepository.GetRoleWithPermissionsAsync(id);
         if (role is null)
@@ -271,15 +352,59 @@ public class IdentityController(
             return NotFound();
         }
 
-        role.Status = string.Equals(role.Status, "active", StringComparison.OrdinalIgnoreCase)
-            ? "inactive"
-            : "active";
-        role.UpdatedAt = DateTime.UtcNow;
+        // Check if role is assigned to any user
+        var users = await userRepository.GetAllWithRoleAsync();
+        if (users.Any(u => u.RoleId == id))
+        {
+            TempData["Error"] = "Không thể khóa vai trò vì đang được gán cho người dùng";
+            return RedirectToAction(nameof(Roles));
+        }
 
+        if (string.Equals(role.Status, "active", StringComparison.OrdinalIgnoreCase))
+        {
+            role.Status = "inactive";
+            TempData["Success"] = "Đã khóa vai trò";
+        }
+        else
+        {
+            role.Status = "active";
+            TempData["Success"] = "Đã mở khóa vai trò";
+        }
+
+        role.UpdatedAt = DateTime.UtcNow;
         await roleRepository.UpdateAsync(role, role.RolePermissions.Select(x => x.PermissionId));
-        TempData["Success"] = role.Status == "active"
-            ? "Đã kích hoạt vai trò"
-            : "Đã khóa vai trò";
+        return RedirectToAction(nameof(Roles));
+    }
+
+    [Authorize(Policy = "roles.update")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SoftDeleteRole(int id)
+    {
+        var role = await roleRepository.GetRoleWithPermissionsAsync(id);
+        if (role is null)
+        {
+            return NotFound();
+        }
+
+        // Check if role is assigned to any user
+        var users = await userRepository.GetAllWithRoleAsync();
+        if (users.Any(u => u.RoleId == id))
+        {
+            TempData["Error"] = "Không thể xóa vai trò vì đang được gán cho người dùng";
+            return RedirectToAction(nameof(Roles));
+        }
+
+        if (string.Equals(role.Status, "deleted", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Info"] = "Vai trò đã được xóa mềm trước đó";
+            return RedirectToAction(nameof(Roles));
+        }
+
+        role.Status = "deleted";
+        role.UpdatedAt = DateTime.UtcNow;
+        await roleRepository.UpdateAsync(role, role.RolePermissions.Select(x => x.PermissionId));
+        TempData["Success"] = "Đã xóa mềm vai trò";
         return RedirectToAction(nameof(Roles));
     }
 
@@ -287,8 +412,8 @@ public class IdentityController(
     public async Task<IActionResult> Permissions()
     {
         SetNav("Phân quyền", "Permissions", "Identity");
-        var roles = await roleRepository.GetAllAsync();
-        return View("~/Views/Admin/Permissions.cshtml", roles);
+        var permissions = await permissionRepository.GetAllAsync();
+        return View(permissions);
     }
 
     [Authorize(Policy = "permissions.update")]
@@ -297,6 +422,7 @@ public class IdentityController(
     {
         SetNav("Phân quyền theo vai trò", "Permissions", "Identity");
 
+        System.Diagnostics.Debug.WriteLine($"Loading role permissions for role ID: {id}");
         var role = await roleRepository.GetRoleWithPermissionsAsync(id);
         if (role is null)
         {
@@ -435,6 +561,7 @@ public class IdentityController(
     {
         SetNav("Quản lý nhân viên", "Staff", "Identity");
         var staffList = await staffRepository.GetAllWithUserAsync();
+        staffList = staffList.Where(s => s.Status != "deleted").ToList();
         return View(staffList);
     }
 
@@ -538,11 +665,77 @@ public class IdentityController(
         return RedirectToAction(nameof(Staff));
     }
 
-    [Authorize(Policy = "veterinarians.view")]
+    [Authorize(Policy = "staff.view")]
+    [HttpGet]
+    public async Task<IActionResult> DetailsStaff(int id)
+    {
+        SetNav("Chi tiết nhân viên", "Staff", "Identity");
+        var staff = await staffRepository.GetByIdAsync(id);
+        if (staff is null)
+        {
+            return NotFound();
+        }
+
+        return View(staff);
+    }
+
+    [Authorize(Policy = "staff.update")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> LockStaff(int id)
+    {
+        var staff = await staffRepository.GetByIdAsync(id);
+        if (staff is null)
+        {
+            return NotFound();
+        }
+
+        if (string.Equals(staff.Status, "active", StringComparison.OrdinalIgnoreCase))
+        {
+            staff.Status = "inactive";
+            TempData["Success"] = "Đã khóa nhân viên";
+        }
+        else
+        {
+            staff.Status = "active";
+            TempData["Success"] = "Đã mở khóa nhân viên";
+        }
+
+        staff.UpdatedAt = DateTime.UtcNow;
+        await staffRepository.UpdateAsync(staff);
+        return RedirectToAction(nameof(Staff));
+    }
+
+    [Authorize(Policy = "staff.update")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SoftDeleteStaff(int id)
+    {
+        var staff = await staffRepository.GetByIdAsync(id);
+        if (staff is null)
+        {
+            return NotFound();
+        }
+
+        if (string.Equals(staff.Status, "deleted", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Info"] = "Nhân viên đã được xóa mềm trước đó";
+            return RedirectToAction(nameof(Staff));
+        }
+
+        staff.Status = "deleted";
+        staff.UpdatedAt = DateTime.UtcNow;
+        await staffRepository.UpdateAsync(staff);
+        TempData["Success"] = "Đã xóa mềm nhân viên";
+        return RedirectToAction(nameof(Staff));
+    }
+
+[Authorize(Policy = "veterinarians.view")]
     public async Task<IActionResult> Veterinarians()
     {
         SetNav("Quản lý bác sĩ thú y", "Veterinarians", "Identity");
         var vets = await veterinarianRepository.GetAllWithUserAsync();
+        vets = vets.Where(v => v.Status != "deleted").ToList();
         return View(vets);
     }
 
@@ -676,11 +869,11 @@ public class IdentityController(
         var permissions = await permissionRepository.GetAllAsync();
         var requiredModules = new[]
         {
-            (Module: "users", DisplayName: "Quản lý người dùng", Codes: new[] { "view", "create", "update", "delete" }),
-            (Module: "roles", DisplayName: "Quản lý vai trò", Codes: new[] { "view", "create", "update", "delete" }),
-            (Module: "permissions", DisplayName: "Phân quyền", Codes: new[] { "view", "create", "update", "delete" }),
-            (Module: "staff", DisplayName: "Quản lý nhân viên", Codes: new[] { "view", "create", "update", "delete" }),
-            (Module: "veterinarians", DisplayName: "Quản lý bác sĩ thú y", Codes: new[] { "view", "create", "update", "delete" })
+            new { Module = "users", DisplayName = "Quản lý người dùng", Codes = new[] { "view", "create", "update", "delete" } },
+            new { Module = "roles", DisplayName = "Quản lý vai trò", Codes = new[] { "view", "create", "update", "delete" } },
+            new { Module = "permissions", DisplayName = "Phân quyền", Codes = new[] { "view", "create", "update", "delete" } },
+            new { Module = "staff", DisplayName = "Quản lý nhân viên", Codes = new[] { "view", "create", "update", "delete" } },
+            new { Module = "veterinarians", DisplayName = "Quản lý bác sĩ thú y", Codes = new[] { "view", "create", "update", "delete" } }
         };
 
         var hasChanges = false;
@@ -726,9 +919,9 @@ public class IdentityController(
         return permissions;
     }
 
-    private static RolePermissionsViewModel BuildRolePermissionsMatrix(Role role, IEnumerable<Permission> permissions, IEnumerable<int>? selectedPermissionIds = null)
+    private RolePermissionsViewModel BuildRolePermissionsMatrix(Role role, List<Permission> permissions)
     {
-        var selectedSet = selectedPermissionIds?.ToHashSet() ?? role.RolePermissions.Select(x => x.PermissionId).ToHashSet();
+        var selectedSet = role.RolePermissions.Select(x => x.PermissionId).ToHashSet();
         var matrix = new RolePermissionsViewModel
         {
             RoleId = role.Id,
@@ -806,6 +999,71 @@ public class IdentityController(
         });
 
         return model;
+    }
+
+    [Authorize(Policy = "veterinarians.view")]
+    [HttpGet]
+    public async Task<IActionResult> DetailsVeterinarian(int id)
+    {
+        SetNav("Chi tiết bác sĩ thú y", "Veterinarians", "Identity");
+        var vet = await veterinarianRepository.GetByIdAsync(id);
+        if (vet is null)
+        {
+            return NotFound();
+        }
+
+        return View(vet);
+    }
+
+    [Authorize(Policy = "veterinarians.update")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> LockVeterinarian(int id)
+    {
+        var vet = await veterinarianRepository.GetByIdAsync(id);
+        if (vet is null)
+        {
+            return NotFound();
+        }
+
+        if (string.Equals(vet.Status, "active", StringComparison.OrdinalIgnoreCase))
+        {
+            vet.Status = "inactive";
+            TempData["Success"] = "Đã khóa bác sĩ thú y";
+        }
+        else
+        {
+            vet.Status = "active";
+            TempData["Success"] = "Đã mở khóa bác sĩ thú y";
+        }
+
+        vet.UpdatedAt = DateTime.UtcNow;
+        await veterinarianRepository.UpdateAsync(vet);
+        return RedirectToAction(nameof(Veterinarians));
+    }
+
+    [Authorize(Policy = "veterinarians.update")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SoftDeleteVeterinarian(int id)
+    {
+        var vet = await veterinarianRepository.GetByIdAsync(id);
+        if (vet is null)
+        {
+            return NotFound();
+        }
+
+        if (string.Equals(vet.Status, "deleted", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Info"] = "Bác sĩ thú y đã được xóa mềm trước đó";
+            return RedirectToAction(nameof(Veterinarians));
+        }
+
+        vet.Status = "deleted";
+        vet.UpdatedAt = DateTime.UtcNow;
+        await veterinarianRepository.UpdateAsync(vet);
+        TempData["Success"] = "Đã xóa mềm bác sĩ thú y";
+        return RedirectToAction(nameof(Veterinarians));
     }
 
     private void SetNav(string title, string active, string activeParent)

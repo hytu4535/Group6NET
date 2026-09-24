@@ -50,7 +50,16 @@
                                     <span class="badge text-bg-info">@role.RolePermissions.Count</span>
                                 </td>
                                 <td class="text-center">
-                                    <a class="btn btn-sm btn-primary" asp-action="RolePermissions" asp-route-id="@role.Id">Phân quyền</a>
+                                    <a class="btn btn-sm btn-outline-info" asp-action="DetailsRole" asp-route-id="@role.Id" title="Xem"><i class="bi bi-eye"></i></a>
+                                    <a class="btn btn-sm btn-outline-primary" asp-action="EditRole" asp-route-id="@role.Id" title="Sửa"><i class="bi bi-pencil-square"></i></a>
+                                    <form asp-action="SoftDeleteRole" asp-route-id="@role.Id" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vai trò này khỏi danh sách?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                                        @Html.AntiForgeryToken()
+                                    </form>
+                                    <form asp-action="LockRole" asp-route-id="@role.Id" method="post">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Khóa"><i class="bi bi-lock"></i></button>
+                                        @Html.AntiForgeryToken()
+                                    </form>
                                 </td>
                             </tr>
                         }

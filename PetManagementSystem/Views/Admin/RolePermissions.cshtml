@@ -41,7 +41,19 @@
             <h5 class="mb-0">Phân quyền vai trò: @Model.RoleName</h5>
             <small class="text-muted">Chọn quyền theo chức năng (Xem / Thêm / Sửa / Xóa)</small>
         </div>
-        <a class="btn btn-outline-secondary" asp-action="Permissions">Quay lại</a>
+        <div>
+            <a class="btn btn-outline-secondary" asp-action="Permissions">Quay lại</a>
+            <a class="btn btn-sm btn-outline-info" asp-action="DetailsRole" asp-route-id="@Model.RoleId" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
+            <form asp-action="LockRole" asp-route-id="@Model.RoleId" method="post">
+                <button type="submit" class="btn btn-sm btn-outline-secondary" title="@(Model.RoleStatus == "active" ? "Khóa" : "Mở khóa")"><i class="bi bi-lock"></i></button>
+                @Html.AntiForgeryToken()
+            </form>
+            <a class="btn btn-sm btn-outline-primary" asp-action="EditRole" asp-route-id="@Model.RoleId" title="Chỉnh sửa"><i class="bi bi-pencil-square"></i></a>
+            <form asp-action="SoftDeleteRole" asp-route-id="@Model.RoleId" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vai trò này khỏi danh sách?');">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa mềm"><i class="bi bi-trash"></i></button>
+                @Html.AntiForgeryToken()
+            </form>
+        </div>
     </div>
 
     <div class="card-body">
@@ -71,28 +83,28 @@
                                 <td class="permission-cell text-center">
                                     @if (row.View.PermissionId > 0)
                                     {
-                                        <input class="form-check-input permission-checkbox" type="checkbox" name="SelectedPermissionIds" value="@row.View.PermissionId" checked="@row.View.IsGranted" />
+                                        <input class="form-check-input permission-checkbox" type="checkbox" name="SelectedPermissionIds" value="@row.View.PermissionId" @(row.View.IsGranted ? "checked" : null) />
                                     }
                                     else { <span class="permission-missing" title="Chưa có quyền">-</span> }
                                 </td>
                                 <td class="permission-cell text-center">
                                     @if (row.Create.PermissionId > 0)
                                     {
-                                        <input class="form-check-input permission-checkbox" type="checkbox" name="SelectedPermissionIds" value="@row.Create.PermissionId" checked="@row.Create.IsGranted" />
+                                        <input class="form-check-input permission-checkbox" type="checkbox" name="SelectedPermissionIds" value="@row.Create.PermissionId" @(row.Create.IsGranted ? "checked" : null) />
                                     }
                                     else { <span class="permission-missing" title="Chưa có quyền">-</span> }
                                 </td>
                                 <td class="permission-cell text-center">
                                     @if (row.Update.PermissionId > 0)
                                     {
-                                        <input class="form-check-input permission-checkbox" type="checkbox" name="SelectedPermissionIds" value="@row.Update.PermissionId" checked="@row.Update.IsGranted" />
+                                        <input class="form-check-input permission-checkbox" type="checkbox" name="SelectedPermissionIds" value="@row.Update.PermissionId" @(row.Update.IsGranted ? "checked" : null) />
                                     }
                                     else { <span class="permission-missing" title="Chưa có quyền">-</span> }
                                 </td>
                                 <td class="permission-cell text-center">
                                     @if (row.Delete.PermissionId > 0)
                                     {
-                                        <input class="form-check-input permission-checkbox" type="checkbox" name="SelectedPermissionIds" value="@row.Delete.PermissionId" checked="@row.Delete.IsGranted" />
+                                        <input class="form-check-input permission-checkbox" type="checkbox" name="SelectedPermissionIds" value="@row.Delete.PermissionId" @(row.Delete.IsGranted ? "checked" : null) />
                                     }
                                     else { <span class="permission-missing" title="Chưa có quyền">-</span> }
                                 </td>

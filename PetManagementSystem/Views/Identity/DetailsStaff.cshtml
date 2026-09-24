@@ -1,0 +1,45 @@
+@model PetManagementSystem.Models.Staff
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white"><h5 class="mb-0">Chi tiết nhân viên</h5></div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Người dùng</label>
+                <p class="form-control-plaintext">@Model.User?.Username</p>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Họ và tên người dùng</label>
+                <p class="form-control-plaintext">@Model.User?.FullName</p>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Chức vụ</label>
+                <p class="form-control-plaintext">@Model.Position</p>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Ngày tuyển</label>
+                <p class="form-control-plaintext">@Model.HireDate?.ToString("yyyy-MM-dd")</p>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Trạng thái</label>
+                <span class="badge @(Model.Status == "active" ? "text-bg-success" : (Model.Status == "inactive" ? "text-bg-warning" : "text-bg-danger"))">
+                    @Model.Status
+                </span>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Ngày tạo</label>
+                <p class="form-control-plaintext">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Ngày cập nhật</label>
+                <p class="form-control-plaintext">@(Model.UpdatedAt.HasValue ? Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm") : "-")</p>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer d-flex justify-content-end">
+        <a class="btn btn-outline-secondary" asp-action="Staff">Quay lại danh sách</a>
+    </div>
+</div>
