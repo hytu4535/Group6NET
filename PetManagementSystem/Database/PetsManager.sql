@@ -511,3 +511,44 @@ CREATE INDEX IX_BreedPredictions_UserId ON breed_predictions(user_id);
 CREATE INDEX IX_BreedPredictionDetails_PredictionId ON breed_prediction_details(prediction_id);
 CREATE INDEX IX_PetImages_PetId ON pet_images(pet_id);
 GO
+
+
+
+
+-- 1) Tạo role (bỏ qua nếu đã tồn tại)
+IF NOT EXISTS (SELECT 1 FROM roles WHERE name = N'admin')
+    INSERT INTO roles (name, description, status) VALUES (N'admin', N'Quản trị hệ thống - toàn quyền', N'active');
+ 
+IF NOT EXISTS (SELECT 1 FROM roles WHERE name = N'staff')
+    INSERT INTO roles (name, description, status) VALUES (N'staff', N'Nhân viên', N'active');
+ 
+IF NOT EXISTS (SELECT 1 FROM roles WHERE name = N'customer')
+    INSERT INTO roles (name, description, status) VALUES (N'customer', N'Khách hàng', N'active');
+GO
+ 
+-- 2) Tạo tài khoản admin (nếu đã tồn tại thì cập nhật lại mật khẩu theo hash mới)
+IF NOT EXISTS (SELECT 1 FROM users WHERE username = N'admin01')
+BEGIN
+    INSERT INTO users (role_id, username, password_hash, full_name, email, phone_number, address, status)
+    SELECT
+        r.id,
+        N'admin01',
+        N'AQAAAAEAAYagAAAAEBrHT5QHuvaFgqKXfEAwl7aJi1REVahgC8n/isILsiBYSLyTSxzNS7V2qUKzZkGbrg==',
+        N'Quan tri vien',
+        N'admin01@petcare.vn',
+        N'0900000001',
+        N'Ho Chi Minh',
+        N'active'
+    FROM roles r WHERE r.name = N'admin';
+END
+ELSE
+BEGIN
+    UPDATE users
+    SET password_hash = N'AQAAAAEAAYagAAAAEBrHT5QHuvaFgqKXfEAwl7aJi1REVahgC8n/isILsiBYSLyTSxzNS7V2qUKzZkGbrg==',
+        status = N'active'
+    WHERE username = N'admin01';
+END
+GO
+ 
+SELECT id, username, role_id, status FROM users WHERE username = N'admin01';
+GO

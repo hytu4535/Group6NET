@@ -680,7 +680,15 @@ public class IdentityController(
             (Module: "roles", DisplayName: "Quản lý vai trò", Codes: new[] { "view", "create", "update", "delete" }),
             (Module: "permissions", DisplayName: "Phân quyền", Codes: new[] { "view", "create", "update", "delete" }),
             (Module: "staff", DisplayName: "Quản lý nhân viên", Codes: new[] { "view", "create", "update", "delete" }),
-            (Module: "veterinarians", DisplayName: "Quản lý bác sĩ thú y", Codes: new[] { "view", "create", "update", "delete" })
+            (Module: "veterinarians", DisplayName: "Quản lý bác sĩ thú y", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "categories", DisplayName: "Danh mục sản phẩm", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "suppliers", DisplayName: "Nhà cung cấp", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "products", DisplayName: "Sản phẩm", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "import_receipts", DisplayName: "Phiếu nhập kho", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "carts", DisplayName: "Giỏ hàng", Codes: new[] { "view", "delete" }),
+            (Module: "orders", DisplayName: "Đơn hàng", Codes: new[] { "view", "create", "update" }),
+            (Module: "payments", DisplayName: "Thanh toán", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "invoices", DisplayName: "Hóa đơn", Codes: new[] { "view", "create", "update" })
         };
 
         var hasChanges = false;
@@ -781,6 +789,14 @@ public class IdentityController(
         "permissions" => "Phân quyền",
         "staff" => "Nhân viên",
         "veterinarians" => "Bác sĩ thú y",
+        "categories" => "Danh mục sản phẩm",
+        "suppliers" => "Nhà cung cấp",
+        "products" => "Sản phẩm",
+        "import_receipts" => "Phiếu nhập kho",
+        "carts" => "Giỏ hàng",
+        "orders" => "Đơn hàng",
+        "payments" => "Thanh toán",
+        "invoices" => "Hóa đơn",
         _ => module
     };
 

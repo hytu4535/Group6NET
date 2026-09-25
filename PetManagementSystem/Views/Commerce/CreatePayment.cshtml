@@ -1,0 +1,83 @@
+@using PetManagementSystem.Helpers
+@model PetManagementSystem.ViewModels.Commerce.PaymentUpsertViewModel
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white"><h5 class="mb-0">Tạo giao dịch thanh toán</h5></div>
+    <div class="card-body">
+        <form asp-action="CreatePayment" method="post" novalidate>
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="OrderId" class="form-label">Đơn hàng</label>
+                    <select asp-for="OrderId" class="form-select" id="orderSelect">
+                        <option value="">-- Chọn đơn hàng --</option>
+                        @foreach (var o in Model.OrderOptions)
+                        {
+                            <option value="@o.Id" data-remaining="@(o.TotalAmount - o.PaidAmount)" selected="@(Model.OrderId == o.Id)">@o.Text</option>
+                        }
+                    </select>
+                    <span asp-validation-for="OrderId" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="PaymentMethod" class="form-label">Phương thức</label>
+                    <select asp-for="PaymentMethod" class="form-select">
+                        @foreach (var m in PaymentMethods.All)
+                        {
+                            <option value="@m">@PaymentMethods.Label(m)</option>
+                        }
+                    </select>
+                    <span asp-validation-for="PaymentMethod" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Amount" class="form-label">Số tiền</label>
+                    <input asp-for="Amount" class="form-control" type="number" step="0.01" min="0.01" />
+                    <span asp-validation-for="Amount" class="text-danger"></span>
+                    <div class="form-text">Số tiền còn phải thu sẽ tự điền khi chọn đơn hàng.</div>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="PaymentDate" class="form-label">Ngày thanh toán</label>
+                    <input asp-for="PaymentDate" class="form-control" type="datetime-local" value="@Model.PaymentDate.ToString("yyyy-MM-ddTHH:mm")" />
+                    <span asp-validation-for="PaymentDate" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Status" class="form-label">Trạng thái</label>
+                    <select asp-for="Status" class="form-select">
+                        @foreach (var s in PaymentStatuses.All)
+                        {
+                            <option value="@s">@PaymentStatuses.Label(s)</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Status" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="TransactionCode" class="form-label">Mã giao dịch</label>
+                    <input asp-for="TransactionCode" class="form-control" placeholder="Để trống để hệ thống tự sinh mã" />
+                    <span asp-validation-for="TransactionCode" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Lưu</button>
+                <a class="btn btn-outline-secondary" asp-action="Payments">Quay lại</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('orderSelect').addEventListener('change', function () {
+            var opt = this.options[this.selectedIndex];
+            var amountInput = document.querySelector('[name="Amount"]');
+            if (opt && opt.dataset.remaining && Number(amountInput.value) === 0) {
+                amountInput.value = Number(opt.dataset.remaining).toFixed(2);
+            }
+        });
+    </script>
+}

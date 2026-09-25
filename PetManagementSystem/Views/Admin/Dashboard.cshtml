@@ -17,7 +17,7 @@
                      ["CardThemeClass"] = "module-identity",
                      ["CardTags"] = new[] { "users", "roles", "permissions", "role_permissions", "staff", "veterinarians" }
                  }' />
-    </div>
+</div>
     <div class="col-lg-6">
         <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
                  view-data='new ViewDataDictionary(ViewData)
@@ -30,7 +30,7 @@
                      ["CardThemeClass"] = "module-petcare",
                      ["CardTags"] = new[] { "pets", "pet_images", "notifications", "feedbacks", "chat_conversations" }
                  }' />
-    </div>
+</div>
     <div class="col-lg-6">
         <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
                  view-data='new ViewDataDictionary(ViewData)
@@ -43,7 +43,7 @@
                      ["CardThemeClass"] = "module-service",
                      ["CardTags"] = new[] { "services", "appointments", "appointment_services", "pet_health_records", "vaccination_records", "medical_prescriptions", "service_packages", "pet_packages" }
                  }' />
-    </div>
+</div>
     <div class="col-lg-6">
         <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
                  view-data='new ViewDataDictionary(ViewData)
@@ -51,12 +51,12 @@
                      ["CardTitle"] = "Commerce",
                      ["CardIcon"] = "bi bi-cart3",
                      ["CardDescription"] = "Quản lý kho, nhập hàng, bán hàng và thanh toán.",
-                     ["CardLinkUrl"] = Url.Action("Orders", "Admin"),
+                     ["CardLinkUrl"] = Url.Action("Orders", "Commerce"),
                      ["CardLinkText"] = "Mở module",
                      ["CardThemeClass"] = "module-commerce",
                      ["CardTags"] = new[] { "suppliers", "import_receipts", "import_details", "categories", "products", "carts", "cart_items", "orders", "order_items", "payments", "invoices" }
                  }' />
-    </div>
+</div>
 </div>
 
 <div class="card-panel">
