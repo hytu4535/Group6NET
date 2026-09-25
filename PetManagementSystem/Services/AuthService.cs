@@ -74,10 +74,10 @@ public class AuthService(
                 return (false, "Username đã tồn tại.");
             }
 
-            var customerRole = await roleRepository.GetByNameAsync("customer");
+            var customerRole = await roleRepository.GetByNameAsync("member");
             if (customerRole is null)
             {
-                return (false, "Không tìm thấy role mặc định 'customer'.");
+                return (false, "Không tìm thấy role mặc định 'member'.");
             }
 
             var user = new User

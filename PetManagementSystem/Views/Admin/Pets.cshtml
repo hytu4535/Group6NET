@@ -1,137 +1,159 @@
+@model IEnumerable<PetManagementSystem.Models.Pet>
+@using PetManagementSystem.Models
+
 @{
     Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý thú cưng";
+    var searchKeyword = ViewData["SearchKeyword"] as string;
+    var petOwners = ViewData["PetOwners"] as IEnumerable<User> ?? [];
+    var currentPage = ViewData["Page"] is int pageValue ? pageValue : 1;
+    var pageSize = ViewData["PageSize"] is int currentPageSize ? currentPageSize : 10;
+    var totalItems = ViewData["TotalItems"] is int total ? total : 0;
+    var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 }
 
-<partial name="~/Views/Admin/Partials/Shared/_ModuleSummary.cshtml"
-         view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
-         {
-             ["SummaryTitle"] = "PetCare: Pets / Pet Images",
-             ["SummaryDescription"] = "Bảng liên quan: pets, pet_images (notifications/chat/feedback quản lý ở trang Feedback).",
-             ["SummaryThemeClass"] = "module-summary-petcare"
-         }' />
-
-<div class="card-panel">
-    <div class="card-panel-header">
-        <h5>Danh sách Pets (mock)</h5>
-        <button class="btn btn-warning text-white" type="button" data-bs-toggle="modal" data-bs-target="#petModal">
-            <i class="bi bi-plus-lg"></i> Thêm pet
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Danh sách thú cưng</h5>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPetModal">
+            <i class="bi bi-plus-circle me-1"></i>Thêm thú cưng
         </button>
     </div>
-    <div class="table-responsive">
-        <table class="table table-admin table-hover align-middle">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Ảnh</th>
-                    <th>Tên</th>
-                    <th>Loài</th>
-                    <th>Giống</th>
-                    <th>Ngày sinh</th>
-                    <th>Cân nặng</th>
-                    <th>Chủ nuôi</th>
-                    <th>Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>1</td>
-                    <td><i class="bi bi-image text-muted fs-4"></i></td>
-                    <td>Milo</td>
-                    <td>Chó</td>
-                    <td>Poodle</td>
-                    <td>12/03/2022</td>
-                    <td>4.5 kg</td>
-                    <td>Nguyễn Văn A</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td><i class="bi bi-image text-muted fs-4"></i></td>
-                    <td>Kitty</td>
-                    <td>Mèo</td>
-                    <td>Anh lông ngắn</td>
-                    <td>05/07/2021</td>
-                    <td>3.8 kg</td>
-                    <td>Trần Thị B</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td><i class="bi bi-image text-muted fs-4"></i></td>
-                    <td>Lucky</td>
-                    <td>Chó</td>
-                    <td>Corgi</td>
-                    <td>20/01/2023</td>
-                    <td>9.2 kg</td>
-                    <td>Lê Văn C</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
+    <div class="card-body">
+        @if (TempData["SuccessMessage"] is string successMessage)
+        {
+            <div class="alert alert-success">@successMessage</div>
+        }
+        @if (TempData["ErrorMessage"] is string errorMessage)
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
 
-<!-- Modal thêm/sửa thú cưng -->
-<div class="modal fade" id="petModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Thêm thú cưng</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <form method="get" asp-action="Pets" class="row g-2 mb-3">
+            <div class="col-md-6 col-lg-4">
+                <label for="searchKeyword" class="visually-hidden">Tìm thú cưng</label>
+                <input id="searchKeyword" type="text" name="searchKeyword" value="@searchKeyword" class="form-control"
+                       placeholder="Tìm tên, loài, giống..." />
             </div>
-            <div class="modal-body">
-                <form>
-                    <div class="mb-3">
-                        <label class="form-label">Tên thú cưng</label>
-                        <input type="text" class="form-control" placeholder="Nhập tên" />
+            <div class="col-auto">
+                <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search me-1"></i>Tìm kiếm</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Chủ nuôi</th>
+                        <th>Tên thú cưng</th>
+                        <th>Loài</th>
+                        <th>Giống</th>
+                        <th>Giới tính</th>
+                        <th>Cân nặng</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model is null || !Model.Any())
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">Chưa có dữ liệu.</td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var pet in Model)
+                        {
+                            <tr>
+                                <td>@pet.Id</td>
+                                <td>@(pet.User?.FullName ?? pet.User?.Username ?? $"User #{pet.UserId}")</td>
+                                <td class="fw-semibold">@pet.Name</td>
+                                <td><span class="badge text-bg-info">@pet.Species</span></td>
+                                <td>@(pet.Breed ?? "-")</td>
+                                <td>@pet.Gender</td>
+                                <td>@(pet.WeightKg.HasValue ? $"{pet.WeightKg} kg" : "-")</td>
+                                <td class="text-end">
+                                    <form asp-action="DeletePet" asp-route-id="@pet.Id" method="post" class="d-inline"
+                                          onsubmit="return confirm('Bạn có muốn xóa thú cưng này?');">
+                                        <input type="hidden" name="searchKeyword" value="@searchKeyword" />
+                                        <input type="hidden" name="page" value="@currentPage" />
+                                        <input type="hidden" name="pageSize" value="@pageSize" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i
+                                            class="bi bi-trash me-1"></i>Xóa</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (totalPages > 1)
+            {
+                <nav class="mt-3" aria-label="Phân trang thú cưng">
+                    <ul class="pagination justify-content-center mb-0">
+                        @for (var pageNumber = 1; pageNumber <= totalPages; pageNumber++)
+                        {
+                            <li class="page-item @(pageNumber == currentPage ? "active" : "")">
+                                <a class="page-link" asp-action="Pets" asp-route-page="@pageNumber" asp-route-pageSize="@pageSize"
+                                   asp-route-searchKeyword="@searchKeyword">@pageNumber</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+
+    <div class="modal fade" id="createPetModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form asp-action="CreatePet" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Thêm Thú Cưng Mới</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Loài</label>
-                            <select class="form-select">
-                                <option>Chó</option>
-                                <option>Mèo</option>
-                                <option>Khác</option>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="petOwnerId" class="form-label">Chủ nuôi</label>
+                            <select id="petOwnerId" name="UserId" class="form-select" required>
+                                <option value="">-- Chọn chủ nuôi --</option>
+                                @foreach (var user in petOwners)
+                                {
+                                    <option value="@user.Id">@(user.FullName ?? user.Username) (@user.Username)</option>
+                                }
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="mb-3">
+                            <label class="form-label">Tên thú cưng</label>
+                            <input name="Name" class="form-control" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Loài</label>
+                            <input name="Species" class="form-control" placeholder="Chó, Mèo..." required />
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Giống</label>
-                            <input type="text" class="form-control" placeholder="Nhập giống" />
+                            <input name="Breed" class="form-control" />
                         </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Ngày sinh</label>
-                            <input type="date" class="form-control" />
+                        <div class="mb-3">
+                            <label class="form-label">Giới tính</label>
+                            <select name="Gender" class="form-select" required>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="mb-3">
                             <label class="form-label">Cân nặng (kg)</label>
-                            <input type="number" step="0.1" class="form-control" placeholder="0.0" />
+                            <input name="WeightKg" type="number" step="0.1" class="form-control" />
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Chủ nuôi</label>
-                        <select class="form-select">
-                            <option>Nguyễn Văn A</option>
-                            <option>Trần Thị B</option>
-                            <option>Lê Văn C</option>
-                        </select>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary">Lưu</button>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-warning text-white">Lưu</button>
-            </div>
         </div>
     </div>
-</div>

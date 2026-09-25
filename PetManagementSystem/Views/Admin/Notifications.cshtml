@@ -1,8 +1,159 @@
+@model IEnumerable<PetManagementSystem.Models.Notification>
+@using PetManagementSystem.Models
+
 @{
     Layout = "_AdminLayout";
+    ViewData["Title"] = "Thông báo";
+    var unreadCount = ViewData["UnreadCount"] is int count ? count : 0;
+    var customers = ViewData["Customers"] as IEnumerable<User> ?? [];
+    var currentPage = ViewData["Page"] is int pageValue ? pageValue : 1;
+    var pageSize = ViewData["PageSize"] is int currentPageSize ? currentPageSize : 10;
+    var totalItems = ViewData["TotalItems"] is int total ? total : 0;
+    var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 }
 
-<div class="card-panel">
-    <h5>Notifications</h5>
-    <p class="text-muted mb-0">Trang placeholder UI cho bảng <strong>notifications</strong>.</p>
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex flex-wrap gap-2 justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-1">Thông báo</h5>
+            <span class="text-muted small">@unreadCount thông báo chưa đọc</span>
+        </div>
+        <form asp-controller="Notifications" asp-action="MarkAllAsRead" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="page" value="@currentPage" />
+            <input type="hidden" name="pageSize" value="@pageSize" />
+            <button type="submit" class="btn btn-outline-primary" @(unreadCount == 0 ? "disabled" : null)>
+                <i class="bi bi-check2-all me-1"></i>Đánh dấu tất cả đã đọc
+            </button>
+        </form>
+    </div>
+
+    <div class="card-body">
+        @if (TempData["SuccessMessage"] is string successMessage)
+        {
+            <div class="alert alert-success">@successMessage</div>
+        }
+        @if (TempData["ErrorMessage"] is string errorMessage)
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+
+        <div class="card border mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">Tạo thông báo cho khách hàng</h6>
+            </div>
+            <div class="card-body">
+                <form asp-controller="Notifications" asp-action="SendNotification" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+                    <div class="col-md-3">
+                        <label for="notificationType" class="form-label">Loại</label>
+                        <select id="notificationType" name="type" class="form-select" required>
+                            <option value="system">Hệ thống</option>
+                            <option value="promotion">Khuyến mãi</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="notificationCustomer" class="form-label">Người nhận</label>
+                        <select id="notificationCustomer" name="userId" class="form-select">
+                            <option value="">-- Chọn khách hàng --</option>
+                            @foreach (var customer in customers)
+                            {
+                                <option value="@customer.Id">@(customer.FullName ?? customer.Username) (@customer.Username)
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-5 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input id="sendToAll" name="sendToAll" value="true" class="form-check-input"
+                                   type="checkbox" />
+                            <label for="sendToAll" class="form-check-label">Gửi cho tất cả khách hàng</label>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label for="notificationMessage" class="form-label">Nội dung</label>
+                        <textarea id="notificationMessage" name="message" class="form-control" rows="3" maxlength="1000"
+                                  required></textarea>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send me-1"></i>Gửi thông báo
+                        </button>
+                    </div>
+                    <input type="hidden" name="page" value="@currentPage" />
+                    <input type="hidden" name="pageSize" value="@pageSize" />
+                </form>
+            </div>
+        </div>
+
+        @if (Model is null || !Model.Any())
+        {
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-bell-slash fs-2 d-block mb-2"></i>
+                Chưa có thông báo nào.
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-3">
+                @foreach (var notification in Model)
+                {
+                    var type = notification.Type?.ToLowerInvariant() ?? "system";
+                    var typeClass = type == "promotion" ? "text-bg-warning" : "text-bg-secondary";
+                    var typeLabel = type == "promotion" ? "Khuyến mãi" : "Hệ thống";
+
+                    <article class="border rounded p-3 @(notification.IsRead ? "bg-light" : "border-primary")">
+                        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start">
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <span class="text-muted small">
+                                    Người nhận: @(notification.User?.FullName ?? notification.User?.Username ?? $"User #{notification.UserId}")
+                                </span>
+                                <span class="badge @typeClass">@typeLabel</span>
+                                @if (notification.IsRead)
+                                {
+                                    <span class="badge text-bg-light border text-muted">Đã đọc</span>
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-primary">Chưa đọc</span>
+                                }
+                            </div>
+                            <time class="text-muted small" datetime="@notification.CreatedAt.ToString("O")">
+                                @notification.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </time>
+                        </div>
+
+                        <p class="mb-2 mt-3">@notification.Message</p>
+
+                        @if (!notification.IsRead)
+                        {
+                            <form asp-controller="Notifications" asp-action="MarkAsRead" asp-route-id="@notification.Id"
+                                  method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="page" value="@currentPage" />
+                                <input type="hidden" name="pageSize" value="@pageSize" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-check2 me-1"></i>Đánh dấu đã đọc
+                                </button>
+                            </form>
+                        }
+                    </article>
+                }
+            </div>
+        }
+    </div>
+    @if (totalPages > 1)
+    {
+        <nav class="px-3 pb-3" aria-label="Phân trang thông báo">
+            <ul class="pagination justify-content-center mb-0">
+                @for (var pageNumber = 1; pageNumber <= totalPages; pageNumber++)
+                {
+                    <li class="page-item @(pageNumber == currentPage ? "active" : "")">
+                        <a class="page-link" asp-controller="Notifications" asp-action="Index" asp-route-page="@pageNumber"
+                           asp-route-pageSize="@pageSize">@pageNumber</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
 </div>
