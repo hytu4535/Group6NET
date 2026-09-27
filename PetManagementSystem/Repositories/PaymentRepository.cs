@@ -7,7 +7,7 @@ namespace PetManagementSystem.Repositories;
 
 public class PaymentRepository(AppDbContext dbContext) : IPaymentRepository
 {
-    public async Task<PetManagementSystem.Helpers.PagedResult<Payment>> SearchAsync(string? search, string? status, string? method, int page, int pageSize)
+    public async Task<PetManagementSystem.Models.PagedResult<Payment>> SearchAsync(string? search, string? status, string? method, int page, int pageSize)
     {
         var query = dbContext.Payments
             .AsNoTracking()

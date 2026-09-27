@@ -5,7 +5,7 @@ namespace PetManagementSystem.Repositories;
 
 public interface ISupplierRepository
 {
-    Task<PetManagementSystem.Helpers.PagedResult<Supplier>> SearchAsync(string? search, int page, int pageSize);
+    Task<PetManagementSystem.Models.PagedResult<Supplier>> SearchAsync(string? search, int page, int pageSize);
     Task<List<Supplier>> GetAllAsync();
     Task<Supplier?> GetByIdAsync(int id);
     Task<bool> ExistsEmailAsync(string email, int? excludeId = null);

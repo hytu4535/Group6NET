@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
-
+using PetManagementSystem.Models;
 namespace PetManagementSystem.Helpers;
 
 public static class AuthorizationExtensions

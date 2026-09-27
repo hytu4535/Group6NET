@@ -1,5 +1,5 @@
 using System.Security.Claims;
-
+using PetManagementSystem.Models;
 namespace PetManagementSystem.Helpers;
 
 public static class ClaimsPrincipalExtensions

@@ -1,5 +1,5 @@
 namespace PetManagementSystem.Helpers;
-
+using PetManagementSystem.Models;
 public static class StringExtensions
 {
     /// <summary>Cắt khoảng trắng hai đầu; chuỗi rỗng trả về null.</summary>

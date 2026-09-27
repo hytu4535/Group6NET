@@ -183,11 +183,7 @@ namespace PetManagementSystem.Controllers
             return View();
         }
 
-        public IActionResult Feedback()
-        {
-            SetNav("Phản hồi Khách hàng", "Feedbacks", "CustomerCare");
-            return View();
-        }
+       
 
         // Identity
         public IActionResult Users() { SetNav("Users", "Users", "Identity"); return View(); }

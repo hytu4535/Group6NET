@@ -7,7 +7,7 @@ namespace PetManagementSystem.Repositories;
 
 public class SupplierRepository(AppDbContext dbContext) : ISupplierRepository
 {
-    public async Task<PetManagementSystem.Helpers.PagedResult<Supplier>> SearchAsync(string? search, int page, int pageSize)
+    public async Task<PetManagementSystem.Models.PagedResult<Supplier>> SearchAsync(string? search, int page, int pageSize)
     {
         var query = dbContext.Suppliers.AsNoTracking().AsQueryable();
 

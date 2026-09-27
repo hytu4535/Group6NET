@@ -5,8 +5,8 @@ namespace PetManagementSystem.Repositories;
 
 public interface IImportReceiptRepository
 {
-    Task<PetManagementSystem.Helpers.PagedResult<ImportReceipt>> SearchAsync(string? search, int? supplierId, DateTime? from, DateTime? to, int page, int pageSize);
-    Task<PetManagementSystem.Helpers.PagedResult<ImportDetail>> SearchDetailsAsync(int? receiptId, string? search, int page, int pageSize);
+    Task<PetManagementSystem.Models.PagedResult<ImportReceipt>> SearchAsync(string? search, int? supplierId, DateTime? from, DateTime? to, int page, int pageSize);
+    Task<PetManagementSystem.Models.PagedResult<ImportDetail>> SearchDetailsAsync(int? receiptId, string? search, int page, int pageSize);
 
     /// <summary>Phiếu nhập kèm nhà cung cấp, nhân viên và chi tiết (có theo dõi thay đổi).</summary>
     Task<ImportReceipt?> GetByIdWithDetailsAsync(int id);

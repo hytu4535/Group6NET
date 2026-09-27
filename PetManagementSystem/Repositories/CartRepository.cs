@@ -7,7 +7,7 @@ namespace PetManagementSystem.Repositories;
 
 public class CartRepository(AppDbContext dbContext) : ICartRepository
 {
-    public async Task<PetManagementSystem.Helpers.PagedResult<Cart>> SearchAsync(string? search, string? status, int page, int pageSize)
+    public async Task<PetManagementSystem.Models.PagedResult<Cart>> SearchAsync(string? search, string? status, int page, int pageSize)
     {
         var query = dbContext.Carts
             .AsNoTracking()
@@ -35,7 +35,7 @@ public class CartRepository(AppDbContext dbContext) : ICartRepository
             .ToPagedResultAsync(page, pageSize);
     }
 
-    public async Task<PetManagementSystem.Helpers.PagedResult<CartItem>> SearchItemsAsync(int? cartId, string? search, int page, int pageSize)
+    public async Task<PetManagementSystem.Models.PagedResult<CartItem>> SearchItemsAsync(int? cartId, string? search, int page, int pageSize)
     {
         var query = dbContext.CartItems
             .AsNoTracking()

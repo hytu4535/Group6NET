@@ -9,7 +9,7 @@ public class OrderRepository(AppDbContext dbContext) : IOrderRepository
 {
     private const int SelectionLimit = 500;
 
-    public async Task<PetManagementSystem.Helpers.PagedResult<Order>> SearchAsync(string? search, string? status, DateTime? from, DateTime? to, int page, int pageSize)
+    public async Task<PetManagementSystem.Models.PagedResult<Order>> SearchAsync(string? search, string? status, DateTime? from, DateTime? to, int page, int pageSize)
     {
         var query = dbContext.Orders
             .AsNoTracking()
@@ -50,7 +50,7 @@ public class OrderRepository(AppDbContext dbContext) : IOrderRepository
             .ToPagedResultAsync(page, pageSize);
     }
 
-    public async Task<PetManagementSystem.Helpers.PagedResult<OrderItem>> SearchItemsAsync(int? orderId, string? search, int page, int pageSize)
+    public async Task<PetManagementSystem.Models.PagedResult<OrderItem>> SearchItemsAsync(int? orderId, string? search, int page, int pageSize)
     {
         var query = dbContext.OrderItems
             .AsNoTracking()

@@ -5,7 +5,7 @@ namespace PetManagementSystem.Repositories;
 
 public interface IInvoiceRepository
 {
-    Task<PetManagementSystem.Helpers.PagedResult<Invoice>> SearchAsync(string? search, DateTime? from, DateTime? to, int page, int pageSize);
+    Task<PetManagementSystem.Models.PagedResult<Invoice>> SearchAsync(string? search, DateTime? from, DateTime? to, int page, int pageSize);
 
     /// <summary>Hóa đơn kèm đơn hàng, khách hàng, sản phẩm và người lập.</summary>
     Task<Invoice?> GetByIdAsync(int id);

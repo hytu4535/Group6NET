@@ -5,9 +5,9 @@ namespace PetManagementSystem.Repositories;
 
 public interface IOrderRepository
 {
-    Task<PetManagementSystem.Helpers.PagedResult<Order>> SearchAsync(string? search, string? status, DateTime? from, DateTime? to, int page, int pageSize);
+    Task<PetManagementSystem.Models.PagedResult<Order>> SearchAsync(string? search, string? status, DateTime? from, DateTime? to, int page, int pageSize);
 
-    Task<PetManagementSystem.Helpers.PagedResult<OrderItem>> SearchItemsAsync(int? orderId, string? search, int page, int pageSize);
+    Task<PetManagementSystem.Models.PagedResult<OrderItem>> SearchItemsAsync(int? orderId, string? search, int page, int pageSize);
 
     /// <summary>Đơn hàng kèm khách hàng, sản phẩm, thanh toán và hóa đơn (có theo dõi thay đổi).</summary>
     Task<Order?> GetByIdWithDetailsAsync(int id);

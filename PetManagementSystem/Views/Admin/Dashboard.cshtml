@@ -1,152 +1,321 @@
-@using Microsoft.AspNetCore.Mvc.ViewFeatures
 @{
     Layout = "_AdminLayout";
+    ViewData["Title"] = "";
+    ViewData["Active"] = "Dashboard";
+    ViewData["ActiveParent"] = "";
 }
 
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Thống kê tổng quan</h3>
-                <div class="card-tools">
-                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                </div>
+<!-- Nhúng trực tiếp CDN để đảm bảo không bị vỡ giao diện -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+<style>
+    /* Custom style tinh chỉnh riêng cho Dashboard PetCare */
+    .content-wrapper { background-color: #f4f6f9 !important; }
+    .stat-card { transition: transform .2s ease, box-shadow .2s ease; border-radius: 8px; overflow: hidden; }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.1) !important; }
+    .stat-icon { position: absolute; top: 15px; right: 15px; font-size: 2.5rem; opacity: 0.3; }
+    .bg-gradient-pet { background: linear-gradient(45deg, #fd7e14, #ff922b); color: white; }
+    .badge-soft-primary { background-color: #e7f1ff; color: #0d6efd; }
+    .badge-soft-success { background-color: #e6f4ea; color: #198754; }
+    .badge-soft-warning { background-color: #fff3cd; color: #ffc107; }
+    .badge-soft-danger { background-color: #f8d7da; color: #dc3545; }
+    .timeline-item-custom { border-left: 2px solid #e9ecef; padding-left: 15px; position: relative; margin-bottom: 15px; }
+    .timeline-item-custom::before { content: ''; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background-color: #fd7e14; }
+</style>
+
+<!-- Content Header (Page header) -->
+<div class="content-header pt-3 pb-2">
+    <div class="container-fluid">
+        <div class="row align-items-center mb-2">
+            <div class="col-sm-6">
+                <h3 class="m-0 font-weight-bold text-dark" style="font-size: 1.5rem;">
+                    <i class="fas fa-paw text-warning mr-2"></i>Tổng quan hệ thống
+                </h3>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-lg-3 col-6">
-                        <div class="small-box bg-info">
-                            <div class="inner">
-                                <h3>@(ViewData["TotalUsers"] != null ? Convert.ToInt32(ViewData["TotalUsers"]) : 0)</h3>
-                                <p>Người dùng</p>
-                            </div>
-                            <div class="icon">
-                                <i class="ion ion-person-add"></i>
-                            </div>
-                            <a href="@Url.Action("Users", "Identity")" class="small-box-footer">Xem thêm <i class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-6">
-                        <div class="small-box bg-success">
-                            <div class="inner">
-                                <h3>@(ViewData["TotalRoles"] != null ? Convert.ToInt32(ViewData["TotalRoles"]) : 0)</h3>
-                                <p>Vai trò</p>
-                            </div>
-                            <div class="icon">
-                                <i class="ion ion-person-stalker"></i>
-                            </div>
-                            <a href="@Url.Action("Roles", "Identity")" class="small-box-footer">Xem thêm <i class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-6">
-                        <div class="small-box bg-warning">
-                            <div class="inner">
-                                <h3>@(ViewData["TotalPermissions"] != null ? Convert.ToInt32(ViewData["TotalPermissions"]) : 0)</h3>
-                                <p>Quyền</p>
-                            </div>
-                            <div class="icon">
-                                <i class="ion ion-locked"></i>
-                            </div>
-                            <a href="@Url.Action("Permissions", "Identity")" class="small-box-footer">Xem thêm <i class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-6">
-                        <div class="small-box bg-danger">
-                            <div class="inner">
-                                <h3>@(ViewData["TotalStaff"] != null ? Convert.ToInt32(ViewData["TotalStaff"]) : 0)</h3>
-                                <p>Nhân viên</p>
-                            </div>
-                            <div class="icon">
-                                <i class="ion ion-person"></i>
-                            </div>
-                            <a href="@Url.Action("Staff", "Identity")" class="small-box-footer">Xem thêm <i class="fas fa-arrow-circle-right"></i></a>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right bg-transparent p-0 m-0 text-sm">
+                    <li class="breadcrumb-item"><a href="#" class="text-orange">Trang chủ</a></li>
+                    <li class="breadcrumb-item active">Dashboard</li>
+                </ol>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-lg-6">
-        <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
-                 view-data='new ViewDataDictionary(ViewData)
-                 {
-                     ["CardTitle"] = "Identity",
-                     ["CardIcon"] = "bi bi-shield-lock",
-                     ["CardDescription"] = "Quản lý tài khoản, phân quyền và nhân sự nội bộ.",
-                     ["CardLinkUrl"] = Url.Action("Customers", "Admin"),
-                     ["CardLinkText"] = "Mở module",
-                     ["CardThemeClass"] = "module-identity",
-                     ["CardTags"] = new[] { "users", "roles", "permissions", "role_permissions", "staff", "veterinarians" }
-                 }' />
-</div>
-    <div class="col-lg-6">
-        <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
-                 view-data='new ViewDataDictionary(ViewData)
-                 {
-                     ["CardTitle"] = "PetCare",
-                     ["CardIcon"] = "bi bi-heart",
-                     ["CardDescription"] = "Hồ sơ thú cưng, hình ảnh, thông báo và trao đổi khách hàng.",
-                     ["CardLinkUrl"] = Url.Action("Pets", "Admin"),
-                     ["CardLinkText"] = "Mở module",
-                     ["CardThemeClass"] = "module-petcare",
-                     ["CardTags"] = new[] { "pets", "pet_images", "notifications", "feedbacks", "chat_conversations" }
-                 }' />
-</div>
-    <div class="col-lg-6">
-        <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
-                 view-data='new ViewDataDictionary(ViewData)
-                 {
-                     ["CardTitle"] = "Service & Medical",
-                     ["CardIcon"] = "bi bi-clipboard2-pulse",
-                     ["CardDescription"] = "Dịch vụ, lịch hẹn và hồ sơ y tế thú cưng.",
-                     ["CardLinkUrl"] = Url.Action("Appointments", "Admin"),
-                     ["CardLinkText"] = "Mở module",
-                     ["CardThemeClass"] = "module-service",
-                     ["CardTags"] = new[] { "services", "appointments", "appointment_services", "pet_health_records", "vaccination_records", "medical_prescriptions", "service_packages", "pet_packages" }
-                 }' />
-</div>
-    <div class="col-lg-6">
-        <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
-                 view-data='new ViewDataDictionary(ViewData)
-                 {
-                     ["CardTitle"] = "Commerce",
-                     ["CardIcon"] = "bi bi-cart3",
-                     ["CardDescription"] = "Quản lý kho, nhập hàng, bán hàng và thanh toán.",
-                     ["CardLinkUrl"] = Url.Action("Orders", "Commerce"),
-                     ["CardLinkText"] = "Mở module",
-                     ["CardThemeClass"] = "module-commerce",
-                     ["CardTags"] = new[] { "suppliers", "import_receipts", "import_details", "categories", "products", "carts", "cart_items", "orders", "order_items", "payments", "invoices" }
-                 }' />
-</div>
-</div>
-
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Thống kê theo tháng</h3>
-                <div class="card-tools">
-                    <div class="input-group input-group-sm" style="width: 150px;">
-                        <select class="form-control form-control-navbar">
-                            <option selected>Tháng này</option>
-                            <option>Tháng geç</option>
-                            <option>3 tháng gần nhất</option>
-                            <option>Năm nay</option>
-                        </select>
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        
+        <!-- 4 Thẻ Thống kê Stat Cards -->
+        <div class="row">
+            <!-- Box 1 -->
+            <div class="col-xl-3 col-md-6 col-12 mb-3">
+                <div class="card stat-card border-0 shadow-sm bg-white h-100 position-relative p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted font-weight-bold text-uppercase text-xs">Thú cưng quản lý</span>
+                            <h2 class="font-weight-bold text-dark my-1">128</h2>
+                            <span class="text-success text-xs font-weight-bold"><i class="fas fa-arrow-up"></i> +8% tháng này</span>
+                        </div>
+                        <div class="stat-icon text-primary">
+                            <i class="fas fa-dog"></i>
+                        </div>
                     </div>
-                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                        <i class="fas fa-minus"></i>
-                    </button>
                 </div>
             </div>
-            <div class="card-body">
-                <canvas id="monthlyChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+
+            <!-- Box 2 -->
+            <div class="col-xl-3 col-md-6 col-12 mb-3">
+                <div class="card stat-card border-0 shadow-sm bg-white h-100 position-relative p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted font-weight-bold text-uppercase text-xs">Đơn hàng mới</span>
+                            <h2 class="font-weight-bold text-dark my-1">45</h2>
+                            <span class="text-success text-xs font-weight-bold"><i class="fas fa-arrow-up"></i> +12% hôm nay</span>
+                        </div>
+                        <div class="stat-icon text-success">
+                            <i class="fas fa-shopping-bag"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 3 -->
+            <div class="col-xl-3 col-md-6 col-12 mb-3">
+                <div class="card stat-card border-0 shadow-sm bg-white h-100 position-relative p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted font-weight-bold text-uppercase text-xs">Khách hàng</span>
+                            <h2 class="font-weight-bold text-dark my-1">312</h2>
+                            <span class="text-muted text-xs">Tài khoản kích hoạt</span>
+                        </div>
+                        <div class="stat-icon text-warning">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 4 -->
+            <div class="col-xl-3 col-md-6 col-12 mb-3">
+                <div class="card stat-card border-0 shadow-sm bg-white h-100 position-relative p-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <span class="text-muted font-weight-bold text-uppercase text-xs">Phản hồi chờ xử lý</span>
+                            <h2 class="font-weight-bold text-danger my-1">18</h2>
+                            <span class="text-danger text-xs font-weight-bold"><i class="fas fa-exclamation-circle"></i> Cần phản hồi</span>
+                        </div>
+                        <div class="stat-icon text-danger">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- Biểu đồ & Lịch hẹn -->
+        <div class="row">
+            <!-- Cột Trái: Biểu đồ & Đơn hàng -->
+            <div class="col-lg-8">
+                <!-- Biểu đồ Doanh Thu -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                        <h6 class="font-weight-bold text-dark m-0">
+                            <i class="fas fa-chart-area text-orange mr-2"></i>Doanh thu Dịch vụ & Sản phẩm (2026)
+                        </h6>
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-xs btn-outline-secondary active">
+                                <input type="radio" name="options" id="option1" checked> Tháng
+                            </label>
+                            <label class="btn btn-xs btn-outline-secondary">
+                                <input type="radio" name="options" id="option2"> Quý
+                            </label>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div style="height: 280px; position: relative;">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bảng Đơn Hàng Gần Đây -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                        <h6 class="font-weight-bold text-dark m-0">
+                            <i class="fas fa-list-alt text-primary mr-2"></i>Đơn hàng gần đây
+                        </h6>
+                        <a asp-controller="Admin" asp-action="Orders" class="btn btn-xs btn-light font-weight-bold">Xem tất cả</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light text-muted text-xs text-uppercase">
+                                <tr>
+                                    <th class="border-0">Mã ĐH</th>
+                                    <th class="border-0">Khách hàng</th>
+                                    <th class="border-0">Trạng thái</th>
+                                    <th class="border-0">Tổng tiền</th>
+                                    <th class="border-0 text-right">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm">
+                                <tr>
+                                    <td class="font-weight-bold"><a href="#" class="text-dark">#ORD-9821</a></td>
+                                    <td>Nguyễn Văn A</td>
+                                    <td><span class="badge badge-soft-success px-2 py-1">Hoàn thành</span></td>
+                                    <td class="font-weight-bold text-dark">1.250.000 đ</td>
+                                    <td class="text-right">
+                                        <button class="btn btn-xs btn-light"><i class="fas fa-eye"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="font-weight-bold"><a href="#" class="text-dark">#ORD-9820</a></td>
+                                    <td>Trần Thị B</td>
+                                    <td><span class="badge badge-soft-warning px-2 py-1">Đang xử lý</span></td>
+                                    <td class="font-weight-bold text-dark">850.000 đ</td>
+                                    <td class="text-right">
+                                        <button class="btn btn-xs btn-light"><i class="fas fa-eye"></i></button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="font-weight-bold"><a href="#" class="text-dark">#ORD-9819</a></td>
+                                    <td>Lê Hoàng C</td>
+                                    <td><span class="badge badge-soft-danger px-2 py-1">Đã hủy</span></td>
+                                    <td class="font-weight-bold text-dark">350.000 đ</td>
+                                    <td class="text-right">
+                                        <button class="btn btn-xs btn-light"><i class="fas fa-eye"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cột Phải: Lịch hẹn & Tác vụ nhanh -->
+            <div class="col-lg-4">
+                <!-- Lịch Hẹn Trong Ngày -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                        <h6 class="font-weight-bold text-dark m-0">
+                            <i class="fas fa-calendar-alt text-warning mr-2"></i>Lịch hẹn hôm nay
+                        </h6>
+                        <span class="badge badge-warning text-white">3 lịch</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline-item-custom">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="font-weight-bold text-sm text-dark">Khám sức khỏe tổng quát</span>
+                                <span class="badge badge-light text-xs">09:00 AM</span>
+                            </div>
+                            <p class="text-muted text-xs mb-0">Mèo Cún (British Short) - Chủ: Anh Nam</p>
+                        </div>
+
+                        <div class="timeline-item-custom">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="font-weight-bold text-sm text-dark">Tắm & Spa Trọn gói</span>
+                                <span class="badge badge-light text-xs">10:30 AM</span>
+                            </div>
+                            <p class="text-muted text-xs mb-0">Chó Alaska - Chủ: Chị Hoa</p>
+                        </div>
+
+                        <div class="timeline-item-custom mb-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="font-weight-bold text-sm text-dark">Tiêm vắc xin định kỳ</span>
+                                <span class="badge badge-light text-xs">02:00 PM</span>
+                            </div>
+                            <p class="text-muted text-xs mb-0">Chó Poodle - Chủ: Anh Hoàng</p>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-0 text-center pt-0 pb-3">
+                        <a asp-controller="Admin" asp-action="Appointments" class="text-sm text-orange font-weight-bold">Xem toàn bộ lịch hẹn <i class="fas fa-arrow-right ml-1"></i></a>
+                    </div>
+                </div>
+
+                <!-- Tác Vụ Nhanh -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h6 class="font-weight-bold text-dark m-0">
+                            <i class="fas fa-bolt text-danger mr-2"></i>Tác vụ nhanh
+                        </h6>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="row">
+                            <div class="col-6 mb-2">
+                                <a asp-controller="Admin" asp-action="Pets" class="btn btn-light btn-block text-left text-sm py-2 font-weight-bold text-dark">
+                                    <i class="fas fa-plus-circle text-primary mr-1"></i> Thêm Thú Cưng
+                                </a>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <a asp-controller="Admin" asp-action="Products" class="btn btn-light btn-block text-left text-sm py-2 font-weight-bold text-dark">
+                                    <i class="fas fa-box text-success mr-1"></i> Thêm Sản Phẩm
+                                </a>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <a asp-controller="Admin" asp-action="Appointments" class="btn btn-light btn-block text-left text-sm py-2 font-weight-bold text-dark">
+                                    <i class="fas fa-calendar-plus text-warning mr-1"></i> Tạo Lịch Hẹn
+                                </a>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <a asp-controller="Admin" asp-action="Feedbacks" class="btn btn-light btn-block text-left text-sm py-2 font-weight-bold text-dark">
+                                    <i class="fas fa-comments text-danger mr-1"></i> Xem Phản Hồi
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
     </div>
-</div>
+</section>
+
+@section Scripts {
+    <!-- CDN Script Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var ctx = document.getElementById('revenueChart').getContext('2d');
+            
+            // Gradient fill cho biểu đồ
+            var gradient = ctx.createLinearGradient(0, 0, 0, 250);
+            gradient.addColorStop(0, 'rgba(253, 126, 20, 0.4)');
+            gradient.addColorStop(1, 'rgba(253, 126, 20, 0.0)');
+
+            var chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9'],
+                    datasets: [{
+                        label: 'Doanh thu (Triệu VNĐ)',
+                        data: [15, 22, 18, 29, 35, 42, 38, 50, 58],
+                        borderColor: '#fd7e14',
+                        borderWidth: 3,
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#fd7e14',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { 
+                            grid: { color: '#f0f0f0' },
+                            ticks: {
+                                callback: function(value) { return value + ' Tr'; }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}
