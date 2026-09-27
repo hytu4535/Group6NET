@@ -5,7 +5,7 @@ namespace PetManagementSystem.Repositories;
 
 public interface IProductRepository
 {
-    Task<PagedResult<Product>> SearchAsync(string? search, int? categoryId, string? status, int page, int pageSize);
+    Task<PetManagementSystem.Helpers.PagedResult<Product>> SearchAsync(string? search, int? categoryId, string? status, int page, int pageSize);
 
     /// <summary>Danh sách rút gọn (Id, tên, đơn vị, giá, tồn kho) dùng cho ô chọn sản phẩm.</summary>
     Task<List<Product>> GetOptionsAsync(bool onlyActive);

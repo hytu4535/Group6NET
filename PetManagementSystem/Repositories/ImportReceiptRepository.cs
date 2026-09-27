@@ -7,7 +7,7 @@ namespace PetManagementSystem.Repositories;
 
 public class ImportReceiptRepository(AppDbContext dbContext) : IImportReceiptRepository
 {
-    public async Task<PagedResult<ImportReceipt>> SearchAsync(string? search, int? supplierId, DateTime? from, DateTime? to, int page, int pageSize)
+    public async Task<PetManagementSystem.Helpers.PagedResult<ImportReceipt>> SearchAsync(string? search, int? supplierId, DateTime? from, DateTime? to, int page, int pageSize)
     {
         var query = dbContext.ImportReceipts
             .AsNoTracking()
@@ -48,7 +48,7 @@ public class ImportReceiptRepository(AppDbContext dbContext) : IImportReceiptRep
             .ToPagedResultAsync(page, pageSize);
     }
 
-    public async Task<PagedResult<ImportDetail>> SearchDetailsAsync(int? receiptId, string? search, int page, int pageSize)
+    public async Task<PetManagementSystem.Helpers.PagedResult<ImportDetail>> SearchDetailsAsync(int? receiptId, string? search, int page, int pageSize)
     {
         var query = dbContext.ImportDetails
             .AsNoTracking()

@@ -5,7 +5,7 @@ namespace PetManagementSystem.Repositories;
 
 public interface IPaymentRepository
 {
-    Task<PagedResult<Payment>> SearchAsync(string? search, string? status, string? method, int page, int pageSize);
+    Task<PetManagementSystem.Helpers.PagedResult<Payment>> SearchAsync(string? search, string? status, string? method, int page, int pageSize);
     Task<Payment?> GetByIdAsync(int id);
     Task<bool> ExistsTransactionCodeAsync(string code, int? excludeId = null);
 

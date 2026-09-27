@@ -7,7 +7,7 @@ namespace PetManagementSystem.Repositories;
 
 public class InvoiceRepository(AppDbContext dbContext) : IInvoiceRepository
 {
-    public async Task<PagedResult<Invoice>> SearchAsync(string? search, DateTime? from, DateTime? to, int page, int pageSize)
+    public async Task<PetManagementSystem.Helpers.PagedResult<Invoice>> SearchAsync(string? search, DateTime? from, DateTime? to, int page, int pageSize)
     {
         var query = dbContext.Invoices
             .AsNoTracking()

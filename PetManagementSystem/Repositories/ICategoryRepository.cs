@@ -5,7 +5,7 @@ namespace PetManagementSystem.Repositories;
 
 public interface ICategoryRepository
 {
-    Task<PagedResult<Category>> SearchAsync(string? search, int page, int pageSize);
+    Task<PetManagementSystem.Helpers.PagedResult<Category>> SearchAsync(string? search, int page, int pageSize);
     Task<List<Category>> GetAllAsync();
     Task<Category?> GetByIdAsync(int id);
     Task<bool> ExistsNameAsync(string name, int? excludeId = null);

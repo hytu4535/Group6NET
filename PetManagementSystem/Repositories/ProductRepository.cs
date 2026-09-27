@@ -7,7 +7,7 @@ namespace PetManagementSystem.Repositories;
 
 public class ProductRepository(AppDbContext dbContext) : IProductRepository
 {
-    public async Task<PagedResult<Product>> SearchAsync(string? search, int? categoryId, string? status, int page, int pageSize)
+    public async Task<PetManagementSystem.Helpers.PagedResult<Product>> SearchAsync(string? search, int? categoryId, string? status, int page, int pageSize)
     {
         var query = dbContext.Products
             .AsNoTracking()

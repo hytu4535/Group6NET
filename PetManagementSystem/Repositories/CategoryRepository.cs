@@ -7,7 +7,7 @@ namespace PetManagementSystem.Repositories;
 
 public class CategoryRepository(AppDbContext dbContext) : ICategoryRepository
 {
-    public async Task<PagedResult<Category>> SearchAsync(string? search, int page, int pageSize)
+    public async Task<PetManagementSystem.Helpers.PagedResult<Category>> SearchAsync(string? search, int page, int pageSize)
     {
         var query = dbContext.Categories.AsNoTracking().AsQueryable();
 
