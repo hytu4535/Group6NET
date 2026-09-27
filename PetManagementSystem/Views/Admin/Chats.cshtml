@@ -1,8 +1,199 @@
+@model IEnumerable<PetManagementSystem.Models.ChatConversation>
+
 @{
     Layout = "_AdminLayout";
+    ViewData["Title"] = "Lịch sử chat";
+    var search = ViewData["Search"] as string;
+    var fromDate = ViewData["FromDate"] as string;
+    var toDate = ViewData["ToDate"] as string;
+    var currentPage = ViewData["Page"] is int pageValue ? pageValue : 1;
+    var pageSize = ViewData["PageSize"] is int currentPageSize ? currentPageSize : 10;
+    var totalItems = ViewData["TotalItems"] is int total ? total : 0;
+    var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 }
 
-<div class="card-panel">
-    <h5>Chats</h5>
-    <p class="text-muted mb-0">Trang placeholder UI cho bảng <strong>chat_conversations</strong>.</p>
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex flex-wrap gap-2 justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-1">Danh sách cuộc trò chuyện</h5>
+            <span class="text-muted small">@totalItems cuộc trò chuyện</span>
+        </div>
+    </div>
+
+    <div class="card-body">
+        @if (TempData["SuccessMessage"] is string successMessage)
+        {
+            <div class="alert alert-success">@successMessage</div>
+        }
+        @if (TempData["ErrorMessage"] is string errorMessage)
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+
+        <form method="get" asp-controller="ChatConversations" asp-action="Index" class="row g-3 align-items-end mb-4">
+            <div class="col-lg-5">
+                <label for="chatSearch" class="form-label">Tìm kiếm</label>
+                <input id="chatSearch" name="search" value="@search" class="form-control"
+                       placeholder="Username, nội dung khách hàng hoặc AI" />
+            </div>
+            <div class="col-sm-6 col-lg-2">
+                <label for="fromDate" class="form-label">Từ ngày</label>
+                <input id="fromDate" name="fromDate" value="@fromDate" type="date" class="form-control" />
+            </div>
+            <div class="col-sm-6 col-lg-2">
+                <label for="toDate" class="form-label">Đến ngày</label>
+                <input id="toDate" name="toDate" value="@toDate" type="date" class="form-control" />
+            </div>
+            <div class="col-lg-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i>Tìm kiếm
+                </button>
+                <a asp-controller="ChatConversations" asp-action="Index" class="btn btn-outline-secondary">Xóa lọc</a>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Người dùng</th>
+                        <th>Tiêu đề</th>
+                        <th>Nội dung gần nhất</th>
+                        <th>Thời gian</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-5">
+                                <i class="bi bi-chat-square-text fs-2 d-block mb-2"></i>
+                                Không tìm thấy lịch sử chat.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var conversation in Model)
+                        {
+                            var displayName = conversation.User?.FullName ?? conversation.User?.Username ?? $"User #{conversation.UserId}";
+                            var preview = conversation.UserRequest.Length > 140
+                                ? $"{conversation.UserRequest[..140]}..."
+                                : conversation.UserRequest;
+
+                            <tr>
+                                <td>
+                                    <strong>@displayName</strong>
+                                    <span class="d-block text-muted small">@@@(conversation.User?.Username ?? "unknown")</span>
+                                </td>
+                                <td>@(string.IsNullOrWhiteSpace(conversation.Title) ? "Không có tiêu đề" : conversation.Title)
+                                </td>
+                                <td class="text-break" style="min-width: 260px;">@preview</td>
+                                <td class="text-nowrap">@conversation.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="text-end text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                                            data-bs-target="#chatDetails-@conversation.Id">
+                                        <i class="bi bi-eye me-1"></i>Xem chi tiết
+                                    </button>
+                                    <form asp-controller="ChatConversations" asp-action="Delete" method="post" class="d-inline"
+                                          onsubmit="return confirm('Bạn có chắc muốn xóa lịch sử chat này không?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@conversation.Id" />
+                                        <input type="hidden" name="search" value="@search" />
+                                        <input type="hidden" name="fromDate" value="@fromDate" />
+                                        <input type="hidden" name="toDate" value="@toDate" />
+                                        <input type="hidden" name="page" value="@currentPage" />
+                                        <input type="hidden" name="pageSize" value="@pageSize" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash me-1"></i>Xóa
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+
+                            <div class="modal fade" id="chatDetails-@conversation.Id" tabindex="-1"
+                                 aria-labelledby="chatDetailsLabel-@conversation.Id" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <div>
+                                                <h5 class="modal-title" id="chatDetailsLabel-@conversation.Id">@displayName</h5>
+                                                <span class="text-muted small">@conversation.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                            </div>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Đóng"></button>
+                                        </div>
+                                        <div class="modal-body bg-light">
+                                            <div class="d-flex justify-content-start mb-3">
+                                                <div class="chat-bubble chat-bubble-user">
+                                                    <span class="chat-bubble-label">Khách hàng</span>
+                                                    <div class="text-break">@conversation.UserRequest</div>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex justify-content-end">
+                                                <div class="chat-bubble chat-bubble-ai">
+                                                    <span class="chat-bubble-label">Trợ lý AI</span>
+                                                    <div class="text-break">@conversation.AiResponse</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary"
+                                                    data-bs-dismiss="modal">Đóng</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (totalPages > 1)
+        {
+            <nav class="mt-3" aria-label="Phân trang lịch sử chat">
+                <ul class="pagination justify-content-center mb-0">
+                    @for (var pageNumber = 1; pageNumber <= totalPages; pageNumber++)
+                    {
+                        <li class="page-item @(pageNumber == currentPage ? "active" : "")">
+                            <a class="page-link" asp-controller="ChatConversations" asp-action="Index"
+                               asp-route-page="@pageNumber" asp-route-pageSize="@pageSize" asp-route-search="@search"
+                               asp-route-fromDate="@fromDate" asp-route-toDate="@toDate">@pageNumber</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    </div>
 </div>
+
+<style>
+    .chat-bubble {
+        max-width: 82%;
+        padding: .75rem 1rem;
+        border-radius: .9rem;
+        box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .08);
+    }
+
+    .chat-bubble-user {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-bottom-left-radius: .2rem;
+    }
+
+    .chat-bubble-ai {
+        background: #e8f1ff;
+        border: 1px solid #c9dcff;
+        border-bottom-right-radius: .2rem;
+    }
+
+    .chat-bubble-label {
+        display: block;
+        margin-bottom: .35rem;
+        color: #6c757d;
+        font-size: .75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+</style>

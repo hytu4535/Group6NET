@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PetManagementSystem.Models;
+using PetManagementSystem.Repositories;
+using PetManagementSystem.Services;
 
 namespace PetManagementSystem.Controllers
 {
@@ -8,22 +11,145 @@ namespace PetManagementSystem.Controllers
     [Authorize]
     public class AdminController : Controller
     {
+        private readonly IPetService _petService;
+        private readonly IFeedbackService _feedbackService;
+        private readonly IUserRepository _userRepository;
+
+        public AdminController(
+            IPetService petService,
+            IFeedbackService feedbackService,
+            IUserRepository userRepository)
+        {
+            _petService = petService;
+            _feedbackService = feedbackService;
+            _userRepository = userRepository;
+        }
         public IActionResult Dashboard()
         {
             SetNav("Dashboard", "Dashboard", string.Empty);
             return View();
         }
 
-        // Legacy pages (giữ tương thích)
+        public async Task<IActionResult> Pets(string? searchKeyword, int page = 1, int pageSize = 10)
+        {
+            SetNav("Quản lý Thú cưng", "Pets", "PetCare");
+            page = Math.Max(page, 1);
+            pageSize = Math.Clamp(pageSize, 1, 100);
+            var pagedPets = await _petService.GetPagedPetsAsync(searchKeyword, page, pageSize);
+            var users = await _userRepository.GetAllWithRoleAsync();
+            ViewData["SearchKeyword"] = searchKeyword;
+            ViewData["PetOwners"] = users;
+            ViewData["Page"] = pagedPets.Page;
+            ViewData["PageSize"] = pagedPets.PageSize;
+            ViewData["TotalItems"] = pagedPets.TotalItems;
+            return View(pagedPets.Items);
+        }
+
+        // POST: /Admin/CreatePet
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreatePet(Pet pet)
+        {
+            if (ModelState.IsValid)
+            {
+                var (success, errorMessage) = await _petService.CreatePetAsync(pet);
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "Thêm thú cưng mới thành công!";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = errorMessage;
+                }
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Dữ liệu nhập vào không hợp lệ!";
+            }
+
+            return RedirectToAction(nameof(Pets));
+        }
+
+        // POST: /Admin/UpdatePet
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdatePet(Pet pet)
+        {
+            if (ModelState.IsValid)
+            {
+                var (success, errorMessage) = await _petService.UpdatePetAsync(pet);
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "Cập nhật thông tin thú cưng thành công!";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = errorMessage;
+                }
+            }
+
+            return RedirectToAction(nameof(Pets));
+        }
+
+        // POST: /Admin/DeletePet
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeletePet(int id, string? searchKeyword, int page = 1, int pageSize = 10)
+        {
+            var (success, errorMessage) = await _petService.DeletePetAsync(id);
+            if (success)
+            {
+                TempData["SuccessMessage"] = "Xóa thú cưng thành công!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = errorMessage;
+            }
+
+            return RedirectToAction(nameof(Pets), new { searchKeyword, page, pageSize });
+        }
+
+
+        public async Task<IActionResult> Feedbacks(int page = 1, int pageSize = 10)
+        {
+            SetNav("Phản hồi Khách hàng", "Feedbacks", "CustomerCare");
+            page = Math.Max(page, 1);
+            pageSize = Math.Clamp(pageSize, 1, 100);
+            var pagedFeedbacks = await _feedbackService.GetPagedFeedbacksAsync(page, pageSize);
+            ViewData["Page"] = pagedFeedbacks.Page;
+            ViewData["PageSize"] = pagedFeedbacks.PageSize;
+            ViewData["TotalItems"] = pagedFeedbacks.TotalItems;
+            return View(pagedFeedbacks.Items);
+        }
+
+        // Alias cho Feedback (giữ tương thích)
+        public async Task<IActionResult> Feedback()
+        {
+            return RedirectToAction(nameof(Feedbacks));
+        }
+
+        // POST: /Admin/UpdateFeedbackStatus (Admin đổi trạng thái 'pending' <-> 'resolved')
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateFeedbackStatus(int id, string status, int page = 1, int pageSize = 10)
+        {
+            var (success, errorMessage) = await _feedbackService.UpdateStatusAsync(id, status);
+            if (success)
+            {
+                TempData["SuccessMessage"] = "Cập nhật trạng thái phản hồi thành công!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = errorMessage;
+            }
+
+            return RedirectToAction(nameof(Feedbacks), new { page, pageSize });
+        }
+
+
         public IActionResult Customers()
         {
             SetNav("Quản lý Khách hàng", "Users", "Identity");
-            return View();
-        }
-
-        public IActionResult Pets()
-        {
-            SetNav("Quản lý Thú cưng", "Pets", "PetCare");
             return View();
         }
 
@@ -45,6 +171,18 @@ namespace PetManagementSystem.Controllers
             return View();
         }
 
+        public IActionResult Products()
+        {
+            SetNav("Quản lý Sản phẩm", "Products", "Commerce");
+            return View();
+        }
+
+        public IActionResult Orders()
+        {
+            SetNav("Quản lý Đơn hàng", "Orders", "Commerce");
+            return View();
+        }
+
         public IActionResult Feedback()
         {
             SetNav("Phản hồi Khách hàng", "Feedbacks", "CustomerCare");
@@ -61,9 +199,6 @@ namespace PetManagementSystem.Controllers
 
         // PetCare
         public IActionResult PetImages() { SetNav("Pet Images", "PetImages", "PetCare"); return View(); }
-        public IActionResult Notifications() { SetNav("Notifications", "Notifications", "CustomerCare"); return View(); }
-        public IActionResult Feedbacks() { SetNav("Feedbacks", "Feedbacks", "CustomerCare"); return View(); }
-        public IActionResult Chats() { SetNav("Chat Conversations", "Chats", "CustomerCare"); return View(); }
 
         // Service & Medical
         public IActionResult ServicePackages() { SetNav("Service Packages", "ServicePackages", "ServiceMedical"); return View(); }
@@ -79,5 +214,6 @@ namespace PetManagementSystem.Controllers
             ViewData["Active"] = active;
             ViewData["ActiveParent"] = activeParent;
         }
+
     }
 }

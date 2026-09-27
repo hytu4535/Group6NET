@@ -12,6 +12,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Staff> Staff => Set<Staff>();
     public DbSet<Veterinarian> Veterinarians => Set<Veterinarian>();
 
+    public DbSet<Pet> Pets { get; set; }
+    public DbSet<Feedback> Feedbacks { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
+    public DbSet<ChatConversation> ChatConversations { get; set; }
+
     // Commerce
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Supplier> Suppliers => Set<Supplier>();
@@ -360,6 +365,90 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .WithMany()
                 .HasForeignKey(e => e.IssuedBy)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Pet>(entity =>
+        {
+            entity.ToTable("pets");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.QrToken).HasColumnName("qr_token").HasMaxLength(100).IsUnicode(true);
+            entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100).IsUnicode(true);
+            entity.Property(e => e.Species).HasColumnName("species").HasMaxLength(50).IsUnicode(true);
+            entity.Property(e => e.Breed).HasColumnName("breed").HasMaxLength(80).IsUnicode(true);
+            entity.Property(e => e.Gender).HasColumnName("gender").HasMaxLength(10).IsUnicode(true);
+            entity.Property(e => e.WeightKg).HasColumnName("weight_kg").HasColumnType("decimal(4, 2)");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasIndex(e => e.QrToken).IsUnique();
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Feedback>(entity =>
+        {
+            entity.ToTable("feedbacks");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Comment).HasColumnName("comment").HasMaxLength(2000).IsUnicode(true);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsUnicode(true);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+
+            entity.HasIndex(e => e.UserId);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.ToTable("notifications");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.AppointmentId).HasColumnName("appointment_id");
+            entity.Property(e => e.Message).HasColumnName("message").HasMaxLength(1000).IsUnicode(true);
+            entity.Property(e => e.Type).HasColumnName("type").HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.IsRead).HasColumnName("is_read").HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("GETDATE()");
+
+            entity.HasIndex(e => e.UserId);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChatConversation>(entity =>
+        {
+            entity.ToTable("chat_conversations");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Title).HasColumnName("title").HasMaxLength(255).IsUnicode(true);
+            entity.Property(e => e.UserRequest).HasColumnName("user_request").IsUnicode(true);
+            entity.Property(e => e.AiResponse).HasColumnName("ai_response").IsUnicode(true);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("GETDATE()");
+
+            entity.HasIndex(e => e.UserId);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
