@@ -1,8 +1,192 @@
+@model List<PetManagementSystem.Models.MedicalPrescription>
 @{
     Layout = "_AdminLayout";
+    var healthRecords = ViewBag.HealthRecords as List<PetManagementSystem.Models.PetHealthRecord> ?? new();
 }
 
-<div class="card-panel">
-    <h5>Medical Prescriptions</h5>
-    <p class="text-muted mb-0">Trang placeholder UI cho bảng <strong>medical_prescriptions</strong>.</p>
+<div class="d-flex justify-content-end mb-3">
+    <button type="button" class="btn btn-primary rounded-3 px-3 py-2" data-bs-toggle="modal" data-bs-target="#prescriptionModal" onclick="resetPrescriptionForm()">
+        <i class="bi bi-plus-circle me-1"></i> Tạo đơn thuốc
+    </button>
 </div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @success
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Thú cưng</th>
+                        <th>Chủ nuôi</th>
+                        <th>Chẩn đoán (Hồ sơ)</th>
+                        <th>Tên thuốc</th>
+                        <th>Liều dùng</th>
+                        <th>Tần suất</th>
+                        <th>Số ngày</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        int index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@(index++)</td>
+                                <td class="fw-semibold">@(item.PetHealthRecord?.Pet?.Name ?? "N/A")</td>
+                                <td>@(item.PetHealthRecord?.Pet?.User?.FullName ?? item.PetHealthRecord?.Pet?.User?.Username ?? "N/A")</td>
+                                <td>@(item.PetHealthRecord != null ? $"{item.PetHealthRecord.Diagnosis} ({item.PetHealthRecord.VisitDate:dd/MM/yyyy})" : "N/A")</td>
+                                <td class="fw-semibold text-primary">@item.MedicationName</td>
+                                <td>@item.Dosage</td>
+                                <td>@item.Frequency</td>
+                                <td>@item.DurationDays ngày</td>
+                                <td class="text-end">
+                                    <div class="d-flex gap-1 justify-content-end">
+                                        <button class="btn btn-sm btn-outline-primary btn-edit-prescription" data-id="@item.Id" title="Sửa"><i class="bi bi-pencil-square"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger btn-delete-prescription" data-id="@item.Id" title="Xóa"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">Chưa có đơn thuốc nào trong hệ thống.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm/Sửa Đơn Thuốc -->
+<div class="modal fade" id="prescriptionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="prescriptionForm" asp-action="CreateMedicalPrescription" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="prescriptionId" name="Id" value="0" />
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold" id="prescriptionModalTitle">Tạo đơn thuốc</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Hồ sơ sức khỏe / Thú cưng</label>
+                        <select class="form-select" id="RecordId" name="RecordId" required>
+                            <option value="">-- Chọn hồ sơ sức khỏe --</option>
+                            @foreach (var hr in healthRecords)
+                            {
+                                <option value="@hr.Id">
+                                    @(hr.Pet?.Name ?? "Thú cưng") - Chẩn đoán: @hr.Diagnosis (@hr.VisitDate.ToString("dd/MM/yyyy"))
+                                </option>
+                            }
+                        </select>
+                        <span class="text-danger small" data-valmsg-for="RecordId" data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tên thuốc</label>
+                        <input type="text" class="form-control" id="MedicationName" name="MedicationName" required />
+                        <span class="text-danger small" data-valmsg-for="MedicationName" data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Liều dùng</label>
+                            <input type="text" class="form-control" id="Dosage" name="Dosage" placeholder="Ví dụ: 1 viên" required />
+                            <span class="text-danger small" data-valmsg-for="Dosage" data-valmsg-replace="true"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tần suất</label>
+                            <input type="text" class="form-control" id="Frequency" name="Frequency" placeholder="Ví dụ: Sáng 1, Tối 1" required />
+                            <span class="text-danger small" data-valmsg-for="Frequency" data-valmsg-replace="true"></span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Số ngày dùng (ngày)</label>
+                        <input type="number" min="1" class="form-control" id="DurationDays" name="DurationDays" value="5" required />
+                        <span class="text-danger small" data-valmsg-for="DurationDays" data-valmsg-replace="true"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu đơn thuốc</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function resetPrescriptionForm() {
+            $('#prescriptionForm').attr('action', '/Admin/CreateMedicalPrescription');
+            $('#prescriptionForm')[0].reset();
+            $('#prescriptionId').val(0);
+            $('#prescriptionModalTitle').text('Tạo đơn thuốc');
+            $('.text-danger').text('');
+        }
+
+        $(document).ready(function() {
+            $(document).on('click', '.btn-edit-prescription', function() {
+                var id = $(this).data('id');
+                $.get('/Admin/GetMedicalPrescriptionById/' + id, function(res) {
+                    if (res.success) {
+                        $('#prescriptionForm').attr('action', '/Admin/EditMedicalPrescription');
+                        $('#prescriptionId').val(res.id);
+                        $('#RecordId').val(res.recordId);
+                        $('#MedicationName').val(res.medicationName);
+                        $('#Dosage').val(res.dosage);
+                        $('#Frequency').val(res.frequency);
+                        $('#DurationDays').val(res.durationDays);
+                        $('#prescriptionModalTitle').text('Cập nhật đơn thuốc');
+                        $('.text-danger').text('');
+                        new bootstrap.Modal('#prescriptionModal').show();
+                    }
+                });
+            });
+
+            $(document).on('click', '.btn-delete-prescription', function() {
+                var id = $(this).data('id');
+                if (confirm('Bạn có chắc chắn muốn xóa đơn thuốc này?')) {
+                    $.post('/Admin/DeleteMedicalPrescription/' + id, {
+                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    }, function(res) {
+                        location.reload();
+                    });
+                }
+            });
+
+            $('#prescriptionForm').on('submit', function (e) {
+                e.preventDefault();
+                if (!$(this).valid()) return;
+
+                var form = $(this);
+                $.ajax({
+                    url: form.attr('action'),
+                    type: 'POST',
+                    data: form.serialize(),
+                    success: function(res) {
+                        if (res.success) {
+                            location.reload();
+                        }
+                    },
+                    error: function(err) {
+                        alert('Có lỗi xảy ra khi lưu đơn thuốc.');
+                    }
+                });
+            });
+        });
+    </script>
+}

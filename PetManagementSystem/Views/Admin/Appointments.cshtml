@@ -1,115 +1,343 @@
+@model List<PetManagementSystem.Models.Appointment>
 @{
     Layout = "_AdminLayout";
+    var pets = ViewBag.Pets as List<PetManagementSystem.Models.Pet> ?? new();
+    var veterinarians = ViewBag.Veterinarians as List<PetManagementSystem.Models.Veterinarian> ?? new();
+    var servicePackages = ViewBag.ServicePackages as List<PetManagementSystem.Models.ServicePackage> ?? new();
+    var services = ViewBag.Services as List<PetManagementSystem.Models.Service> ?? new();
 }
 
-<partial name="~/Views/Admin/Partials/Shared/_ModuleSummary.cshtml"
-         view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
-         {
-             ["SummaryTitle"] = "Service & Medical: Appointments / Health Records",
-             ["SummaryDescription"] = "Bảng liên quan: appointments, appointment_services, pet_health_records, vaccination_records, medical_prescriptions.",
-             ["SummaryThemeClass"] = "module-summary-service"
-         }' />
+<div class="d-flex justify-content-end mb-3">
+    <button type="button" class="btn btn-primary rounded-3 px-3 py-2" data-bs-toggle="modal" data-bs-target="#appointmentModal" onclick="resetAppointmentForm()">
+        <i class="bi bi-plus-circle me-1"></i> Tạo lịch hẹn
+    </button>
+</div>
 
-<div class="card-panel">
-    <div class="card-panel-header">
-        <h5>Lịch hẹn điều trị (mock)</h5>
-        <button class="btn btn-warning text-white" type="button" data-bs-toggle="modal" data-bs-target="#appointmentModal">
-            <i class="bi bi-plus-lg"></i> Tạo lịch hẹn
-        </button>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-admin table-hover align-middle">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Thú cưng</th>
-                    <th>Chủ nuôi</th>
-                    <th>Dịch vụ</th>
-                    <th>Nhân viên phụ trách</th>
-                    <th>Thời gian</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>1</td>
-                    <td>Milo</td>
-                    <td>Nguyễn Văn A</td>
-                    <td>Tắm &amp; cắt tỉa lông</td>
-                    <td>Hoàng Văn E</td>
-                    <td>10:00 - 15/06/2026</td>
-                    <td><span class="badge badge-status-active">Đã xác nhận</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>Kitty</td>
-                    <td>Trần Thị B</td>
-                    <td>Khám định kỳ</td>
-                    <td>BS. Phạm Thị D</td>
-                    <td>14:30 - 15/06/2026</td>
-                    <td><span class="badge badge-status-pending">Chờ xác nhận</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @success
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Thú cưng</th>
+                        <th>Chủ nuôi</th>
+                        <th>Bác sĩ phụ trách</th>
+                        <th>Dịch vụ đi kèm</th>
+                        <th>Thời gian hẹn</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        int index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@(index++)</td>
+                                <td class="fw-semibold">@(item.Pet != null ? item.Pet.Name : "N/A")</td>
+                                <td>@(item.Pet?.User?.FullName ?? item.Pet?.User?.Username ?? "N/A")</td>
+                                <td>@(item.Veterinarian?.User?.FullName ?? item.Veterinarian?.User?.Username ?? "N/A")</td>
+                                <td>
+                                    @if (item.AppointmentServices != null && item.AppointmentServices.Any())
+                                    {
+                                        @string.Join(" + ", item.AppointmentServices.Select(asv => asv.Service?.Name ?? ""))
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Không có dịch vụ</span>
+                                    }
+                                </td>
+                                <td>@item.AppointmentTime.ToString(@"hh\:mm") - @item.AppointmentDate.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    @if (item.Status == 1)
+                                    {
+                                        <span class="badge bg-warning text-dark">Chờ xác nhận</span>
+                                    }
+                                    else if (item.Status == 2)
+                                    {
+                                        <span class="badge bg-success">Đã xác nhận</span>
+                                    }
+                                    else if (item.Status == 3)
+                                    {
+                                        <span class="badge bg-danger">Đã hủy</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Khác</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-flex gap-1 justify-content-end">
+                                        <button class="btn btn-sm btn-outline-primary btn-edit-appointment" data-id="@item.Id" title="Sửa"><i class="bi bi-pencil-square"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger btn-delete-appointment" data-id="@item.Id" title="Xóa"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">Chưa có lịch hẹn nào trong hệ thống.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <!-- Modal đặt lịch -->
 <div class="modal fade" id="appointmentModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Đặt lịch hẹn mới</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form>
+            <form id="appointmentForm" asp-action="CreateAppointment" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="appointmentId" name="Id" value="0" />
+                <input type="hidden" id="appointmentPetId" name="PetId" value="" />
+                <input type="hidden" id="ServicePackageId" name="PackageId" value="" />
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold" id="appointmentModalTitle">Đặt lịch hẹn mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Thú cưng</label>
-                        <select class="form-select">
-                            <option>Milo</option>
-                            <option>Kitty</option>
-                            <option>Lucky</option>
+                        <select class="form-select" id="AppointmentPetId" required>
+                            <option value="">-- Chọn thú cưng --</option>
+                            @foreach (var p in pets)
+                            {
+                                <option value="@p.Id">@p.Name (@p.Species)</option>
+                            }
+                        </select>
+                        <span class="text-danger small" data-valmsg-for="PetId" data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Gói dịch vụ (Tự động chọn và khóa khi chọn thú cưng)</label>
+                        <select class="form-select" id="AppointmentPackageId" disabled>
+                            <option value="">-- Chọn gói dịch vụ --</option>
+                            @foreach (var sp in servicePackages)
+                            {
+                                <option value="@sp.Id">@sp.Name (@sp.Price.ToString("N0") đ)</option>
+                            }
+                        </select>
+                        <span class="text-danger small" data-valmsg-for="PackageId" data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Chọn Dịch vụ đi kèm</label>
+                        <div class="border rounded p-3 bg-light" style="max-height: 150px; overflow-y: auto;">
+                            @if (services.Any())
+                            {
+                                foreach (var s in services)
+                                {
+                                    <div class="form-check">
+                                        <input class="form-check-input service-checkbox" type="checkbox" name="serviceIds" value="@s.Id" id="appt_service_@s.Id" />
+                                        <label class="form-check-label" for="appt_service_@s.Id">
+                                            @s.Name (@s.Price.ToString("N0") đ)
+                                        </label>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Chưa có dịch vụ nào trong hệ thống.</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Bác sĩ / Nhân viên phụ trách</label>
+                        <select class="form-select" id="AppointmentVetId" name="VetId">
+                            <option value="">-- Chọn bác sĩ --</option>
+                            @foreach (var v in veterinarians)
+                            {
+                                <option value="@v.Id">@(v.User?.FullName ?? v.User?.Username ?? "N/A") (@v.Specialty)</option>
+                            }
+                        </select>
+                        <span class="text-danger small" data-valmsg-for="VetId" data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Ngày hẹn</label>
+                            <input type="date" class="form-control" id="AppointmentDate" name="AppointmentDate" required />
+                            <span class="text-danger small" data-valmsg-for="AppointmentDate" data-valmsg-replace="true"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Giờ hẹn</label>
+                            <input type="time" class="form-control" id="AppointmentTime" name="AppointmentTime" required />
+                            <span class="text-danger small" data-valmsg-for="AppointmentTime" data-valmsg-replace="true"></span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Trạng thái</label>
+                        <select class="form-select" id="AppointmentStatus" name="Status">
+                            <option value="1">Chờ xác nhận</option>
+                            <option value="2">Đã xác nhận</option>
+                            <option value="3">Đã hủy</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Dịch vụ</label>
-                        <select class="form-select">
-                            <option>Gói Cơ bản</option>
-                            <option>Gói Spa Cao cấp</option>
-                            <option>Khám sức khỏe định kỳ</option>
-                        </select>
+                        <label class="form-label">Lý do / Ghi chú</label>
+                        <textarea class="form-control" id="AppointmentReason" name="Reason" rows="2" placeholder="Lý do khám hoặc ghi chú"></textarea>
+                        <span class="text-danger small" data-valmsg-for="Reason" data-valmsg-replace="true"></span>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Nhân viên phụ trách</label>
-                        <select class="form-select">
-                            <option>BS. Phạm Thị D</option>
-                            <option>Hoàng Văn E</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Thời gian hẹn</label>
-                        <input type="datetime-local" class="form-control" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Ghi chú</label>
-                        <textarea class="form-control" rows="2" placeholder="Ghi chú thêm"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-warning text-white">Lưu</button>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu lịch hẹn</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function resetAppointmentForm() {
+            $('#appointmentForm').attr('action', '/Admin/CreateAppointment');
+            $('#appointmentForm')[0].reset();
+            $('#appointmentId').val(0);
+            $('#appointmentPetId').val('');
+            $('#AppointmentPetId').prop('disabled', false);
+            $('#ServicePackageId').val('');
+            $('#AppointmentDate').val(new Date().toISOString().split('T')[0]);
+            $('#AppointmentTime').val('09:00');
+            $('#AppointmentPackageId').prop('disabled', true).val('');
+            $('#AppointmentStatus').val('1');
+            $('.service-checkbox').prop('checked', false);
+            $('#appointmentForm button[type="submit"]').prop('disabled', false);
+            $('[data-valmsg-for="PackageId"]').text('');
+            $('#appointmentModalTitle').text('Đặt lịch hẹn mới');
+            $('.text-danger').text('');
+        }
+
+        $(document).ready(function() {
+            $('#AppointmentPackageId').on('change', function() {
+                $('#ServicePackageId').val($(this).val());
+            });
+
+            $('#AppointmentPetId').on('change', function() {
+                var petId = $(this).val();
+                $('#appointmentPetId').val(petId);
+                if (petId) {
+                    $.get('/Admin/GetActivePetPackage', { petId: petId }, function(res) {
+                        if (res.success && res.packageId) {
+                            $('#AppointmentPackageId').val(res.packageId);
+                            $('#ServicePackageId').val(res.packageId);
+                            $('#AppointmentPackageId').prop('disabled', true);
+                            $('[data-valmsg-for="PackageId"]').text('');
+                            $('#appointmentForm button[type="submit"]').prop('disabled', false);
+                        } else {
+                            $('#AppointmentPackageId').val('');
+                            $('#ServicePackageId').val('');
+                            $('#AppointmentPackageId').prop('disabled', true);
+                            $('[data-valmsg-for="PackageId"]').text('Thú cưng này chưa đăng ký gói dịch vụ nào!');
+                            $('#appointmentForm button[type="submit"]').prop('disabled', true);
+                        }
+                    });
+                } else {
+                    $('#AppointmentPackageId').val('');
+                    $('#ServicePackageId').val('');
+                    $('#AppointmentPackageId').prop('disabled', true);
+                    $('[data-valmsg-for="PackageId"]').text('');
+                    $('#appointmentForm button[type="submit"]').prop('disabled', false);
+                }
+            });
+
+            $(document).on('click', '.btn-edit-appointment', function() {
+                var id = $(this).data('id');
+                $.get('/Admin/GetAppointmentById/' + id, function(res) {
+                    if (res.success) {
+                        $('#appointmentForm').attr('action', '/Admin/EditAppointment');
+                        $('#appointmentId').val(res.id);
+                        $('#AppointmentPetId').val(res.petId).prop('disabled', true);
+                        $('#appointmentPetId').val(res.petId);
+                        $('#AppointmentVetId').val(res.vetId);
+                        $('#AppointmentDate').val(res.appointmentDate);
+                        $('#AppointmentTime').val(res.appointmentTime);
+                        $('#AppointmentReason').val(res.reason);
+                        $('#AppointmentStatus').val(res.status);
+                        if (res.packageId) {
+                            $('#AppointmentPackageId').val(res.packageId);
+                            $('#ServicePackageId').val(res.packageId);
+                        }
+                        $('.service-checkbox').prop('checked', false);
+                        if (Array.isArray(res.serviceIds)) {
+                            res.serviceIds.forEach(function(sId) {
+                                $('#appt_service_' + sId).prop('checked', true);
+                            });
+                        }
+                        $('#appointmentModalTitle').text('Cập nhật lịch hẹn');
+                        $('.text-danger').text('');
+                        new bootstrap.Modal('#appointmentModal').show();
+                    }
+                });
+            });
+
+            $(document).on('click', '.btn-delete-appointment', function() {
+                var id = $(this).data('id');
+                if (confirm('Bạn có chắc chắn muốn xóa lịch hẹn này?')) {
+                    $.post('/Admin/DeleteAppointment/' + id, {
+                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    }, function(res) {
+                        location.reload();
+                    });
+                }
+            });
+
+            $('#appointmentForm').on('submit', function (e) {
+                e.preventDefault();
+                $('#ServicePackageId').val($('#AppointmentPackageId').val());
+                if (!$(this).valid()) {
+                    return false;
+                }
+                var form = $(this);
+                $.ajax({
+                    type: 'POST',
+                    url: form.attr('action'),
+                    data: form.serialize(),
+                    success: function (res) {
+                        if (res && res.success === false) {
+                            alert(res.message);
+                        } else {
+                            location.reload();
+                        }
+                    },
+                    error: function (xhr) {
+                        if (xhr.responseJSON) {
+                            if (xhr.responseJSON.message) {
+                                alert(xhr.responseJSON.message);
+                            } else if (xhr.responseJSON.errors) {
+                                var errors = xhr.responseJSON.errors;
+                                $('.text-danger.small').text('');
+                                for (var key in errors) {
+                                    var msg = Array.isArray(errors[key]) ? errors[key][0] : errors[key];
+                                    $('[data-valmsg-for="' + key + '"]').text(msg);
+                                }
+                            }
+                        } else {
+                            location.reload();
+                        }
+                    }
+                });
+            });
+
+            @if (ViewBag.ShowModal != null)
+            {
+                <text>
+                new bootstrap.Modal('#@ViewBag.ShowModal').show();
+                </text>
+            }
+        });
+    </script>
+}

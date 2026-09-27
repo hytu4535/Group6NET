@@ -43,6 +43,19 @@ builder.Services.AddPermissionPolicies();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
+    var adminUser = dbContext.Users.FirstOrDefault(x => x.Username == "admin01");
+    if (adminUser != null)
+    {
+        adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "Huy123456");
+        dbContext.SaveChanges();
+        Console.WriteLine("[SETUP] Updated admin01 password hash for Huy123456 successfully.");
+    }
+}
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();

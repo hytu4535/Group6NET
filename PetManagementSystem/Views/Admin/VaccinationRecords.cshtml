@@ -1,8 +1,249 @@
+@model List<PetManagementSystem.Models.VaccinationRecord>
 @{
     Layout = "_AdminLayout";
+    var pets = ViewBag.Pets as List<PetManagementSystem.Models.Pet> ?? new();
+    var veterinarians = ViewBag.Veterinarians as List<PetManagementSystem.Models.Veterinarian> ?? new();
 }
 
-<div class="card-panel">
-    <h5>Vaccination Records</h5>
-    <p class="text-muted mb-0">Trang placeholder UI cho bảng <strong>vaccination_records</strong>.</p>
+<div class="d-flex justify-content-end mb-3">
+    <button type="button" class="btn btn-primary rounded-3 px-3 py-2" data-bs-toggle="modal" data-bs-target="#vaccinationRecordModal" onclick="resetVaccinationRecordForm()">
+        <i class="bi bi-plus-circle me-1"></i> Tạo lịch sử tiêm phòng
+    </button>
 </div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @success
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Thú cưng</th>
+                        <th>Chủ nuôi</th>
+                        <th>Tên Vắc-xin</th>
+                        <th>Số lô</th>
+                        <th>Ngày tiêm</th>
+                        <th>Hẹn tiêm tiếp theo</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        int index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@(index++)</td>
+                                <td class="fw-semibold">@(item.Pet != null ? item.Pet.Name : "N/A")</td>
+                                <td>@(item.Pet?.User?.FullName ?? item.Pet?.User?.Username ?? "N/A")</td>
+                                <td>@item.VaccineName</td>
+                                <td>@(item.BatchNumber ?? "N/A")</td>
+                                <td>@item.AdministeredDate.ToString("dd/MM/yyyy")</td>
+                                <td>@item.NextDueDate.ToString("dd/MM/yyyy")</td>
+                                <td class="text-end">
+                                    <div class="d-flex gap-1 justify-content-end">
+                                        <button class="btn btn-sm btn-outline-primary btn-edit-vaccine" data-id="@item.Id" title="Sửa"><i class="bi bi-pencil-square"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger btn-delete-vaccine" data-id="@item.Id" title="Xóa"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">Chưa có lịch sử tiêm phòng nào trong hệ thống.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm/Sửa Tiêm Phòng -->
+<div class="modal fade" id="vaccinationRecordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="vaccinationRecordForm" asp-action="CreateVaccinationRecord" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="vaccinationRecordId" name="Id" value="0" />
+                <input type="hidden" id="vaccinationRecordPetId" name="PetId" value="" />
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold" id="vaccinationRecordModalTitle">Tạo lịch sử tiêm phòng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Thú cưng</label>
+                        <select class="form-select" id="PetId" required>
+                            <option value="">-- Chọn thú cưng --</option>
+                            @foreach (var p in pets)
+                            {
+                                <option value="@p.Id">@p.Name (@p.Species)</option>
+                            }
+                        </select>
+                        <span class="text-danger small" data-valmsg-for="PetId" data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Tên vắc-xin</label>
+                            <input type="text" class="form-control" id="VaccineName" name="VaccineName" required />
+                            <span class="text-danger small" data-valmsg-for="VaccineName" data-valmsg-replace="true"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Số lô</label>
+                            <input type="text" class="form-control" id="BatchNumber" name="BatchNumber" />
+                            <span class="text-danger small" data-valmsg-for="BatchNumber" data-valmsg-replace="true"></span>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Ngày tiêm</label>
+                            <input type="date" class="form-control" id="AdministeredDate" name="AdministeredDate" required />
+                            <span class="text-danger small" data-valmsg-for="AdministeredDate" data-valmsg-replace="true"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Ngày hẹn tiêm tiếp theo</label>
+                            <input type="date" class="form-control" id="NextDueDate" name="NextDueDate" required />
+                            <span class="text-danger small" data-valmsg-for="NextDueDate" data-valmsg-replace="true"></span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Bác sĩ / Người tiêm</label>
+                        <select class="form-select" id="VetId" name="VetId">
+                            <option value="">-- Chọn bác sĩ --</option>
+                            @foreach (var v in veterinarians)
+                            {
+                                <option value="@v.Id">@(v.User?.FullName ?? v.User?.Username ?? "N/A") (@v.Specialty)</option>
+                            }
+                        </select>
+                        <span class="text-danger small" data-valmsg-for="VetId" data-valmsg-replace="true"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu lịch sử</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function resetVaccinationRecordForm() {
+            $('#vaccinationRecordForm').attr('action', '/Admin/CreateVaccinationRecord');
+            $('#vaccinationRecordForm')[0].reset();
+            $('#vaccinationRecordId').val(0);
+            $('#vaccinationRecordPetId').val('');
+            $('#PetId').prop('disabled', false).attr('name', 'PetId');
+            $('#AdministeredDate').val(new Date().toISOString().split('T')[0]);
+            let nextYear = new Date();
+            nextYear.setFullYear(nextYear.getFullYear() + 1);
+            $('#NextDueDate').val(nextYear.toISOString().split('T')[0]);
+            $('#vaccinationRecordModalTitle').text('Tạo lịch sử tiêm phòng');
+            $('.text-danger').text('');
+        }
+
+        $(document).ready(function() {
+            $('#PetId').on('change', function() {
+                $('#vaccinationRecordPetId').val($(this).val());
+            });
+
+            $(document).on('click', '.btn-edit-vaccine', function() {
+                var id = $(this).data('id');
+                $.get('/Admin/GetVaccinationRecordById/' + id, function(res) {
+                    if (res.success) {
+                        $('#vaccinationRecordForm').attr('action', '/Admin/EditVaccinationRecord');
+                        $('#vaccinationRecordId').val(res.id);
+                        $('#PetId').val(res.petId).prop('disabled', true).removeAttr('name');
+                        $('#vaccinationRecordPetId').val(res.petId);
+                        $('#VaccineName').val(res.vaccineName);
+                        $('#BatchNumber').val(res.batchNumber);
+                        $('#AdministeredDate').val(res.administeredDate);
+                        $('#NextDueDate').val(res.nextDueDate);
+                        $('#VetId').val(res.vetId);
+                        $('#vaccinationRecordModalTitle').text('Cập nhật lịch sử tiêm phòng');
+                        $('.text-danger').text('');
+                        new bootstrap.Modal('#vaccinationRecordModal').show();
+                    }
+                });
+            });
+
+            $(document).on('click', '.btn-delete-vaccine', function() {
+                var id = $(this).data('id');
+                if (confirm('Bạn có chắc chắn muốn xóa lịch sử tiêm phòng này?')) {
+                    $.post('/Admin/DeleteVaccinationRecord/' + id, {
+                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    }, function(res) {
+                        location.reload();
+                    });
+                }
+            });
+
+            $('#vaccinationRecordForm').on('submit', function (e) {
+                e.preventDefault();
+                $('#vaccinationRecordPetId').val($('#PetId').val());
+
+                var adminDate = new Date($('#AdministeredDate').val());
+                var nextDate = new Date($('#NextDueDate').val());
+                if (nextDate <= adminDate) {
+                    $('[data-valmsg-for="NextDueDate"]').text('Ngày tiêm tiếp theo phải sau ngày tiêm hiện tại!');
+                    return false;
+                } else {
+                    $('[data-valmsg-for="NextDueDate"]').text('');
+                }
+
+                if (!$(this).valid()) {
+                    return false;
+                }
+                var form = $(this);
+                $.ajax({
+                    type: 'POST',
+                    url: form.attr('action'),
+                    data: form.serialize(),
+                    success: function (res) {
+                        if (res && res.success === false) {
+                            alert(res.message);
+                        } else {
+                            location.reload();
+                        }
+                    },
+                    error: function (xhr) {
+                        if (xhr.responseJSON) {
+                            if (xhr.responseJSON.message) {
+                                alert(xhr.responseJSON.message);
+                            } else if (xhr.responseJSON.errors) {
+                                var errors = xhr.responseJSON.errors;
+                                $('.text-danger.small').text('');
+                                for (var key in errors) {
+                                    var msg = Array.isArray(errors[key]) ? errors[key][0] : errors[key];
+                                    $('[data-valmsg-for="' + key + '"]').text(msg);
+                                }
+                            }
+                        } else {
+                            location.reload();
+                        }
+                    }
+                });
+            });
+
+            @if (ViewBag.ShowModal != null)
+            {
+                <text>
+                new bootstrap.Modal('#@ViewBag.ShowModal').show();
+                </text>
+            }
+        });
+    </script>
+}

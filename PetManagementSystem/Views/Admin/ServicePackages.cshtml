@@ -1,8 +1,251 @@
+@model List<PetManagementSystem.Models.ServicePackage>
 @{
     Layout = "_AdminLayout";
+    var allServices = ViewBag.AllServices as List<PetManagementSystem.Models.Service> ?? new();
 }
 
-<div class="card-panel">
-    <h5>Service Packages</h5>
-    <p class="text-muted mb-0">Trang placeholder UI cho bảng <strong>service_packages</strong>.</p>
+<div class="d-flex justify-content-end mb-3">
+    <button type="button" class="btn btn-primary rounded-3 px-3 py-2" data-bs-toggle="modal" data-bs-target="#packageModal" onclick="resetPackageForm()">
+        <i class="bi bi-plus-circle me-1"></i> Tạo gói dịch vụ
+    </button>
 </div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @success
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Tên gói</th>
+                        <th>Mô tả</th>
+                        <th>Dịch vụ trong gói</th>
+                        <th>Thời hạn</th>
+                        <th>Thời lượng</th>
+                        <th>Giá</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        int index = 1;
+                        foreach (var item in Model)
+                        {
+                            var serviceIds = item.ServicePackageServices?.Select(sps => sps.ServiceId).ToList() ?? new();
+                            <tr>
+                                <td>@(index++)</td>
+                                <td class="fw-semibold">@item.Name</td>
+                                <td>@item.Description</td>
+                                <td>
+                                    @if (item.ServicePackageServices != null && item.ServicePackageServices.Any())
+                                    {
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @foreach (var sps in item.ServicePackageServices)
+                                            {
+                                                <span class="badge bg-light text-dark border">@sps.Service?.Name</span>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Không có dịch vụ lẻ</span>
+                                    }
+                                </td>
+                                <td>@item.ValidityDays ngày</td>
+                                <td>@item.DurationMinutes phút</td>
+                                <td class="text-primary fw-bold">@item.Price.ToString("N0") đ</td>
+                                <td>
+                                    @if (item.Status == 1)
+                                    {
+                                        <span class="badge bg-success">Hoạt động</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Ngừng hoạt động</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-flex gap-1 justify-content-end">
+                                        <button class="btn btn-sm btn-outline-primary" title="Sửa" onclick="editPackage(@item.Id, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(item.Name))', '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(item.Description ?? ""))', @item.Price, @item.DurationMinutes, @item.ValidityDays, @item.Status, @System.Text.Json.JsonSerializer.Serialize(serviceIds))">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <form asp-action="DeleteServicePackage" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa gói dịch vụ này?');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">Chưa có gói dịch vụ nào trong hệ thống.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm/Sửa Gói Dịch Vụ -->
+<div class="modal fade" id="packageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="packageForm" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="packageId" name="Id" value="0" />
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold" id="packageModalTitle">Tạo gói dịch vụ mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tên gói dịch vụ</label>
+                        <input type="text" class="form-control" id="PackageName" name="Name" required />
+                        <span class="text-danger small" data-valmsg-for="Name" data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Mô tả</label>
+                        <textarea class="form-control" id="PackageDescription" name="Description" rows="3"></textarea>
+                        <span class="text-danger small" data-valmsg-for="Description" data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Giá (VNĐ)</label>
+                            <input type="number" step="1000" class="form-control" id="PackagePrice" name="Price" required />
+                            <span class="text-danger small" data-valmsg-for="Price" data-valmsg-replace="true"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Thời lượng (phút)</label>
+                            <input type="number" class="form-control" id="PackageDuration" name="DurationMinutes" required />
+                            <span class="text-danger small" data-valmsg-for="DurationMinutes" data-valmsg-replace="true"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Thời hạn (ngày)</label>
+                            <input type="number" class="form-control" id="PackageValidity" name="ValidityDays" required />
+                            <span class="text-danger small" data-valmsg-for="ValidityDays" data-valmsg-replace="true"></span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Chọn các dịch vụ lẻ trong gói</label>
+                        <div class="border rounded p-3 bg-light" style="max-height: 200px; overflow-y: auto;">
+                            @if (allServices.Any())
+                            {
+                                foreach (var s in allServices)
+                                {
+                                    <div class="form-check">
+                                        <input class="form-check-input service-checkbox" type="checkbox" name="serviceIds" value="@s.Id" id="service_@s.Id" />
+                                        <label class="form-check-label" for="service_@s.Id">
+                                            @s.Name (@s.Price.ToString("N0") đ - @s.DurationMinutes phút)
+                                        </label>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Chưa có dịch vụ lẻ nào. Hãy tạo dịch vụ trước.</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Trạng thái</label>
+                        <select class="form-select" id="PackageStatus" name="Status">
+                            <option value="1">Hoạt động</option>
+                            <option value="0">Ngừng hoạt động</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu gói dịch vụ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function resetPackageForm() {
+            $('#packageForm').attr('action', '/Admin/CreateServicePackage');
+            $('#packageId').val(0);
+            $('#packageForm')[0].reset();
+            $('#PackageStatus').val('1');
+            $('.service-checkbox').prop('checked', false);
+            $('#packageModalTitle').text('Tạo gói dịch vụ mới');
+            $('.text-danger').text('');
+        }
+
+        function editPackage(id, name, desc, price, duration, validity, status, serviceIds) {
+            $('#packageForm').attr('action', '/Admin/SaveServicePackage');
+            $('#packageId').val(id);
+            $('#PackageName').val(name);
+            $('#PackageDescription').val(desc);
+            $('#PackagePrice').val(price);
+            $('#PackageDuration').val(duration);
+            $('#PackageValidity').val(validity);
+            $('#PackageStatus').val(status);
+
+            $('.service-checkbox').prop('checked', false);
+            if (Array.isArray(serviceIds)) {
+                serviceIds.forEach(function (sId) {
+                    $('#service_' + sId).prop('checked', true);
+                });
+            }
+
+            $('#packageModalTitle').text('Cập nhật gói dịch vụ');
+            $('.text-danger').text('');
+            new bootstrap.Modal('#packageModal').show();
+        }
+
+        $(document).ready(function() {
+            $('#packageForm').on('submit', function (e) {
+                e.preventDefault();
+                if (!$(this).valid()) {
+                    return false;
+                }
+                var form = $(this);
+                $.ajax({
+                    type: 'POST',
+                    url: form.attr('action'),
+                    data: form.serialize(),
+                    success: function (res) {
+                        location.reload();
+                    },
+                    error: function (xhr) {
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            var errors = xhr.responseJSON.errors;
+                            $('.text-danger.small').text('');
+                            for (var key in errors) {
+                                var msg = Array.isArray(errors[key]) ? errors[key][0] : errors[key];
+                                $('[data-valmsg-for="' + key + '"]').text(msg);
+                            }
+                        } else {
+                            location.reload();
+                        }
+                    }
+                });
+            });
+
+            @if (ViewBag.ShowModal != null)
+            {
+                <text>
+                new bootstrap.Modal('#@ViewBag.ShowModal').show();
+                </text>
+            }
+        });
+    </script>
+}

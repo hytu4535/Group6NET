@@ -1,8 +1,236 @@
+@model List<PetManagementSystem.Models.PetHealthRecord>
 @{
     Layout = "_AdminLayout";
+    var pets = ViewBag.Pets as List<PetManagementSystem.Models.Pet> ?? new();
+    var veterinarians = ViewBag.Veterinarians as List<PetManagementSystem.Models.Veterinarian> ?? new();
 }
 
-<div class="card-panel">
-    <h5>Pet Health Records</h5>
-    <p class="text-muted mb-0">Trang placeholder UI cho bảng <strong>pet_health_records</strong>.</p>
+<div class="d-flex justify-content-end mb-3">
+    <button type="button" class="btn btn-primary rounded-3 px-3 py-2" data-bs-toggle="modal" data-bs-target="#healthRecordModal" onclick="resetHealthRecordForm()">
+        <i class="bi bi-plus-circle me-1"></i> Tạo hồ sơ sức khỏe
+    </button>
 </div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @success
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Thú cưng</th>
+                        <th>Chủ nuôi</th>
+                        <th>Cân nặng / Nhiệt độ</th>
+                        <th>Chẩn đoán</th>
+                        <th>Điều trị</th>
+                        <th>Ngày khám</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        int index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@(index++)</td>
+                                <td class="fw-semibold">@(item.Pet != null ? item.Pet.Name : "N/A")</td>
+                                <td>@(item.Pet?.User?.FullName ?? item.Pet?.User?.Username ?? "N/A")</td>
+                                <td>@(item.WeightKg?.ToString("0.##") ?? "N/A") kg / @(item.Temperature?.ToString("0.#") ?? "N/A") °C</td>
+                                <td>@item.Diagnosis</td>
+                                <td>@item.Treatment</td>
+                                <td>@item.VisitDate.ToString("dd/MM/yyyy")</td>
+                                <td class="text-end">
+                                    <div class="d-flex gap-1 justify-content-end">
+                                        <button class="btn btn-sm btn-outline-primary btn-edit-health" data-id="@item.Id" title="Sửa"><i class="bi bi-pencil-square"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger btn-delete-health" data-id="@item.Id" title="Xóa"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">Chưa có hồ sơ sức khỏe nào trong hệ thống.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm/Sửa Hồ Sơ Sức Khỏe -->
+<div class="modal fade" id="healthRecordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="healthRecordForm" asp-action="CreatePetHealthRecord" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="healthRecordId" name="Id" value="0" />
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold" id="healthRecordModalTitle">Tạo hồ sơ sức khỏe</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Thú cưng</label>
+                        <select class="form-select" id="PetId" name="PetId" required>
+                            <option value="">-- Chọn thú cưng --</option>
+                            @foreach (var p in pets)
+                            {
+                                <option value="@p.Id">@p.Name (@p.Species)</option>
+                            }
+                        </select>
+                        <span class="text-danger small" data-valmsg-for="PetId" data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cân nặng (kg)</label>
+                            <input type="number" step="0.1" class="form-control" id="WeightKg" name="WeightKg" />
+                            <span class="text-danger small" data-valmsg-for="WeightKg" data-valmsg-replace="true"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nhiệt độ (°C)</label>
+                            <input type="number" step="0.1" class="form-control" id="Temperature" name="Temperature" />
+                            <span class="text-danger small" data-valmsg-for="Temperature" data-valmsg-replace="true"></span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Chẩn đoán</label>
+                        <textarea class="form-control" id="Diagnosis" name="Diagnosis" rows="2" required></textarea>
+                        <span class="text-danger small" data-valmsg-for="Diagnosis" data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phương pháp điều trị</label>
+                        <textarea class="form-control" id="Treatment" name="Treatment" rows="2" required></textarea>
+                        <span class="text-danger small" data-valmsg-for="Treatment" data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Ngày khám</label>
+                            <input type="date" class="form-control" id="VisitDate" name="VisitDate" required />
+                            <span class="text-danger small" data-valmsg-for="VisitDate" data-valmsg-replace="true"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Bác sĩ khám</label>
+                            <select class="form-select" id="VetId" name="VetId">
+                                <option value="">-- Chọn bác sĩ --</option>
+                                @foreach (var v in veterinarians)
+                                {
+                                    <option value="@v.Id">@(v.User?.FullName ?? v.User?.Username ?? "N/A") (@v.Specialty)</option>
+                                }
+                            </select>
+                            <span class="text-danger small" data-valmsg-for="VetId" data-valmsg-replace="true"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmitHealth">Lưu hồ sơ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function resetHealthRecordForm() {
+            $('#healthRecordForm').attr('action', '/Admin/CreatePetHealthRecord');
+            $('#healthRecordForm')[0].reset();
+            $('#healthRecordId').val(0);
+            $('#PetId').val('');
+            $('#VisitDate').val(new Date().toISOString().split('T')[0]);
+            $('#healthRecordModalTitle').text('Tạo hồ sơ sức khỏe');
+            $('#btnSubmitHealth').prop('disabled', false);
+            $('.text-danger').text('');
+        }
+
+        $(document).ready(function() {
+            $(document).on('click', '.btn-edit-health', function() {
+                var id = $(this).data('id');
+                $.get('/Admin/EditPetHealthRecord/' + id, function(res) {
+                    if (res.success) {
+                        $('#healthRecordForm').attr('action', '/Admin/EditPetHealthRecord');
+                        $('#healthRecordId').val(res.id);
+                        $('#PetId').val(res.petId);
+                        $('#WeightKg').val(res.weightKg);
+                        $('#Temperature').val(res.temperature);
+                        $('#Diagnosis').val(res.diagnosis);
+                        $('#Treatment').val(res.treatment);
+                        $('#VisitDate').val(res.visitDate);
+                        $('#VetId').val(res.vetId);
+                        $('#healthRecordModalTitle').text('Cập nhật hồ sơ sức khỏe');
+                        $('#btnSubmitHealth').prop('disabled', false);
+                        $('.text-danger').text('');
+                        new bootstrap.Modal('#healthRecordModal').show();
+                    }
+                });
+            });
+
+            $(document).on('click', '.btn-delete-health', function() {
+                var id = $(this).data('id');
+                if (confirm('Bạn có chắc chắn muốn xóa hồ sơ sức khỏe này?')) {
+                    $.post('/Admin/DeletePetHealthRecord/' + id, {
+                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    }, function(res) {
+                        location.reload();
+                    });
+                }
+            });
+
+            $('#healthRecordForm').on('submit', function (e) {
+                e.preventDefault();
+                if (!$(this).valid()) {
+                    return false;
+                }
+                var form = $(this);
+                $.ajax({
+                    type: 'POST',
+                    url: form.attr('action'),
+                    data: form.serialize(),
+                    success: function (res) {
+                        if (res && res.success === false) {
+                            alert(res.message);
+                        } else {
+                            location.reload();
+                        }
+                    },
+                    error: function (xhr) {
+                        if (xhr.responseJSON) {
+                            if (xhr.responseJSON.message) {
+                                alert(xhr.responseJSON.message);
+                            } else if (xhr.responseJSON.errors) {
+                                var errors = xhr.responseJSON.errors;
+                                $('.text-danger.small').text('');
+                                for (var key in errors) {
+                                    var msg = Array.isArray(errors[key]) ? errors[key][0] : errors[key];
+                                    $('[data-valmsg-for="' + key + '"]').text(msg);
+                                }
+                            }
+                        } else {
+                            location.reload();
+                        }
+                    }
+                });
+            });
+
+            @if (ViewBag.ShowModal != null)
+            {
+                <text>
+                new bootstrap.Modal('#@ViewBag.ShowModal').show();
+                </text>
+            }
+        });
+    </script>
+}

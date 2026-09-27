@@ -18,18 +18,24 @@ public class AuthService(
     {
         try
         {
-            var user = await userRepository.GetUserWithRoleAndPermissionsAsync(username.Trim());
+            var trimmedUsername = username?.Trim() ?? string.Empty;
+            var user = await userRepository.GetUserWithRoleAndPermissionsAsync(trimmedUsername);
             if (user is null)
             {
+                Console.WriteLine($"[LOGIN DEBUG] User not found for username: '{trimmedUsername}'");
                 return false;
             }
 
+            Console.WriteLine($"[LOGIN DEBUG] Found user id={user.Id}, username={user.Username}, status={user.Status}, roleId={user.RoleId}");
+
             if (!string.Equals(user.Status, "active", StringComparison.OrdinalIgnoreCase))
             {
+                Console.WriteLine($"[LOGIN DEBUG] User status is not active: '{user.Status}'");
                 return false;
             }
 
             var verifyResult = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+            Console.WriteLine($"[LOGIN DEBUG] Password verification result: {verifyResult}");
             if (verifyResult == PasswordVerificationResult.Failed)
             {
                 return false;
