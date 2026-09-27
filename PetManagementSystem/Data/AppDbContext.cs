@@ -12,6 +12,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Staff> Staff => Set<Staff>();
     public DbSet<Veterinarian> Veterinarians => Set<Veterinarian>();
 
+    // Commerce
+    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<ImportReceipt> ImportReceipts => Set<ImportReceipt>();
+    public DbSet<ImportDetail> ImportDetails => Set<ImportDetail>();
+    public DbSet<Cart> Carts => Set<Cart>();
+    public DbSet<CartItem> CartItems => Set<CartItem>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -124,6 +137,229 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .WithOne(u => u.Veterinarian)
                 .HasForeignKey<Veterinarian>(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        ConfigureCommerce(modelBuilder);
+    }
+
+    private static void ConfigureCommerce(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.ToTable("categories");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CategoryName).HasColumnName("category_name").HasMaxLength(100).IsUnicode(true);
+            entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(255).IsUnicode(true);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+        });
+
+        modelBuilder.Entity<Supplier>(entity =>
+        {
+            entity.ToTable("suppliers");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.SupplierName).HasColumnName("supplier_name").HasMaxLength(150).IsUnicode(true);
+            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(15).IsUnicode(false);
+            entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(100).IsUnicode(false);
+            entity.Property(e => e.Address).HasColumnName("address").HasMaxLength(255).IsUnicode(true);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+        });
+
+        modelBuilder.Entity<Product>(entity =>
+        {
+            entity.ToTable("products");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.ProductName).HasColumnName("product_name").HasMaxLength(150).IsUnicode(true);
+            entity.Property(e => e.Description).HasColumnName("description").IsUnicode(true);
+            entity.Property(e => e.Unit).HasColumnName("unit").HasMaxLength(20).IsUnicode(true);
+            entity.Property(e => e.ImportPrice).HasColumnName("import_price").HasPrecision(12, 2);
+            entity.Property(e => e.SellPrice).HasColumnName("sell_price").HasPrecision(12, 2);
+            entity.Property(e => e.StockQuantity).HasColumnName("stock_quantity");
+            entity.Property(e => e.ImageUrl).HasColumnName("image_url").IsUnicode(false);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasOne(e => e.Category)
+                .WithMany(c => c.Products)
+                .HasForeignKey(e => e.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ImportReceipt>(entity =>
+        {
+            entity.ToTable("import_receipts");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.SupplierId).HasColumnName("supplier_id");
+            entity.Property(e => e.EmployeeId).HasColumnName("employee_id");
+            entity.Property(e => e.ReceiptDate).HasColumnName("receipt_date");
+            entity.Property(e => e.TotalAmount).HasColumnName("total_amount").HasPrecision(14, 2);
+            entity.Property(e => e.Note).HasColumnName("note").HasMaxLength(255).IsUnicode(true);
+
+            entity.HasOne(e => e.Supplier)
+                .WithMany(s => s.ImportReceipts)
+                .HasForeignKey(e => e.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Employee)
+                .WithMany()
+                .HasForeignKey(e => e.EmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ImportDetail>(entity =>
+        {
+            entity.ToTable("import_details");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ReceiptId).HasColumnName("receipt_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.Quantity).HasColumnName("quantity");
+            entity.Property(e => e.ImportPrice).HasColumnName("import_price").HasPrecision(12, 2);
+            entity.Property(e => e.Subtotal).HasColumnName("subtotal").HasPrecision(14, 2);
+
+            entity.HasOne(e => e.Receipt)
+                .WithMany(r => r.Details)
+                .HasForeignKey(e => e.ReceiptId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Cart>(entity =>
+        {
+            entity.ToTable("carts");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CartItem>(entity =>
+        {
+            entity.ToTable("cart_items");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CartId).HasColumnName("cart_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.Quantity).HasColumnName("quantity");
+            entity.Property(e => e.Price).HasColumnName("price").HasPrecision(12, 2);
+
+            entity.HasOne(e => e.Cart)
+                .WithMany(c => c.Items)
+                .HasForeignKey(e => e.CartId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.ToTable("orders");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.OrderDate).HasColumnName("order_date");
+            entity.Property(e => e.ShippingAddress).HasColumnName("shipping_address").HasMaxLength(255).IsUnicode(true);
+            entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(15).IsUnicode(false);
+            entity.Property(e => e.TotalAmount).HasColumnName("total_amount").HasPrecision(14, 2);
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.Note).HasColumnName("note").HasMaxLength(255).IsUnicode(true);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<OrderItem>(entity =>
+        {
+            entity.ToTable("order_items");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.Quantity).HasColumnName("quantity");
+            entity.Property(e => e.Price).HasColumnName("price").HasPrecision(12, 2);
+            entity.Property(e => e.Subtotal).HasColumnName("subtotal").HasPrecision(14, 2);
+
+            entity.HasOne(e => e.Order)
+                .WithMany(o => o.Items)
+                .HasForeignKey(e => e.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Product)
+                .WithMany()
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Payment>(entity =>
+        {
+            entity.ToTable("payments");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.PaymentMethod).HasColumnName("payment_method").HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(14, 2);
+            entity.Property(e => e.PaymentDate).HasColumnName("payment_date");
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.TransactionCode).HasColumnName("transaction_code").HasMaxLength(100).IsUnicode(false);
+
+            entity.HasOne(e => e.Order)
+                .WithMany(o => o.Payments)
+                .HasForeignKey(e => e.OrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Invoice>(entity =>
+        {
+            entity.ToTable("invoices");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.InvoiceDate).HasColumnName("invoice_date");
+            entity.Property(e => e.TotalAmount).HasColumnName("total_amount").HasPrecision(14, 2);
+            entity.Property(e => e.TaxAmount).HasColumnName("tax_amount").HasPrecision(14, 2);
+            entity.Property(e => e.IssuedBy).HasColumnName("issued_by");
+
+            entity.HasOne(e => e.Order)
+                .WithOne(o => o.Invoice)
+                .HasForeignKey<Invoice>(e => e.OrderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.IssuedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.IssuedBy)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

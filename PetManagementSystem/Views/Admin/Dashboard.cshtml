@@ -70,49 +70,59 @@
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Biểu đồ người dùng theo vai trò</h3>
-                <div class="card-tools">
-                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="card-body">
-                <canvas id="roleChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Hoạt động gần đây</h3>
-                <div class="card-tools">
-                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <ul class="users-list clearfix">
-                    @foreach (var log in (ViewData["RecentLogs"] as List<string>) ?? new List<string>())
-                    {
-                        <li>
-                            <img src="@Url.Content("~/wwwroot/dist/img/user2-160x160.jpg")" alt="User Image">
-                            <a class="users-list-name" href="#">@log</a>
-                            <span class="users-list-date">@DateTime.Now.ToString("HH:mm")</span>
-                        </li>
-                    }
-                </ul>
-            </div>
-            <div class="card-footer text-center">
-                <a href="@Url.Action("Feedbacks", "Admin")" class="uppercase">Xem tất cả hoạt động</a>
-            </div>
-        </div>
-    </div>
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
+                 view-data='new ViewDataDictionary(ViewData)
+                 {
+                     ["CardTitle"] = "Identity",
+                     ["CardIcon"] = "bi bi-shield-lock",
+                     ["CardDescription"] = "Quản lý tài khoản, phân quyền và nhân sự nội bộ.",
+                     ["CardLinkUrl"] = Url.Action("Customers", "Admin"),
+                     ["CardLinkText"] = "Mở module",
+                     ["CardThemeClass"] = "module-identity",
+                     ["CardTags"] = new[] { "users", "roles", "permissions", "role_permissions", "staff", "veterinarians" }
+                 }' />
+</div>
+    <div class="col-lg-6">
+        <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
+                 view-data='new ViewDataDictionary(ViewData)
+                 {
+                     ["CardTitle"] = "PetCare",
+                     ["CardIcon"] = "bi bi-heart",
+                     ["CardDescription"] = "Hồ sơ thú cưng, hình ảnh, thông báo và trao đổi khách hàng.",
+                     ["CardLinkUrl"] = Url.Action("Pets", "Admin"),
+                     ["CardLinkText"] = "Mở module",
+                     ["CardThemeClass"] = "module-petcare",
+                     ["CardTags"] = new[] { "pets", "pet_images", "notifications", "feedbacks", "chat_conversations" }
+                 }' />
+</div>
+    <div class="col-lg-6">
+        <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
+                 view-data='new ViewDataDictionary(ViewData)
+                 {
+                     ["CardTitle"] = "Service & Medical",
+                     ["CardIcon"] = "bi bi-clipboard2-pulse",
+                     ["CardDescription"] = "Dịch vụ, lịch hẹn và hồ sơ y tế thú cưng.",
+                     ["CardLinkUrl"] = Url.Action("Appointments", "Admin"),
+                     ["CardLinkText"] = "Mở module",
+                     ["CardThemeClass"] = "module-service",
+                     ["CardTags"] = new[] { "services", "appointments", "appointment_services", "pet_health_records", "vaccination_records", "medical_prescriptions", "service_packages", "pet_packages" }
+                 }' />
+</div>
+    <div class="col-lg-6">
+        <partial name="~/Views/Admin/Partials/Dashboard/_ModuleCard.cshtml"
+                 view-data='new ViewDataDictionary(ViewData)
+                 {
+                     ["CardTitle"] = "Commerce",
+                     ["CardIcon"] = "bi bi-cart3",
+                     ["CardDescription"] = "Quản lý kho, nhập hàng, bán hàng và thanh toán.",
+                     ["CardLinkUrl"] = Url.Action("Orders", "Commerce"),
+                     ["CardLinkText"] = "Mở module",
+                     ["CardThemeClass"] = "module-commerce",
+                     ["CardTags"] = new[] { "suppliers", "import_receipts", "import_details", "categories", "products", "carts", "cart_items", "orders", "order_items", "payments", "invoices" }
+                 }' />
+</div>
 </div>
 
 <div class="row">

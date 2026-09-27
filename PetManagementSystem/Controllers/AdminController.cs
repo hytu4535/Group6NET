@@ -45,18 +45,6 @@ namespace PetManagementSystem.Controllers
             return View();
         }
 
-        public IActionResult Products()
-        {
-            SetNav("Quản lý Sản phẩm", "Products", "Commerce");
-            return View();
-        }
-
-        public IActionResult Orders()
-        {
-            SetNav("Quản lý Đơn hàng", "Orders", "Commerce");
-            return View();
-        }
-
         public IActionResult Feedback()
         {
             SetNav("Phản hồi Khách hàng", "Feedbacks", "CustomerCare");
@@ -84,17 +72,6 @@ namespace PetManagementSystem.Controllers
         public IActionResult PetHealthRecords() { SetNav("Pet Health Records", "PetHealthRecords", "ServiceMedical"); return View(); }
         public IActionResult VaccinationRecords() { SetNav("Vaccination Records", "VaccinationRecords", "ServiceMedical"); return View(); }
         public IActionResult MedicalPrescriptions() { SetNav("Medical Prescriptions", "MedicalPrescriptions", "ServiceMedical"); return View(); }
-
-        // Commerce
-        public IActionResult Suppliers() { SetNav("Suppliers", "Suppliers", "Commerce"); return View(); }
-        public IActionResult ImportReceipts() { SetNav("Import Receipts", "ImportReceipts", "Commerce"); return View(); }
-        public IActionResult ImportDetails() { SetNav("Import Details", "ImportDetails", "Commerce"); return View(); }
-        public IActionResult Categories() { SetNav("Categories", "Categories", "Commerce"); return View(); }
-        public IActionResult Carts() { SetNav("Carts", "Carts", "Commerce"); return View(); }
-        public IActionResult CartItems() { SetNav("Cart Items", "CartItems", "Commerce"); return View(); }
-        public IActionResult OrderItems() { SetNav("Order Items", "OrderItems", "Commerce"); return View(); }
-        public IActionResult Payments() { SetNav("Payments", "Payments", "Commerce"); return View(); }
-        public IActionResult Invoices() { SetNav("Invoices", "Invoices", "Commerce"); return View(); }
 
         private void SetNav(string title, string active, string activeParent)
         {

@@ -1,0 +1,135 @@
+@model PetManagementSystem.ViewModels.Commerce.ImportReceiptCreateViewModel
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white"><h5 class="mb-0">Tạo phiếu nhập kho</h5></div>
+    <div class="card-body">
+        <form asp-action="CreateImportReceipt" method="post" novalidate id="receiptForm">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="All" class="alert alert-danger"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="SupplierId" class="form-label">Nhà cung cấp</label>
+                    <select asp-for="SupplierId" asp-items="Model.SupplierOptions" class="form-select">
+                        <option value="">-- Chọn nhà cung cấp --</option>
+                    </select>
+                    <span asp-validation-for="SupplierId" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="ReceiptDate" class="form-label">Ngày nhập</label>
+                    <input asp-for="ReceiptDate" class="form-control" type="datetime-local" value="@Model.ReceiptDate.ToString("yyyy-MM-ddTHH:mm")" />
+                    <span asp-validation-for="ReceiptDate" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Note" class="form-label">Ghi chú</label>
+                    <input asp-for="Note" class="form-control" />
+                    <span asp-validation-for="Note" class="text-danger"></span>
+                </div>
+            </div>
+
+            <hr class="my-4" />
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">Danh sách sản phẩm nhập</h6>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="addLineBtn"><i class="bi bi-plus-lg"></i> Thêm dòng</button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle" id="linesTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="min-width: 220px;">Sản phẩm</th>
+                            <th style="width: 120px;">Số lượng</th>
+                            <th style="width: 160px;">Giá nhập</th>
+                            <th style="width: 140px;">Thành tiền</th>
+                            <th style="width: 60px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="linesBody"></tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3" class="text-end">Tổng cộng</th>
+                            <th id="grandTotal">0đ</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Lưu phiếu nhập</button>
+                <a class="btn btn-outline-secondary" asp-action="ImportReceipts">Quay lại</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script id="productOptionsData" type="application/json">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ProductOptions))</script>
+    <script>
+        (function () {
+            var products = JSON.parse(document.getElementById('productOptionsData').textContent || '[]');
+            var body = document.getElementById('linesBody');
+            var index = 0;
+
+            function money(v) {
+                return Number(v || 0).toLocaleString('vi-VN') + 'đ';
+            }
+
+            function recalcTotal() {
+                var total = 0;
+                body.querySelectorAll('tr').forEach(function (row) {
+                    total += Number(row.querySelector('.line-subtotal').dataset.value || 0);
+                });
+                document.getElementById('grandTotal').textContent = money(total);
+            }
+
+            function recalcRow(row) {
+                var qty = Number(row.querySelector('.qty-input').value || 0);
+                var price = Number(row.querySelector('.price-input').value || 0);
+                var subtotal = qty * price;
+                var cell = row.querySelector('.line-subtotal');
+                cell.dataset.value = subtotal;
+                cell.textContent = money(subtotal);
+                recalcTotal();
+            }
+
+            function addLine() {
+                var i = index++;
+                var tr = document.createElement('tr');
+
+                var options = '<option value="">-- Chọn sản phẩm --</option>' + products.map(function (p) {
+                    return '<option value="' + p.Id + '" data-price="' + p.ImportPrice + '">' + p.Name + (p.Unit ? ' (' + p.Unit + ')' : '') + '</option>';
+                }).join('');
+
+                tr.innerHTML =
+                    '<td><select class="form-select form-select-sm product-select" name="Lines[' + i + '].ProductId">' + options + '</select></td>' +
+                    '<td><input type="number" min="1" value="1" class="form-control form-control-sm qty-input" name="Lines[' + i + '].Quantity" /></td>' +
+                    '<td><input type="number" min="0" step="0.01" value="0" class="form-control form-control-sm price-input" name="Lines[' + i + '].ImportPrice" /></td>' +
+                    '<td class="line-subtotal" data-value="0">0đ</td>' +
+                    '<td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger remove-line"><i class="bi bi-trash"></i></button></td>';
+
+                body.appendChild(tr);
+
+                tr.querySelector('.product-select').addEventListener('change', function () {
+                    var opt = this.options[this.selectedIndex];
+                    var price = opt ? opt.dataset.price : 0;
+                    tr.querySelector('.price-input').value = price || 0;
+                    recalcRow(tr);
+                });
+                tr.querySelector('.qty-input').addEventListener('input', function () { recalcRow(tr); });
+                tr.querySelector('.price-input').addEventListener('input', function () { recalcRow(tr); });
+                tr.querySelector('.remove-line').addEventListener('click', function () {
+                    tr.remove();
+                    recalcTotal();
+                });
+            }
+
+            document.getElementById('addLineBtn').addEventListener('click', addLine);
+            addLine();
+        })();
+    </script>
+}

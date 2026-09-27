@@ -1,0 +1,73 @@
+@using PetManagementSystem.Helpers
+@model PetManagementSystem.ViewModels.Commerce.CartItemListViewModel
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Chi tiết giỏ hàng</h5>
+        <small class="text-muted">@Model.TotalCount dòng sản phẩm</small>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-3">
+                <input type="number" name="cartId" value="@Model.CartId" class="form-control" placeholder="Mã giỏ hàng (#)" />
+            </div>
+            <div class="col-md-4">
+                <input type="text" name="search" value="@Model.Search" class="form-control" placeholder="Tìm theo sản phẩm, khách hàng..." />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-search"></i> Lọc</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Giỏ hàng</th>
+                        <th>Khách hàng</th>
+                        <th>Trạng thái giỏ</th>
+                        <th>Sản phẩm</th>
+                        <th>Đơn vị</th>
+                        <th>Số lượng</th>
+                        <th>Đơn giá</th>
+                        <th>Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Items.Any())
+                    {
+                        <tr><td colspan="8" class="text-center text-muted py-4">Không có dữ liệu</td></tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td><a asp-action="CartDetails" asp-route-id="@item.CartId">#@item.CartId</a></td>
+                                <td>@item.CustomerName</td>
+                                <td><span class="badge @CartStatuses.Badge(item.CartStatus)">@CartStatuses.Label(item.CartStatus)</span></td>
+                                <td>@item.ProductName</td>
+                                <td>@(item.Unit ?? "-")</td>
+                                <td>@item.Quantity</td>
+                                <td>@CommerceFormat.Money(item.Price)</td>
+                                <td>@CommerceFormat.Money(item.Subtotal)</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <partial name="~/Views/Shared/Commerce/_Pagination.cshtml"
+                 view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+                 {
+                     ["Page"] = Model.Page,
+                     ["TotalPages"] = Model.TotalPages,
+                     ["Action"] = "CartItems",
+                     ["RouteValues"] = new Dictionary<string, string?> { ["cartId"] = Model.CartId?.ToString(), ["search"] = Model.Search }
+                 }' />
+    </div>
+</div>

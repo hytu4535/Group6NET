@@ -1,0 +1,128 @@
+@using PetManagementSystem.Helpers
+@model PetManagementSystem.ViewModels.Commerce.ProductListViewModel
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h5 class="mb-0">Sản phẩm</h5>
+            <small class="text-muted">@Model.TotalCount sản phẩm</small>
+        </div>
+        @if (User.HasPermission("products.create"))
+        {
+            <a class="btn btn-primary" asp-action="CreateProduct"><i class="bi bi-plus-circle me-1"></i>Thêm sản phẩm</a>
+        }
+    </div>
+    <div class="card-body">
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert alert-success">@success</div>
+        }
+        @if (TempData["Error"] is string error)
+        {
+            <div class="alert alert-danger">@error</div>
+        }
+
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-4">
+                <input type="text" name="search" value="@Model.Search" class="form-control" placeholder="Tìm theo tên sản phẩm..." />
+            </div>
+            <div class="col-md-3">
+                <select name="categoryId" class="form-select">
+                    <option value="">-- Tất cả danh mục --</option>
+                    @foreach (var c in Model.CategoryOptions)
+                    {
+                        <option value="@c.Value" selected="@(Model.CategoryId.HasValue && Model.CategoryId.Value.ToString() == c.Value)">@c.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    <option value="active" selected="@(Model.Status == "active")">Đang bán</option>
+                    <option value="inactive" selected="@(Model.Status == "inactive")">Ngừng bán</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-search"></i> Lọc</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Danh mục</th>
+                        <th>Đơn vị</th>
+                        <th>Giá nhập</th>
+                        <th>Giá bán</th>
+                        <th>Tồn kho</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Items.Any())
+                    {
+                        <tr><td colspan="9" class="text-center text-muted py-4">Chưa có sản phẩm nào</td></tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>@item.Id</td>
+                                <td>@item.ProductName</td>
+                                <td>@item.CategoryName</td>
+                                <td>@(item.Unit ?? "-")</td>
+                                <td>@CommerceFormat.Money(item.ImportPrice)</td>
+                                <td>@CommerceFormat.Money(item.SellPrice)</td>
+                                <td>@item.StockQuantity</td>
+                                <td><span class="badge @ProductStatuses.Badge(item.Status)">@ProductStatuses.Label(item.Status)</span></td>
+                                <td class="text-end">
+                                    @if (User.HasPermission("products.update"))
+                                    {
+                                        <a class="btn btn-sm btn-outline-primary" asp-action="EditProduct" asp-route-id="@item.Id">Sửa</a>
+                                        <form asp-action="ToggleProductStatus" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-@(item.Status == "active" ? "warning" : "success")">
+                                                @(item.Status == "active" ? "Ngừng bán" : "Mở bán")
+                                            </button>
+                                        </form>
+                                    }
+                                    @if (User.HasPermission("products.delete"))
+                                    {
+                                        <form asp-action="DeleteProduct" method="post" class="d-inline" onsubmit="return confirm('Xóa sản phẩm này?');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Xóa</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <partial name="~/Views/Shared/Commerce/_Pagination.cshtml"
+                 view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+                 {
+                     ["Page"] = Model.Page,
+                     ["TotalPages"] = Model.TotalPages,
+                     ["Action"] = "Products",
+                     ["RouteValues"] = new Dictionary<string, string?>
+                     {
+                         ["search"] = Model.Search,
+                         ["categoryId"] = Model.CategoryId?.ToString(),
+                         ["status"] = Model.Status
+                     }
+                 }' />
+    </div>
+</div>

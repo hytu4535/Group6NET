@@ -1,0 +1,58 @@
+@model PetManagementSystem.ViewModels.Commerce.InvoiceUpsertViewModel
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white"><h5 class="mb-0">Lập hóa đơn</h5></div>
+    <div class="card-body">
+        <form asp-action="CreateInvoice" method="post" novalidate>
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="OrderId" class="form-label">Đơn hàng</label>
+                    <select asp-for="OrderId" class="form-select" id="orderSelect">
+                        <option value="">-- Chọn đơn hàng --</option>
+                        @foreach (var o in Model.OrderOptions)
+                        {
+                            <option value="@o.Id" data-total="@o.TotalAmount" selected="@(Model.OrderId == o.Id)">@o.Text</option>
+                        }
+                    </select>
+                    <span asp-validation-for="OrderId" class="text-danger"></span>
+                    <div class="form-text">Chỉ hiển thị các đơn hàng chưa hủy và chưa có hóa đơn.</div>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="InvoiceDate" class="form-label">Ngày lập hóa đơn</label>
+                    <input asp-for="InvoiceDate" class="form-control" type="datetime-local" value="@Model.InvoiceDate.ToString("yyyy-MM-ddTHH:mm")" />
+                    <span asp-validation-for="InvoiceDate" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Tổng tiền (theo đơn hàng)</label>
+                    <input class="form-control" id="totalDisplay" value="@Model.TotalAmount" disabled />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="TaxAmount" class="form-label">Tiền thuế</label>
+                    <input asp-for="TaxAmount" class="form-control" type="number" step="0.01" min="0" />
+                    <span asp-validation-for="TaxAmount" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Lưu hóa đơn</button>
+                <a class="btn btn-outline-secondary" asp-action="Invoices">Quay lại</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('orderSelect').addEventListener('change', function () {
+            var opt = this.options[this.selectedIndex];
+            document.getElementById('totalDisplay').value = opt && opt.dataset.total ? opt.dataset.total : '';
+        });
+    </script>
+}
