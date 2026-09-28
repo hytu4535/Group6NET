@@ -75,7 +75,7 @@
         <li class="@(ViewData["Active"] as string == "ServicePackages" ? "active" : "")"><a href="@Url.Action("ServicePackages", "Admin")">Gói dịch vụ</a></li>
         <li class="@(ViewData["Active"] as string == "PetPackages" ? "active" : "")"><a href="@Url.Action("PetPackages", "Admin")">Gói dịch vụ của thú cưng</a></li>
         <li class="@(ViewData["Active"] as string == "Appointments" ? "active" : "")"><a href="@Url.Action("Appointments", "Admin")">Lịch hẹn</a></li>
-        <li class="@(ViewData["Active"] as string == "AppointmentServices" ? "active" : "")"><a href="@Url.Action("AppointmentServices", "Admin")">Dịch vụ theo lịch hẹn</a></li>
+        <!-- <li class="@(ViewData["Active"] as string == "AppointmentServices" ? "active" : "")"><a href="@Url.Action("AppointmentServices", "Admin")">Dịch vụ theo lịch hẹn</a></li> -->
         <li class="@(ViewData["Active"] as string == "PetHealthRecords" ? "active" : "")"><a href="@Url.Action("PetHealthRecords", "Admin")">Hồ sơ sức khỏe thú cưng</a></li>
         <li class="@(ViewData["Active"] as string == "VaccinationRecords" ? "active" : "")"><a href="@Url.Action("VaccinationRecords", "Admin")">Lịch sử tiêm phòng thú cưng</a></li>
         <li class="@(ViewData["Active"] as string == "MedicalPrescriptions" ? "active" : "")"><a href="@Url.Action("MedicalPrescriptions", "Admin")">Đơn thuốc</a></li>
