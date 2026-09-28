@@ -1,8 +1,234 @@
+@model List<PetManagementSystem.Models.AppointmentService>
 @{
     Layout = "_AdminLayout";
+    var appointments = ViewBag.Appointments as List<PetManagementSystem.Models.Appointment> ?? new();
+    var services = ViewBag.Services as List<PetManagementSystem.Models.Service> ?? new();
 }
 
-<div class="card-panel">
-    <h5>Appointment Services</h5>
-    <p class="text-muted mb-0">Trang placeholder UI cho bảng <strong>appointment_services</strong>.</p>
+<div class="d-flex justify-content-end mb-3">
+    <button type="button" class="btn btn-primary rounded-3 px-3 py-2" data-bs-toggle="modal" data-bs-target="#appointmentServiceModal" onclick="resetAppointmentServiceForm()">
+        <i class="bi bi-plus-circle me-1"></i> Thêm dịch vụ theo lịch
+    </button>
 </div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @success
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Lịch Hẹn (Thú cưng - Ngày)</th>
+                        <th>Tên Dịch Vụ</th>
+                        <th>Giá Dịch Vụ</th>
+                        <th>Trạng Thái Thực Hiện</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        int index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@(index++)</td>
+                                <td class="fw-semibold">
+                                    @(item.Appointment?.Pet?.Name ?? "N/A") 
+                                    (@(item.Appointment?.AppointmentDate.ToString("dd/MM/yyyy") ?? "N/A"))
+                                </td>
+                                <td>@(item.Service?.Name ?? "N/A")</td>
+                                <td class="text-primary fw-bold">@item.PriceAtBooking.ToString("N0") đ</td>
+                                <td>
+                                    <span class="badge bg-success">Đã gán</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-flex gap-1 justify-content-end">
+                                        <button class="btn btn-sm btn-outline-primary btn-edit-appointmentservice" data-appointmentid="@item.AppointmentId" data-serviceid="@item.ServiceId" title="Sửa"><i class="bi bi-pencil-square"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger btn-delete-appointmentservice" data-appointmentid="@item.AppointmentId" data-serviceid="@item.ServiceId" title="Xóa"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Chưa có dịch vụ theo lịch hẹn nào trong hệ thống.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm/Sửa Dịch Vụ Theo Lịch Hẹn -->
+<div class="modal fade" id="appointmentServiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="appointmentServiceForm" asp-action="CreateAppointmentService" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold" id="appointmentServiceModalTitle">Thêm dịch vụ theo lịch</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Chọn Lịch hẹn</label>
+                        <select class="form-select" id="AppointmentId" name="AppointmentId" required>
+                            <option value="">-- Chọn lịch hẹn --</option>
+                            @foreach (var a in appointments)
+                            {
+                                <option value="@a.Id">@(a.Pet?.Name ?? "N/A") - @a.AppointmentDate.ToString("dd/MM/yyyy") @a.AppointmentTime.ToString(@"hh\:mm")</option>
+                            }
+                        </select>
+                        <span class="text-danger small" data-valmsg-for="AppointmentId" data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Chọn Dịch vụ</label>
+                        <select class="form-select" id="ServiceId" name="ServiceId" required>
+                            <option value="">-- Chọn dịch vụ --</option>
+                            @foreach (var s in services)
+                            {
+                                <option value="@s.Id" data-price="@s.Price">@s.Name (@s.Price.ToString("N0") đ)</option>
+                            }
+                        </select>
+                        <span class="text-danger small" data-valmsg-for="ServiceId" data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Giá Dịch Vụ (VNĐ)</label>
+                        <input type="number" step="1000" class="form-control" id="PriceAtBooking" name="PriceAtBooking" required />
+                        <span class="text-danger small" data-valmsg-for="PriceAtBooking" data-valmsg-replace="true"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu thông tin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function resetAppointmentServiceForm() {
+            $('#appointmentServiceForm').attr('action', '/Admin/CreateAppointmentService');
+            $('#appointmentServiceForm')[0].reset();
+            $('#AppointmentId').prop('disabled', false);
+            $('#ServiceId').prop('disabled', false);
+            $('#appointmentServiceModalTitle').text('Thêm dịch vụ theo lịch');
+            $('.text-danger').text('');
+        }
+
+        $(document).ready(function() {
+            $('#ServiceId').on('change', function() {
+                var price = $(this).find(':selected').data('price');
+                if (price !== undefined) {
+                    $('#PriceAtBooking').val(price);
+                } else {
+                    $('#PriceAtBooking').val('');
+                }
+            });
+
+            $(document).on('click', '.btn-edit-appointmentservice', function() {
+                var appointmentId = $(this).data('appointmentid');
+                var serviceId = $(this).data('serviceid');
+                $.get('/Admin/GetAppointmentServiceById', { appointmentId: appointmentId, serviceId: serviceId }, function(res) {
+                    if (res.success) {
+                        $('#appointmentServiceForm').attr('action', '/Admin/EditAppointmentService');
+                        $('#AppointmentId').val(res.appointmentId).prop('disabled', true);
+                        $('#ServiceId').val(res.serviceId).prop('disabled', true);
+                        
+                        // Add hidden inputs for disabled fields if not present, or backend can bind from route / form
+                        if ($('#hiddenAppointmentId').length === 0) {
+                            $('#appointmentServiceForm').append('<input type="hidden" id="hiddenAppointmentId" name="AppointmentId" value="' + res.appointmentId + '" />');
+                        } else {
+                            $('#hiddenAppointmentId').val(res.appointmentId);
+                        }
+                        if ($('#hiddenServiceId').length === 0) {
+                            $('#appointmentServiceForm').append('<input type="hidden" id="hiddenServiceId" name="ServiceId" value="' + res.serviceId + '" />');
+                        } else {
+                            $('#hiddenServiceId').val(res.serviceId);
+                        }
+
+                        $('#PriceAtBooking').val(res.priceAtBooking);
+                        $('#appointmentServiceModalTitle').text('Cập nhật dịch vụ theo lịch');
+                        $('.text-danger').text('');
+                        new bootstrap.Modal('#appointmentServiceModal').show();
+                    }
+                });
+            });
+
+            $(document).on('click', '.btn-delete-appointmentservice', function() {
+                var appointmentId = $(this).data('appointmentid');
+                var serviceId = $(this).data('serviceid');
+                if (confirm('Bạn có chắc chắn muốn xóa dịch vụ này khỏi lịch hẹn?')) {
+                    $.post('/Admin/DeleteAppointmentService', {
+                        appointmentId: appointmentId,
+                        serviceId: serviceId,
+                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    }, function(res) {
+                        location.reload();
+                    });
+                }
+            });
+
+            $('#appointmentServiceForm').on('submit', function (e) {
+                e.preventDefault();
+                $('#AppointmentId').prop('disabled', false);
+                $('#ServiceId').prop('disabled', false);
+                if (!$(this).valid()) {
+                    $('#AppointmentId').prop('disabled', $('#appointmentServiceForm').attr('action').includes('Edit'));
+                    $('#ServiceId').prop('disabled', $('#appointmentServiceForm').attr('action').includes('Edit'));
+                    return false;
+                }
+                var form = $(this);
+                $.ajax({
+                    type: 'POST',
+                    url: form.attr('action'),
+                    data: form.serialize(),
+                    success: function (res) {
+                        if (res && res.success === false) {
+                            alert(res.message);
+                        } else {
+                            location.reload();
+                        }
+                    },
+                    error: function (xhr) {
+                        if (xhr.responseJSON) {
+                            if (xhr.responseJSON.message) {
+                                alert(xhr.responseJSON.message);
+                            } else if (xhr.responseJSON.errors) {
+                                var errors = xhr.responseJSON.errors;
+                                $('.text-danger.small').text('');
+                                for (var key in errors) {
+                                    var msg = Array.isArray(errors[key]) ? errors[key][0] : errors[key];
+                                    $('[data-valmsg-for="' + key + '"]').text(msg);
+                                }
+                            }
+                        } else {
+                            location.reload();
+                        }
+                    }
+                });
+            });
+
+            @if (ViewBag.ShowModal != null)
+            {
+                <text>
+                new bootstrap.Modal('#@ViewBag.ShowModal').show();
+                </text>
+            }
+        });
+    </script>
+}

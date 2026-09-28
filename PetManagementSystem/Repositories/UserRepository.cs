@@ -8,9 +8,10 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
 {
     public async Task<User?> GetByUsernameAsync(string username)
     {
+        var normalized = username?.Trim() ?? string.Empty;
         return await dbContext.Users
             .Include(x => x.Role)
-            .FirstOrDefaultAsync(x => x.Username == username);
+            .FirstOrDefaultAsync(x => x.Username.Trim() == normalized);
     }
 
     public async Task<User?> GetByIdAsync(int id)
@@ -22,11 +23,24 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
 
     public async Task<User?> GetUserWithRoleAndPermissionsAsync(string username)
     {
-        return await dbContext.Users
-            .Include(x => x.Role)
-                .ThenInclude(r => r!.RolePermissions)
+        var normalized = username?.Trim() ?? string.Empty;
+        var user = await dbContext.Users
+            .FirstOrDefaultAsync(x => x.Username.Trim() == normalized);
+
+        if (user is null)
+        {
+            return null;
+        }
+
+        if (user.RoleId > 0)
+        {
+            user.Role = await dbContext.Roles
+                .Include(r => r.RolePermissions)
                     .ThenInclude(rp => rp.Permission)
-            .FirstOrDefaultAsync(x => x.Username == username);
+                .FirstOrDefaultAsync(r => r.Id == user.RoleId);
+        }
+
+        return user;
     }
 
     public async Task<List<User>> GetAllWithRoleAsync()

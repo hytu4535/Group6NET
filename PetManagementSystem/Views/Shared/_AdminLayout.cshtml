@@ -64,34 +64,23 @@
                                                                 </ul>
                                                             </li>
 
-                                                            <li class="nav-section">Service &amp; Medical</li>
-                                                            <li
-                                                                class="menu-group @((ViewData["ActiveParent"] as string) == "ServiceMedical" ? "menu-open" : "")">
-                                                                <a href="#" class="menu-toggle" data-menu-target="service-menu">
-                                                                    <span class="menu-title"><i class="bi bi-clipboard2-pulse-fill"></i><span>Dịch vụ & Khám
-                                                                        bệnh</span></span>
-                                                                        <i class="bi bi-chevron-right menu-arrow"></i>
-                                                                    </a>
-                                                                    <ul id="service-menu" class="submenu">
-                                                                        <li class="@(ViewData["Active"] as string == "Services" ? "active" : "")"><a
-                                                                            href="@Url.Action("Services", "Admin")">Dịch vụ</a></li>
-                                                                            <li class="@(ViewData["Active"] as string == "ServicePackages" ? "active" : "")"><a
-                                                                                href="@Url.Action("ServicePackages", "Admin")">Gói dịch vụ</a></li>
-                                                                                <li class="@(ViewData["Active"] as string == "PetPackages" ? "active" : "")"><a
-                                                                                    href="@Url.Action("PetPackages", "Admin")">Gói dịch vụ của thú cưng</a></li>
-                                                                                    <li class="@(ViewData["Active"] as string == "Appointments" ? "active" : "")"><a
-                                                                                        href="@Url.Action("Appointments", "Admin")">Lịch hẹn</a></li>
-                                                                                        <li class="@(ViewData["Active"] as string == "AppointmentServices" ? "active" : "")"><a
-                                                                                            href="@Url.Action("AppointmentServices", "Admin")">Dịch vụ theo lịch hẹn</a></li>
-                                                                                            <li class="@(ViewData["Active"] as string == "PetHealthRecords" ? "active" : "")"><a
-                                                                                                href="@Url.Action("PetHealthRecords", "Admin")">Hồ sơ sức khỏe thú cưng</a></li>
-                                                                                                <li class="@(ViewData["Active"] as string == "VaccinationRecords" ? "active" : "")"><a
-                                                                                                    href="@Url.Action("VaccinationRecords", "Admin")">Lịch sử tiêm phòng thú cưng</a>
-                                                                                                </li>
-                                                                                                <li class="@(ViewData["Active"] as string == "MedicalPrescriptions" ? "active" : "")"><a
-                                                                                                    href="@Url.Action("MedicalPrescriptions", "Admin")">Đơn thuốc</a></li>
-                                                                                                </ul>
-                                                                                            </li>
+<li class="nav-section">Service &amp; Medical</li>
+<li class="menu-group @((ViewData["ActiveParent"] as string) == "ServiceMedical" ? "menu-open" : "")">
+    <a href="#" class="menu-toggle" data-menu-target="service-menu">
+        <span class="menu-title"><i class="bi bi-clipboard2-pulse-fill"></i><span>Dịch vụ &amp; Khám bệnh</span></span>
+        <i class="bi bi-chevron-right menu-arrow"></i>
+    </a>
+    <ul id="service-menu" class="submenu">
+        <li class="@(ViewData["Active"] as string == "Services" ? "active" : "")"><a href="@Url.Action("Services", "Admin")">Dịch vụ</a></li>
+        <li class="@(ViewData["Active"] as string == "ServicePackages" ? "active" : "")"><a href="@Url.Action("ServicePackages", "Admin")">Gói dịch vụ</a></li>
+        <li class="@(ViewData["Active"] as string == "PetPackages" ? "active" : "")"><a href="@Url.Action("PetPackages", "Admin")">Gói dịch vụ của thú cưng</a></li>
+        <li class="@(ViewData["Active"] as string == "Appointments" ? "active" : "")"><a href="@Url.Action("Appointments", "Admin")">Lịch hẹn</a></li>
+        <li class="@(ViewData["Active"] as string == "AppointmentServices" ? "active" : "")"><a href="@Url.Action("AppointmentServices", "Admin")">Dịch vụ theo lịch hẹn</a></li>
+        <li class="@(ViewData["Active"] as string == "PetHealthRecords" ? "active" : "")"><a href="@Url.Action("PetHealthRecords", "Admin")">Hồ sơ sức khỏe thú cưng</a></li>
+        <li class="@(ViewData["Active"] as string == "VaccinationRecords" ? "active" : "")"><a href="@Url.Action("VaccinationRecords", "Admin")">Lịch sử tiêm phòng thú cưng</a></li>
+        <li class="@(ViewData["Active"] as string == "MedicalPrescriptions" ? "active" : "")"><a href="@Url.Action("MedicalPrescriptions", "Admin")">Đơn thuốc</a></li>
+    </ul>
+</li>
 
                     <li class="nav-section">Commerce</li>
                     <li class="menu-group @((ViewData["ActiveParent"] as string) == "Commerce" ? "menu-open" : "")">
