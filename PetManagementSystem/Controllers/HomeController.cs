@@ -26,6 +26,18 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult Doctors()
+    {
+        // For now, return empty view; later can fetch from Veterinarians table
+        return View();
+    }
+
+    public IActionResult Blog()
+    {
+        // For now, return empty view; later can fetch from BlogPosts table if exists
+        return View();
+    }
+
     public IActionResult Privacy()
     {
         return View();

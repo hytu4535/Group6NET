@@ -5,6 +5,7 @@ namespace PetManagementSystem.Repositories;
 public interface IUserRepository
 {
     Task<User?> GetByUsernameAsync(string username);
+    Task<User?> GetByEmailAsync(string email);
     Task<User?> GetByIdAsync(int id);
     Task<User?> GetUserWithRoleAndPermissionsAsync(string username);
     Task<List<User>> GetAllWithRoleAsync();

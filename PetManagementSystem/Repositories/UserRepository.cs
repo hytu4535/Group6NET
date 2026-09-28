@@ -11,7 +11,15 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
         var normalized = username?.Trim() ?? string.Empty;
         return await dbContext.Users
             .Include(x => x.Role)
-            .FirstOrDefaultAsync(x => x.Username.Trim() == normalized);
+            .FirstOrDefaultAsync(x => (x.Username ?? string.Empty).Trim() == normalized);
+    }
+
+    public async Task<User?> GetByEmailAsync(string email)
+    {
+        var normalized = email?.Trim() ?? string.Empty;
+        return await dbContext.Users
+            .Include(x => x.Role)
+            .FirstOrDefaultAsync(x => (x.Email ?? string.Empty).Trim() == normalized);
     }
 
     public async Task<User?> GetByIdAsync(int id)
@@ -25,7 +33,7 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
     {
         var normalized = username?.Trim() ?? string.Empty;
         var user = await dbContext.Users
-            .FirstOrDefaultAsync(x => x.Username.Trim() == normalized);
+            .FirstOrDefaultAsync(x => (x.Username ?? string.Empty).Trim() == normalized);
 
         if (user is null)
         {

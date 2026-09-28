@@ -1,0 +1,85 @@
+@model IEnumerable<PetManagementSystem.Models.Appointment>
+
+@{
+    ViewData["Title"] = "Lịch hẹn của tôi";
+}
+
+<h2 class="mb-4">Lịch hẹn của tôi</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Bạn chưa có lịch hẹn nào. <a asp-controller="Home" asp-action="Booking">Đặt lịch hẹn</a>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Ngày</th>
+                    <th>Giờ</th>
+                    <th>Thú cưng</th>
+                    <th>Bác sĩ</th>
+                    <th>Lý do</th>
+                    <th>Trạng thái</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var appt in Model)
+                {
+                    <tr>
+                        <td>@appt.AppointmentDate.ToString("dd/MM/yyyy")</td>
+                        <td>@appt.AppointmentTime.ToString(@"hh\:mm")</td>
+                        <td>
+                            @if (appt.Pet != null)
+                            {
+                                <strong>@appt.Pet.Name</strong>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Không có thông tin</span>
+                            }
+                        </td>
+                        <td>
+                            @if (appt.Veterinarian != null)
+                            {
+                                <strong>@appt.Veterinarian.User?.FullName ?? "Bác sĩ"</strong>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Chưa chỉ định</span>
+                            }
+                        </td>
+                        <td>@appt.Reason</td>
+                        <td>
+                            @switch (appt.Status)
+                            {
+                                case 0:
+                                    <span class="badge bg-secondary">Chờ xác nhận</span>
+                                    break;
+                                case 1:
+                                    <span class="badge bg-success">Đã xác nhận</span>
+                                    break;
+                                case 2:
+                                    <span class="badge bg-info">Đã hoàn thành</span>
+                                    break;
+                                case 3:
+                                    <span class="badge bg-danger">Đã hủy</span>
+                                    break;
+                                default:
+                                    <span class="badge bg-secondary">Khác</span>
+                                    break;
+                            }
+                        </td>
+                        <td>
+                            <a asp-controller="Appointment" asp-action="Details" asp-route-id="@appt.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

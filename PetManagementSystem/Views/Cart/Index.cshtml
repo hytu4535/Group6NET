@@ -1,0 +1,105 @@
+@model IEnumerable<PetManagementSystem.Models.CartItem>
+
+@{
+    ViewData["Title"] = "Giỏ hàng";
+}
+
+<h2 class="mb-4">Giỏ hàng của tôi</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Giỏ hàng của bạn đang trống. <a asp-controller="Product" asp-action="Index">Tiếp tục mua sắm</a>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Sản phẩm</th>
+                    <th>Giá</th>
+                    <th>Số lượng</th>
+                    <th>Thành tiền</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <img src="@(item.Product?.ImageUrl ?? "/images/default-product.jpg")" alt="@item.Product?.ProductName" class="me-2" style="width: 50px; height: 50px; object-fit: cover;">
+                                <div>
+                                    <strong>@item.Product?.ProductName</strong><br>
+                                    <small class="text-muted">@item.Product?.Description</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>@(item.Product?.SellPrice.ToString("#,##0") + "đ")</td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm qty-input" value="@item.Quantity" min="1" data-item-id="@item.Id" />
+                        </td>
+                        <td>@(((item.Product?.SellPrice ?? 0) * item.Quantity).ToString("#,##0") + "đ")</td>
+                        <td>
+                            <a asp-controller="Cart" asp-action="Remove" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Xóa</a>
+                        </td>
+                    </tr>
+                }
+                <tr class="table-light">
+                    <td colspan="3" class="text-end fw-bold">Tổng cộng:</td>
+                    <td id="cart-total" class="fw-bold">
+                        @{
+                            decimal total = Model.Sum(i => (i.Product?.SellPrice ?? 0) * i.Quantity);
+                            @(total.ToString("#,##0") + "đ")
+                        }
+                    </td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-4">
+        <a asp-controller="Product" asp-action="Index" class="btn btn-outline-secondary me-2">Tiếp tục mua sắm</a>
+        <a asp-controller="Cart" asp-action="Checkout" class="btn btn-success">Thanh toán</a>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $(".qty-input").change(function () {
+                var qtyInput = $(this);
+                var newQty = parseInt(qtyInput.val()) || 1;
+                if (newQty < 1) newQty = 1;
+                qtyInput.val(newQty);
+
+                var itemId = qtyInput.data("item-id");
+                var row = qtyInput.closest("tr");
+                var priceCell = row.find("td:nth-child(2)");
+                var price = parseFloat(priceCell.text().replace(/[^\d,-]/g, "")) || 0;
+                var totalCell = row.find("td:nth-child(4)");
+                var total = price * newQty;
+                totalCell.text(total.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) + " đ");
+
+                // Update cart total
+                var cartTotal = 0;
+                $(".qty-input").each(function () {
+                    var qty = parseInt($(this).val()) || 1;
+                    var price = parseFloat($(this).closest("tr").find("td:nth-child(2)").text().replace(/[^\d,-]/g, "")) || 0;
+                    cartTotal += price * qty;
+                });
+                $("#cart-total").text(cartTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) + " đ");
+
+                // Send update to server (optional)
+                $.post("/Cart/UpdateQuantity", { id: itemId, quantity: newQty })
+                    .fail(function () {
+                        alert("Có lỗi xảy ra khi cập nhật số lượng.");
+                    });
+            });
+        });
+    </script>
+}

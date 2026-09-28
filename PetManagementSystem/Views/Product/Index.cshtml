@@ -1,0 +1,40 @@
+@model IEnumerable<PetManagementSystem.Models.Product>
+
+@{
+    ViewData["Title"] = "Sản phẩm";
+}
+
+<h2 class="mb-4">Sản phẩm của chúng tôi</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Hiện tại chưa có sản phẩm nào được đăng ký.
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        @foreach (var product in Model)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="ratio ratio-1x1">
+                        <img src="@(product.ImageUrl ?? "/images/default-product.jpg")" class="card-img-top" alt="@product.ProductName">
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">@product.ProductName</h5>
+                        <p class="card-text flex-grow-1">
+                            @product.Description
+                        </p>
+                        <div class="mt-3">
+                            <strong>Giá:</strong> @product.SellPrice.ToString("#,##0") đ<br>
+                            <strong>Kho:</strong> @product.StockQuantity @product.Unit
+                        </div>
+                        <a asp-controller="Product" asp-action="Details" asp-route-id="@product.Id" class="btn btn-primary mt-auto">Mua ngay</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
