@@ -73,7 +73,11 @@ namespace PetManagementSystem.Controllers
         // POST: /Admin/UpdatePet
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdatePet(Pet pet)
+        public async Task<IActionResult> UpdatePet(
+            Pet pet,
+            string? searchKeyword,
+            int page = 1,
+            int pageSize = 10)
         {
             if (ModelState.IsValid)
             {
@@ -88,7 +92,12 @@ namespace PetManagementSystem.Controllers
                 }
             }
 
-            return RedirectToAction(nameof(Pets));
+            else
+            {
+                TempData["ErrorMessage"] = "Dữ liệu nhập vào không hợp lệ!";
+            }
+
+            return RedirectToAction(nameof(Pets), new { searchKeyword, page, pageSize });
         }
 
         // POST: /Admin/DeletePet
