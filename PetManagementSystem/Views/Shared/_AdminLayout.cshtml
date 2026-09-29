@@ -40,8 +40,6 @@
                                         href="@Url.Action("Users", "Identity")">Người dùng</a></li>
                                         <li class="@(ViewData["Active"] as string == "Roles" ? "active" : "")"><a
                                             href="@Url.Action("Roles", "Identity")">Vai trò</a></li>
-                                            <li class="@(ViewData["Active"] as string == "Permissions" ? "active" : "")"><a
-                                                href="@Url.Action("Permissions", "Identity")">Phân quyền</a></li>
                                                 <li class="@(ViewData["Active"] as string == "Staff" ? "active" : "")"><a
                                                     href="@Url.Action("Staff", "Identity")">Nhân viên</a></li>
                                                     <li class="@(ViewData["Active"] as string == "Veterinarians" ? "active" : "")"><a
@@ -91,13 +89,10 @@
                         <ul id="commerce-menu" class="submenu">
                             <li class="@(ViewData["Active"] as string == "Suppliers" ? "active" : "")"><a href="@Url.Action("Suppliers", "Commerce")">Nhà cung cấp</a></li>
                             <li class="@(ViewData["Active"] as string == "ImportReceipts" ? "active" : "")"><a href="@Url.Action("ImportReceipts", "Commerce")">Phiếu nhập kho</a></li>
-                            <li class="@(ViewData["Active"] as string == "ImportDetails" ? "active" : "")"><a href="@Url.Action("ImportDetails", "Commerce")">Chi tiết phiếu nhập</a></li>
                             <li class="@(ViewData["Active"] as string == "Categories" ? "active" : "")"><a href="@Url.Action("Categories", "Commerce")">Danh mục</a></li>
                             <li class="@(ViewData["Active"] as string == "Products" ? "active" : "")"><a href="@Url.Action("Products", "Commerce")">Sản phẩm</a></li>
                             <li class="@(ViewData["Active"] as string == "Carts" ? "active" : "")"><a href="@Url.Action("Carts", "Commerce")">Giỏ hàng</a></li>
-                            <li class="@(ViewData["Active"] as string == "CartItems" ? "active" : "")"><a href="@Url.Action("CartItems", "Commerce")">Chi tiết giỏ hàng</a></li>
                             <li class="@(ViewData["Active"] as string == "Orders" ? "active" : "")"><a href="@Url.Action("Orders", "Commerce")">Đơn hàng</a></li>
-                            <li class="@(ViewData["Active"] as string == "OrderItems" ? "active" : "")"><a href="@Url.Action("OrderItems", "Commerce")">Chi tiết đơn hàng</a></li>
                             <li class="@(ViewData["Active"] as string == "Payments" ? "active" : "")"><a href="@Url.Action("Payments", "Commerce")">Thanh toán</a></li>
                             <li class="@(ViewData["Active"] as string == "Invoices" ? "active" : "")"><a href="@Url.Action("Invoices", "Commerce")">Hóa đơn</a></li>
                         </ul>
