@@ -1,0 +1,56 @@
+@model PetManagementSystem.Models.User
+@{
+    ViewData["Title"] = "Hồ sơ của tôi";
+}
+
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0">Hồ sơ của tôi</h4>
+                </div>
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] is string successMessage)
+                    {
+                        <div class="alert alert-success">@successMessage</div>
+                    }
+
+                    <dl class="row">
+                        <dt class="col-sm-3">Họ tên</dt>
+                        <dd class="col-sm-9">@Model.FullName</dd>
+
+                        <dt class="col-sm-3">Tên đăng nhập</dt>
+                        <dd class="col-sm-9">@Model.Username</dd>
+
+                        <dt class="col-sm-3">Email</dt>
+                        <dd class="col-sm-9">@Model.Email</dd>
+
+                        <dt class="col-sm-3">Số điện thoại</dt>
+                        <dd class="col-sm-9">@Model.PhoneNumber</dd>
+
+                        <dt class="col-sm-3">Địa chỉ</dt>
+                        <dd class="col-sm-9">@Model.Address</dd>
+
+                        <dt class="col-sm-3">Trạng thái</dt>
+                        <dd class="col-sm-9">@Model.Status</dd>
+
+                        <dt class="col-sm-3">Ngày tạo</dt>
+                        <dd class="col-sm-9">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</dd>
+
+                        @if (Model.UpdatedAt.HasValue)
+                        {
+                            <dt class="col-sm-3">Ngày cập nhật</dt>
+                            <dd class="col-sm-9">@Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+                        }
+                    </dl>
+
+                    <div class="mt-4">
+                        <a asp-action="EditProfile" class="btn btn-outline-primary me-2">Chỉnh sửa hồ sơ</a>
+                        <a asp-action="ChangePassword" class="btn btn-outline-secondary">Đổi mật khẩu</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

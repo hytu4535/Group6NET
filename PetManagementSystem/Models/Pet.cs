@@ -16,4 +16,5 @@ public class Pet
     // Navigation properties
     public User? User { get; set; }
     public ICollection<PetPackage> PetPackages { get; set; } = new List<PetPackage>();
+    public ICollection<PetImage> PetImages { get; set; } = new List<PetImage>();
 }

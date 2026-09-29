@@ -1,0 +1,100 @@
+@model PetManagementSystem.ViewModels.LoginViewModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập - Pet Management</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+        html, body {
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow-x: hidden;
+        }
+        body {
+            background: url('/images/background_user_pastel.jpg') no-repeat center center fixed !important;
+            background-size: cover !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* Style giúp khung login nổi bật trên ảnh nền pastel */
+        .login-card {
+            background: rgba(255, 255, 255, 0.9) !important;
+            backdrop-filter: blur(8px);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.18);
+            padding: 30px;
+            max-width: 420px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        @{
+            var successMessage = TempData["SuccessMessage"] as string;
+        }
+        @if (successMessage != null)
+        {
+            <div class="alert alert-success">@successMessage</div>
+        }
+
+        @{
+            var infoMessage = TempData["InfoMessage"] as string;
+        }
+        @if (infoMessage != null)
+        {
+            <div class="alert alert-info">@infoMessage</div>
+        }
+
+        <div class="text-center mb-4">
+            <h4 class="mb-4">Đăng nhập</h4>
+        </div>
+
+        <form asp-action="Login" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label asp-for="Username" class="form-label">Tên đăng nhập</label>
+                <input asp-for="Username" class="form-control" autocomplete="username" />
+                <span asp-validation-for="Username" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label">Mật khẩu</label>
+                <input asp-for="Password" class="form-control" autocomplete="current-password" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+
+            <div class="form-check mb-3">
+                <input asp-for="RememberMe" class="form-check-input" />
+                <label asp-for="RememberMe" class="form-check-label">Ghi nhớ đăng nhập</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
+        </form>
+
+        <div class="text-center mt-3">
+            <span>Chưa có tài khoản?</span>
+            <a asp-action="Register" class="text-decoration-none">Đăng ký</a>
+        </div>
+
+        <div class="text-center mt-2">
+            <a href="/Account/ForgotPassword" class="text-decoration-none">Quên mật khẩu?</a>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <partial name="_ValidationScriptsPartial" />
+</body>
+</html>

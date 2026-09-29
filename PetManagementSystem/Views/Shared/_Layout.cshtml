@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
@@ -21,9 +21,40 @@
                     <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Trang chủ</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Services">Dịch vụ</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Booking">Đặt lịch</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Product" asp-action="Index">Sản phẩm</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Doctors">Bác sĩ thú y</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Blog">Bài viết & Tips</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Contact">Liên hệ</a></li>
-                        <li class="nav-item"><a class="btn btn-warning text-white ms-lg-2" asp-controller="Admin" asp-action="Dashboard">Vào trang Admin</a></li>
+                        <li class="nav-item">
+                            <a class="btn btn-warning text-white ms-lg-2" asp-controller="Home" asp-action="Booking">Đặt lịch ngay</a>
+                        </li>
+                    </ul>
+                    <!-- Account dropdown -->
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle text-muted" href="#" id="accountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-circle"></i> Tài khoản
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="accountDropdown">
+                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="MyPets"><i class="bi bi-paw-fill me-2"></i>Thú cưng của tôi</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="MyAppointments"><i class="bi bi-calendar-check-fill me-2"></i>Lịch hẹn của tôi</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="MyOrders"><i class="bi bi-cart-fill me-2"></i>Đơn hàng của tôi</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Cart" asp-action="Index"><i class="bi bi-basket me-2"></i>Giỏ hàng</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile"><i class="bi bi-person me-2"></i>Hồ sơ cá nhân</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-key-fill me-2"></i>Đổi mật khẩu</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" asp-controller="Account" asp-action="Logout"><i class="bi bi-box-arrow-left me-2"></i>Đăng xuất</a></li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Login">Đăng nhập</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Register">Đăng ký</a></li>
+                        }
                     </ul>
                 </div>
             </div>

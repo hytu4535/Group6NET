@@ -114,6 +114,16 @@ public class PetService(
                 return (false, "Bạn không có quyền chỉnh sửa thú cưng này.");
             }
 
+            if (isUserAdmin)
+            {
+                if (pet.UserId <= 0)
+                {
+                    return (false, "Vui lòng chọn chủ nuôi cho thú cưng.");
+                }
+
+                existingPet.UserId = pet.UserId;
+            }
+
             existingPet.Name = pet.Name.Trim();
             existingPet.Species = pet.Species.Trim();
             existingPet.Breed = pet.Breed?.Trim();

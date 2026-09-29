@@ -1,0 +1,40 @@
+@model IEnumerable<PetManagementSystem.Models.Service>
+
+@{
+    ViewData["Title"] = "Dịch vụ";
+}
+
+<h2 class="mb-4">Dịch vụ của chúng tôi</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Hiện tại chưa có dịch vụ nào được đăng ký.
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        @foreach (var service in Model)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="ratio ratio-16x9">
+                        <img src="@(service.ImageUrl ?? "/images/default-service.jpg")" class="card-img-top" alt="@service.Name">
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">@service.Name</h5>
+                        <p class="card-text flex-grow-1">
+                            @service.Description
+                        </p>
+                        <div class="mt-3">
+                            <strong>Giá:</strong> @service.Price.ToString("#,##0") đ<br>
+                            <strong>Thời lượng:</strong> @service.DurationMinutes phút
+                        </div>
+                        <a asp-controller="Service" asp-action="Details" asp-route-id="@service.Id" class="btn btn-primary mt-auto">Xem chi tiết</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

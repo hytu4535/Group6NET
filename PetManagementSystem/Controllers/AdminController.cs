@@ -68,7 +68,11 @@ namespace PetManagementSystem.Controllers
         // POST: /Admin/UpdatePet
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdatePet(Pet pet)
+        public async Task<IActionResult> UpdatePet(
+            Pet pet,
+            string? searchKeyword,
+            int page = 1,
+            int pageSize = 10)
         {
             if (ModelState.IsValid)
             {
@@ -83,7 +87,12 @@ namespace PetManagementSystem.Controllers
                 }
             }
 
-            return RedirectToAction(nameof(Pets));
+            else
+            {
+                TempData["ErrorMessage"] = "Dữ liệu nhập vào không hợp lệ!";
+            }
+
+            return RedirectToAction(nameof(Pets), new { searchKeyword, page, pageSize });
         }
 
         // POST: /Admin/DeletePet
@@ -704,9 +713,9 @@ namespace PetManagementSystem.Controllers
             SetNav("Hồ sơ sức khỏe", "PetHealthRecords", "ServiceMedical");
             var healthRecords = await context.PetHealthRecords
                 .Include(h => h.Pet)
-                    .ThenInclude(p => p.User)
+                    .ThenInclude(p => p!.User)
                 .Include(h => h.Veterinarian)
-                    .ThenInclude(v => v.User)
+                    .ThenInclude(v => v!.User)
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -728,9 +737,9 @@ namespace PetManagementSystem.Controllers
                 SetNav("Hồ sơ sức khỏe", "PetHealthRecords", "ServiceMedical");
                 var healthRecords = await context.PetHealthRecords
                     .Include(h => h.Pet)
-                        .ThenInclude(p => p.User)
+                        .ThenInclude(p => p!.User)
                     .Include(h => h.Veterinarian)
-                        .ThenInclude(v => v.User)
+                        .ThenInclude(v => v!.User)
                     .AsNoTracking()
                     .ToListAsync();
                 ViewBag.Pets = await context.Pets.AsNoTracking().ToListAsync();
@@ -834,9 +843,9 @@ namespace PetManagementSystem.Controllers
             SetNav("Lịch sử tiêm phòng", "VaccinationRecords", "ServiceMedical");
             var vaccinationRecords = await context.VaccinationRecords
                 .Include(v => v.Pet)
-                    .ThenInclude(p => p.User)
+                    .ThenInclude(p => p!.User)
                 .Include(v => v.Veterinarian)
-                    .ThenInclude(vt => vt.User)
+                    .ThenInclude(vt => vt!.User)
                 .AsNoTracking()
                 .ToListAsync();
 
@@ -863,9 +872,9 @@ namespace PetManagementSystem.Controllers
                 SetNav("Lịch sử tiêm phòng", "VaccinationRecords", "ServiceMedical");
                 var vaccinationRecords = await context.VaccinationRecords
                     .Include(v => v.Pet)
-                        .ThenInclude(p => p.User)
+                        .ThenInclude(p => p!.User)
                     .Include(v => v.Veterinarian)
-                        .ThenInclude(vt => vt.User)
+                        .ThenInclude(vt => vt!.User)
                     .AsNoTracking()
                     .ToListAsync();
                 ViewBag.Pets = await context.Pets.AsNoTracking().ToListAsync();
@@ -954,17 +963,17 @@ namespace PetManagementSystem.Controllers
             SetNav("Đơn thuốc", "MedicalPrescriptions", "ServiceMedical");
             var prescriptions = await context.MedicalPrescriptions
                 .Include(m => m.PetHealthRecord)
-                    .ThenInclude(r => r.Pet)
-                        .ThenInclude(p => p.User)
+                    .ThenInclude(r => r!.Pet)
+                        .ThenInclude(p => p!.User)
                 .Include(m => m.PetHealthRecord)
-                    .ThenInclude(r => r.Veterinarian)
-                        .ThenInclude(v => v.User)
+                    .ThenInclude(r => r!.Veterinarian)
+                        .ThenInclude(v => v!.User)
                 .AsNoTracking()
                 .ToListAsync();
 
             ViewBag.HealthRecords = await context.PetHealthRecords
                 .Include(r => r.Pet)
-                    .ThenInclude(p => p.User)
+                    .ThenInclude(p => p!.User)
                 .AsNoTracking()
                 .ToListAsync();
             return View(prescriptions);
@@ -983,16 +992,16 @@ namespace PetManagementSystem.Controllers
                 SetNav("Đơn thuốc", "MedicalPrescriptions", "ServiceMedical");
                 var prescriptions = await context.MedicalPrescriptions
                     .Include(m => m.PetHealthRecord)
-                        .ThenInclude(r => r.Pet)
-                            .ThenInclude(p => p.User)
+                        .ThenInclude(r => r!.Pet)
+                            .ThenInclude(p => p!.User)
                     .Include(m => m.PetHealthRecord)
-                        .ThenInclude(r => r.Veterinarian)
-                            .ThenInclude(v => v.User)
+                        .ThenInclude(r => r!.Veterinarian)
+                            .ThenInclude(v => v!.User)
                     .AsNoTracking()
                     .ToListAsync();
                 ViewBag.HealthRecords = await context.PetHealthRecords
                     .Include(r => r.Pet)
-                        .ThenInclude(p => p.User)
+                        .ThenInclude(p => p!.User)
                     .AsNoTracking()
                     .ToListAsync();
                 ViewBag.ShowModal = "prescriptionModal";
