@@ -1,31 +1,184 @@
-﻿@{
-    ViewData["Title"] = "Trang chủ";
+@{
+    Layout = "_Layout";
 }
 
-<section class="hero-section p-5 rounded-4 mb-4 text-center">
-    <h1 class="display-5 fw-bold">Chăm sóc thú cưng của bạn toàn diện</h1>
-    <p class="lead text-muted">Đặt lịch khám, spa, tiêm phòng và mua sản phẩm cho thú cưng chỉ trong vài bước.</p>
-    <a class="btn btn-warning text-white btn-lg me-2" asp-action="Booking">Đặt lịch ngay</a>
-    <a class="btn btn-outline-secondary btn-lg" asp-action="Services">Xem dịch vụ</a>
-</section>
+<style>
+    .hero-banner {
+        background: linear-gradient(135deg, #fcdad7 0%, #fbc4c0 100%);
+        border-radius: 24px;
+        position: relative;
+        overflow: hidden;
+        padding: 4rem 2rem;
+    }
+    .paw-bg-1, .paw-bg-2 {
+        position: absolute;
+        opacity: 0.15;
+        font-size: 5rem;
+        color: #ff7b72;
+        z-index: 1;
+    }
+    .paw-bg-1 {
+        top: 10px;
+        left: 20px;
+        transform: rotate(-25deg);
+    }
+    .paw-bg-2 {
+        bottom: 10px;
+        right: 30px;
+        transform: rotate(25deg);
+    }
+    .hero-content {
+        position: relative;
+        z-index: 2;
+    }
+    .hero-title {
+        color: #4a2c2a;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }
+    .hero-desc {
+        color: #5c3a38;
+        font-size: 1.15rem;
+    }
+    .btn-hero-primary {
+        background-color: #ff7b72;
+        border: none;
+        color: white;
+        border-radius: 50px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(255, 123, 114, 0.3);
+        transition: all 0.2s;
+    }
+    .btn-hero-primary:hover {
+        background-color: #fa655b;
+        color: white;
+        transform: translateY(-2px);
+    }
+    .btn-hero-outline {
+        background: transparent;
+        border: 2px solid #4a2c2a;
+        color: #4a2c2a;
+        border-radius: 50px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    .btn-hero-outline:hover {
+        background-color: #4a2c2a;
+        color: white;
+    }
+    .service-card {
+        background-color: #ffffff;
+        border-radius: 16px;
+        border: none;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+        transition: transform 0.2s, box-shadow 0.2s;
+        padding: 2rem 1.5rem;
+        height: 100%;
+    }
+    .service-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+    }
+    .service-icon-box {
+        width: 60px;
+        height: 60px;
+        background-color: #fff0ef;
+        color: #ff7b72;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        margin-bottom: 1.25rem;
+    }
+    .service-title {
+        color: #4a2c2a;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+    .service-desc {
+        color: #7a5c5a;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin-bottom: 0;
+    }
+</style>
 
-<div class="row g-3">
+<!-- Hero Banner Block -->
+<div class="hero-banner mb-5">
+    <div class="paw-bg-1"><i class="bi bi-shield-fill">🐾</i></div>
+    <div class="paw-bg-2"><i class="bi bi-shield-fill">🐾</i></div>
+    
+    <div class="container hero-content">
+        <div class="row align-items-center">
+            <div class="col-lg-7 text-lg-start text-center mb-4 mb-lg-0">
+                <h1 class="hero-title display-5 fw-bold mb-3">Chăm sóc thú cưng của bạn toàn diện</h1>
+                <p class="hero-desc mb-4">Đặt lịch khám, spa, tiêm phòng và mua sản phẩm cho thú cưng chỉ trong vài bước.</p>
+                <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
+                    <a href="#" class="btn btn-hero-primary">Đặt lịch ngay</a>
+                    <a href="#" class="btn btn-hero-outline">Xem dịch vụ</a>
+                </div>
+            </div>
+            <div class="col-lg-5 text-center">
+                <!-- SVG Illustration vector chó mèo dễ thương -->
+                <svg width="100%" height="280" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="200" cy="150" r="120" fill="#ffefed" />
+                    <!-- Cute Cat Illustration -->
+                    <g transform="translate(120, 80)">
+                        <path d="M40 80 Q60 20 80 80 Z" fill="#ff7b72" />
+                        <path d="M120 80 Q140 20 160 80 Z" fill="#ff7b72" />
+                        <circle cx="100" cy="100" r="50" fill="#ff9b94" />
+                        <ellipse cx="100" cy="115" rx="35" ry="25" fill="#fff" />
+                        <circle cx="85" cy="95" r="6" fill="#4a2c2a" />
+                        <circle cx="115" cy="95" r="6" fill="#4a2c2a" />
+                        <polygon points="100,105 95,112 105,112" fill="#4a2c2a" />
+                        <path d="M95 118 Q100 125 105 118" stroke="#4a2c2a" stroke-width="2" stroke-linecap="round" fill="none" />
+                    </g>
+                    <!-- Cute Dog Illustration -->
+                    <g transform="translate(200, 100)">
+                        <ellipse cx="50" cy="80" rx="30" ry="20" fill="#e06c64" transform="rotate(-30 50 80)" />
+                        <ellipse cx="110" cy="80" rx="30" ry="20" fill="#e06c64" transform="rotate(30 110 80)" />
+                        <circle cx="80" cy="90" r="45" fill="#ff9b94" />
+                        <circle cx="65" cy="85" r="5" fill="#4a2c2a" />
+                        <circle cx="95" cy="85" r="5" fill="#4a2c2a" />
+                        <ellipse cx="80" cy="98" rx="10" ry="8" fill="#4a2c2a" />
+                        <path d="M75 108 Q80 114 85 108" stroke="#4a2c2a" stroke-width="2" stroke-linecap="round" fill="none" />
+                    </g>
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 3 Thẻ Dịch Vụ Nổi Bật -->
+<div class="row g-4 mb-5">
     <div class="col-md-4">
-        <div class="feature-card h-100">
-            <h5>Khám thú y</h5>
-            <p class="text-muted mb-0">Đội ngũ bác sĩ nhiều kinh nghiệm, kiểm tra sức khỏe định kỳ.</p>
+        <div class="service-card shadow-sm">
+            <div class="service-icon-box">
+                <i class="bi bi-heart-pulse-fill"></i>
+            </div>
+            <h4 class="service-title">Khám thú y</h4>
+            <p class="service-desc">Đội ngũ bác sĩ nhiều kinh nghiệm, kiểm tra sức khỏe định kỳ cho thú cưng.</p>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="feature-card h-100">
-            <h5>Spa & Grooming</h5>
-            <p class="text-muted mb-0">Tắm, cắt tỉa lông, vệ sinh tai móng chuyên nghiệp.</p>
+        <div class="service-card shadow-sm">
+            <div class="service-icon-box">
+                <i class="bi bi-scissors"></i>
+            </div>
+            <h4 class="service-title">Spa & Grooming</h4>
+            <p class="service-desc">Tắm, cắt tỉa lông, vệ sinh tai móng chuyên nghiệp giúp thú cưng luôn sạch đẹp.</p>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="feature-card h-100">
-            <h5>Phụ kiện & Thức ăn</h5>
-            <p class="text-muted mb-0">Sản phẩm chính hãng phù hợp cho từng giống chó mèo.</p>
+        <div class="service-card shadow-sm">
+            <div class="service-icon-box">
+                <i class="bi bi-bag-heart-fill"></i>
+            </div>
+            <h4 class="service-title">Phụ kiện & Thức ăn</h4>
+            <p class="service-desc">Sản phẩm chính hãng chất lượng cao phù hợp cho từng giống chó mèo.</p>
         </div>
     </div>
 </div>
