@@ -1,0 +1,1125 @@
+
+@{
+    ViewData["Title"] = "Nhận diện thú cưng";
+}
+
+<style>
+    .recognition-page {
+        --ai-primary: #0f766e;
+        --ai-primary-dark: #115e59;
+        --ai-bg: #f5f8fa;
+        --ai-border: #e3e9ee;
+        --ai-text: #172b3a;
+        --ai-muted: #718096;
+        color: var(--ai-text);
+        padding: 8px 0 32px;
+    }
+
+    .recognition-page * {
+        box-sizing: border-box;
+    }
+
+    .ai-heading {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 26px;
+    }
+
+    .ai-eyebrow {
+        color: var(--ai-primary);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 1.3px;
+        text-transform: uppercase;
+        margin-bottom: 9px;
+    }
+
+    .ai-heading h1 {
+        font-size: clamp(25px, 3vw, 32px);
+        line-height: 1.25;
+        font-weight: 800;
+        letter-spacing: -0.8px;
+        margin: 0 0 9px;
+    }
+
+    .ai-heading p {
+        margin: 0;
+        color: var(--ai-muted);
+        font-size: 14px;
+        line-height: 1.7;
+    }
+
+    .ai-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 13px;
+        border: 1px solid #b9e7d5;
+        border-radius: 30px;
+        background: #effbf5;
+        color: #16704d;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .ai-status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #22a06b;
+    }
+
+    .ai-layout {
+        display: grid;
+        grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.5fr);
+        gap: 22px;
+        align-items: start;
+    }
+
+    .ai-panel {
+        min-width: 0;
+        background: #fff;
+        border: 1px solid var(--ai-border);
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(22, 45, 65, 0.035);
+    }
+
+    .ai-panel-header {
+        padding: 21px 22px 17px;
+        border-bottom: 1px solid #edf1f4;
+    }
+
+    .ai-panel-header h2 {
+        font-size: 16px;
+        font-weight: 800;
+        margin: 0 0 6px;
+    }
+
+    .ai-panel-header p {
+        color: var(--ai-muted);
+        font-size: 12px;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .ai-panel-body {
+        padding: 22px;
+    }
+
+    .ai-upload-zone {
+        min-height: 245px;
+        padding: 23px 16px;
+        border: 1.5px dashed #b7cbd0;
+        border-radius: 14px;
+        background: #f8fbfc;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color .2s, background .2s;
+    }
+
+    .ai-upload-zone:hover,
+    .ai-upload-zone.dragging {
+        border-color: var(--ai-primary);
+        background: #effaf8;
+    }
+
+    .ai-upload-zone.has-image {
+        padding: 10px;
+        min-height: 245px;
+    }
+
+    .ai-upload-icon {
+        width: 58px;
+        height: 58px;
+        border-radius: 17px;
+        display: grid;
+        place-items: center;
+        background: #e0f4f0;
+        color: var(--ai-primary);
+        font-size: 27px;
+        margin-bottom: 17px;
+    }
+
+    .ai-upload-title {
+        font-size: 14px;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+
+    .ai-upload-description {
+        max-width: 235px;
+        color: var(--ai-muted);
+        font-size: 12px;
+        line-height: 1.7;
+    }
+
+    .ai-upload-description strong {
+        color: var(--ai-primary);
+    }
+
+    .ai-preview {
+        width: 100%;
+        max-height: 310px;
+        object-fit: contain;
+        border-radius: 10px;
+    }
+
+    .ai-file-input {
+        display: none;
+    }
+
+    .ai-file-meta {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        margin-top: 13px;
+        padding: 11px 12px;
+        border: 1px solid var(--ai-border);
+        border-radius: 10px;
+        background: #fff;
+    }
+
+    .ai-file-meta.visible {
+        display: flex;
+    }
+
+    .ai-file-name {
+        min-width: 0;
+        flex: 1;
+        font-size: 12px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .ai-file-size {
+        color: var(--ai-muted);
+        font-size: 11px;
+        margin-top: 4px;
+    }
+
+    .ai-text-button {
+        border: 0;
+        background: transparent;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 6px;
+        cursor: pointer;
+    }
+
+    .ai-primary-button {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        gap: 9px;
+        width: 100%;
+        border: 0;
+        border-radius: 11px;
+        padding: 13px 16px;
+        background: var(--ai-primary);
+        color: white;
+        font-size: 13px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: background .2s, transform .2s;
+    }
+
+    .ai-primary-button:hover:not(:disabled) {
+        background: var(--ai-primary-dark);
+        transform: translateY(-1px);
+    }
+
+    .ai-primary-button:disabled {
+        opacity: .55;
+        cursor: not-allowed;
+    }
+
+    .ai-guideline {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 13px;
+        margin-top: 18px;
+        background: #f4f8fb;
+        border-radius: 11px;
+        color: var(--ai-muted);
+        font-size: 12px;
+        line-height: 1.7;
+    }
+
+    .ai-guideline-icon {
+        color: var(--ai-primary);
+        font-size: 17px;
+        flex-shrink: 0;
+    }
+
+    .ai-result-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+    }
+
+    .ai-result-header h2 {
+        font-size: 17px;
+        font-weight: 800;
+        margin: 0 0 5px;
+    }
+
+    .ai-result-header p {
+        color: var(--ai-muted);
+        font-size: 12px;
+        margin: 0;
+    }
+
+    .ai-count {
+        padding: 7px 10px;
+        background: #e8f6f3;
+        color: var(--ai-primary-dark);
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    .ai-result-state {
+        min-height: 310px;
+        padding: 25px 18px;
+        border: 1px solid var(--ai-border);
+        border-radius: 14px;
+        background: #fbfcfd;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+
+    .ai-state-icon {
+        display: grid;
+        place-items: center;
+        width: 64px;
+        height: 64px;
+        border-radius: 20px;
+        background: #edf5f6;
+        color: #64818c;
+        font-size: 29px;
+        margin-bottom: 17px;
+    }
+
+    .ai-result-state h3 {
+        font-size: 15px;
+        font-weight: 800;
+        margin: 0 0 8px;
+    }
+
+    .ai-result-state p {
+        max-width: 300px;
+        color: var(--ai-muted);
+        font-size: 12px;
+        line-height: 1.8;
+        margin: 0;
+    }
+
+    .ai-loading-spinner {
+        width: 36px;
+        height: 36px;
+        border: 3px solid #d5e9e6;
+        border-top-color: var(--ai-primary);
+        border-radius: 50%;
+        animation: ai-spin .8s linear infinite;
+        margin-bottom: 18px;
+    }
+
+    @@keyframes ai-spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .ai-candidates {
+        display: grid;
+        gap: 13px;
+    }
+
+    .ai-candidate {
+        padding: 17px;
+        border: 1px solid var(--ai-border);
+        border-radius: 14px;
+        background: white;
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+    .ai-candidate:hover {
+        border-color: #b6dcd6;
+        box-shadow: 0 5px 16px rgba(15, 118, 110, .06);
+    }
+
+    .ai-candidate-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 15px;
+    }
+
+    .ai-pet-identity {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .ai-pet-avatar {
+        width: 47px;
+        height: 47px;
+        flex-shrink: 0;
+        display: grid;
+        place-items: center;
+        background: #e7f5f2;
+        color: var(--ai-primary);
+        border-radius: 13px;
+        font-size: 22px;
+    }
+
+    .ai-pet-name {
+        font-size: 15px;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+        margin-bottom: 5px;
+    }
+
+    .ai-pet-code {
+        color: var(--ai-muted);
+        font-size: 11px;
+    }
+
+    .ai-similarity {
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .ai-similarity-value {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--ai-primary);
+        letter-spacing: -.5px;
+    }
+
+    .ai-similarity-label {
+        color: var(--ai-muted);
+        font-size: 10px;
+        margin-top: 3px;
+    }
+
+    .ai-progress-track {
+        height: 5px;
+        border-radius: 10px;
+        background: #e9eff1;
+        overflow: hidden;
+        margin-bottom: 15px;
+    }
+
+    .ai-progress-bar {
+        height: 100%;
+        border-radius: inherit;
+        background: var(--ai-primary);
+    }
+
+    .ai-pet-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 13px;
+        padding-top: 14px;
+        border-top: 1px solid #edf1f4;
+    }
+
+    .ai-detail-label {
+        color: var(--ai-muted);
+        font-size: 10px;
+        margin-bottom: 5px;
+    }
+
+    .ai-detail-value {
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+    }
+
+    .ai-owner-contact {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        color: #64748b;
+        font-size: 11px;
+        overflow-wrap: anywhere;
+    }
+
+    .ai-confirm-button {
+        width: 100%;
+        margin-top: 15px;
+        border: 1px solid #b8dfd7;
+        border-radius: 9px;
+        background: #effaf7;
+        color: #0f766e;
+        padding: 10px 12px;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: background .2s;
+    }
+
+    .ai-confirm-button:hover:not(:disabled) {
+        background: #dff5ee;
+    }
+
+    .ai-confirm-button:disabled {
+        opacity: .65;
+        cursor: not-allowed;
+    }
+
+    .ai-notice {
+        display: none;
+        padding: 12px 14px;
+        border-radius: 10px;
+        font-size: 12px;
+        line-height: 1.7;
+        margin-bottom: 15px;
+    }
+
+    .ai-notice.visible {
+        display: block;
+    }
+
+    .ai-notice.error {
+        color: #a32d36;
+        background: #fff1f1;
+        border: 1px solid #ffd9dc;
+    }
+
+    .ai-notice.success {
+        color: #176b4b;
+        background: #effbf5;
+        border: 1px solid #cceedd;
+    }
+
+    .ai-result-footer {
+        color: var(--ai-muted);
+        font-size: 11px;
+        line-height: 1.7;
+        margin-top: 15px;
+    }
+
+    @@media (max-width: 1050px) {
+        .ai-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .ai-upload-zone {
+            min-height: 220px;
+        }
+    }
+
+    @@media (max-width: 600px) {
+        .ai-heading {
+            flex-direction: column;
+        }
+
+        .ai-panel-header,
+        .ai-panel-body {
+            padding: 17px;
+        }
+
+        .ai-candidate {
+            padding: 13px;
+        }
+
+        .ai-similarity-value {
+            font-size: 17px;
+        }
+    }
+</style>
+
+<div class="recognition-page">
+    <div class="ai-heading">
+        <div>
+            <div class="ai-eyebrow">Pet Clinic · AI Vision</div>
+            <h1>Nhận diện thú cưng</h1>
+            <p>
+                Tìm kiếm thú cưng trong hệ thống bằng hình ảnh,
+                sau đó xác nhận thông tin trước khi lưu lịch sử.
+            </p>
+        </div>
+
+        <div class="ai-status">
+            <span class="ai-status-dot"></span>
+            AI Recognition
+        </div>
+    </div>
+
+    <div class="ai-layout">
+        <section class="ai-panel">
+            <div class="ai-panel-header">
+                <h2>01. Hình ảnh đầu vào</h2>
+                <p>Tải ảnh rõ nét để AI tìm kiếm các thú cưng tương tự.</p>
+            </div>
+
+            <div class="ai-panel-body">
+                <form id="recognitionForm">
+                    <input
+                        type="file"
+                        id="imageInput"
+                        class="ai-file-input"
+                        accept="image/jpeg,image/png,image/webp" />
+
+                    <div
+                        id="uploadZone"
+                        class="ai-upload-zone"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Chọn ảnh thú cưng">
+
+                        <div id="uploadPlaceholder">
+                            <div class="ai-upload-icon">
+                                <i class="bi bi-cloud-arrow-up"></i>
+                            </div>
+
+                            <div class="ai-upload-title">
+                                Tải ảnh thú cưng lên
+                            </div>
+
+                            <div class="ai-upload-description">
+                                Kéo thả ảnh vào đây hoặc
+                                <strong>chọn ảnh từ máy tính</strong>.
+                                <br />
+                                Hỗ trợ JPG, PNG, WEBP.
+                            </div>
+                        </div>
+
+                        <img
+                            id="imagePreview"
+                            class="ai-preview"
+                            alt="Ảnh thú cưng được chọn"
+                            style="display:none" />
+                    </div>
+
+                    <div id="fileMeta" class="ai-file-meta">
+                        <i class="bi bi-file-earmark-image"
+                           style="font-size:21px;color:#0f766e"></i>
+
+                        <div style="min-width:0;flex:1">
+                            <div id="fileName" class="ai-file-name"></div>
+                            <div id="fileSize" class="ai-file-size"></div>
+                        </div>
+
+                        <button
+                            type="button"
+                            id="removeImage"
+                            class="ai-text-button">
+                            Xóa ảnh
+                        </button>
+                    </div>
+
+                    <button
+                        id="recognizeButton"
+                        type="submit"
+                        class="ai-primary-button"
+                        style="margin-top:17px"
+                        disabled>
+                        <i class="bi bi-stars"></i>
+                        Bắt đầu nhận diện
+                    </button>
+                </form>
+
+                <div class="ai-guideline">
+                    <i class="bi bi-lightbulb ai-guideline-icon"></i>
+                    <div>
+                        <strong>Lưu ý</strong><br />
+                        Ưu tiên ảnh nhìn rõ khuôn mặt hoặc đặc điểm
+                        nhận dạng của thú cưng. Kết quả AI chỉ là
+                        gợi ý; nhân viên cần xác nhận trước khi lưu.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="ai-panel">
+            <div class="ai-panel-header">
+                <h2>02. Kết quả nhận diện</h2>
+                <p>Đối chiếu thông tin và chọn đúng thú cưng.</p>
+            </div>
+
+            <div class="ai-panel-body">
+                <div id="notice" class="ai-notice"></div>
+
+                <div class="ai-result-header">
+                    <div>
+                        <h2>Danh sách ứng viên</h2>
+                        <p id="resultDescription">
+                            Kết quả sẽ xuất hiện sau khi phân tích ảnh.
+                        </p>
+                    </div>
+
+                    <span id="candidateCount" class="ai-count">
+                        0 ứng viên
+                    </span>
+                </div>
+
+                <div id="resultState" class="ai-result-state">
+                    <div class="ai-state-icon">
+                        <i class="bi bi-fingerprint"></i>
+                    </div>
+
+                    <h3>Sẵn sàng nhận diện</h3>
+
+                    <p>
+                        Chọn ảnh thú cưng ở khung bên trái.
+                        Hệ thống sẽ tìm các hồ sơ có đặc điểm hình ảnh
+                        tương đồng để nhân viên kiểm tra.
+                    </p>
+                </div>
+
+                <div id="candidates" class="ai-candidates"></div>
+
+                <div class="ai-result-footer">
+                    Độ tương đồng hình ảnh là điểm so khớp của mô hình,
+                    không phải xác suất chắc chắn thú cưng đã được nhận diện.
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+(() => {
+    const recognizeUrl = '@Url.Action("Recognize", "PetRecognition")';
+    const confirmUrl = '@Url.Action("Confirm", "PetRecognition")';
+
+    const form = document.getElementById("recognitionForm");
+    const imageInput = document.getElementById("imageInput");
+    const uploadZone = document.getElementById("uploadZone");
+    const uploadPlaceholder = document.getElementById("uploadPlaceholder");
+    const imagePreview = document.getElementById("imagePreview");
+    const fileMeta = document.getElementById("fileMeta");
+    const fileName = document.getElementById("fileName");
+    const fileSize = document.getElementById("fileSize");
+    const removeImage = document.getElementById("removeImage");
+    const recognizeButton = document.getElementById("recognizeButton");
+    const notice = document.getElementById("notice");
+    const resultState = document.getElementById("resultState");
+    const candidatesContainer = document.getElementById("candidates");
+    const candidateCount = document.getElementById("candidateCount");
+    const resultDescription = document.getElementById("resultDescription");
+
+    let selectedFile = null;
+    let previewUrl = null;
+    let recognizing = false;
+    let confirming = false;
+
+    function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, char => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        })[char]);
+    }
+
+    function formatSize(bytes) {
+        if (bytes < 1024 * 1024) {
+            return `${(bytes / 1024).toFixed(0)} KB`;
+        }
+
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    }
+
+    function showNotice(message, type) {
+        notice.className = `ai-notice visible ${type}`;
+        notice.textContent = message;
+    }
+
+    function hideNotice() {
+        notice.className = "ai-notice";
+        notice.textContent = "";
+    }
+
+    function showState(title, description, icon = "bi-fingerprint", loading = false) {
+        resultState.style.display = "flex";
+        candidatesContainer.innerHTML = "";
+
+        resultState.innerHTML = loading
+            ? `
+                <div class="ai-loading-spinner"></div>
+                <h3>${escapeHtml(title)}</h3>
+                <p>${escapeHtml(description)}</p>
+              `
+            : `
+                <div class="ai-state-icon">
+                    <i class="bi ${escapeHtml(icon)}"></i>
+                </div>
+                <h3>${escapeHtml(title)}</h3>
+                <p>${escapeHtml(description)}</p>
+              `;
+
+        candidateCount.textContent = "0 ứng viên";
+    }
+
+    function clearPreview() {
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            previewUrl = null;
+        }
+
+        selectedFile = null;
+        imageInput.value = "";
+        imagePreview.removeAttribute("src");
+        imagePreview.style.display = "none";
+        uploadPlaceholder.style.display = "block";
+        uploadZone.classList.remove("has-image");
+        fileMeta.classList.remove("visible");
+        recognizeButton.disabled = true;
+    }
+
+    function setFile(file) {
+        hideNotice();
+
+        if (!file) return;
+
+        const allowedTypes = [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+            showNotice("Vui lòng chọn ảnh JPG, PNG hoặc WEBP.", "error");
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            showNotice("Ảnh vượt quá 10 MB. Vui lòng chọn ảnh nhỏ hơn.", "error");
+            return;
+        }
+
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+        }
+
+        selectedFile = file;
+        previewUrl = URL.createObjectURL(file);
+
+        imagePreview.src = previewUrl;
+        imagePreview.style.display = "block";
+        uploadPlaceholder.style.display = "none";
+        uploadZone.classList.add("has-image");
+
+        fileName.textContent = file.name;
+        fileSize.textContent = formatSize(file.size);
+        fileMeta.classList.add("visible");
+
+        recognizeButton.disabled = false;
+
+        showState(
+            "Sẵn sàng phân tích",
+            "Nhấn “Bắt đầu nhận diện” để tìm thú cưng tương ứng trong hệ thống."
+        );
+
+        resultDescription.textContent = "Ảnh đã sẵn sàng để phân tích.";
+    }
+
+    uploadZone.addEventListener("click", event => {
+        if (event.target.closest("button")) return;
+        imageInput.click();
+    });
+
+    uploadZone.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            imageInput.click();
+        }
+    });
+
+    imageInput.addEventListener("change", () => {
+        if (imageInput.files.length) {
+            setFile(imageInput.files[0]);
+        }
+    });
+
+    removeImage.addEventListener("click", () => {
+        clearPreview();
+        hideNotice();
+        showState(
+            "Sẵn sàng nhận diện",
+            "Chọn ảnh thú cưng để bắt đầu tìm kiếm."
+        );
+        resultDescription.textContent =
+            "Kết quả sẽ xuất hiện sau khi phân tích ảnh.";
+    });
+
+    uploadZone.addEventListener("dragover", event => {
+        event.preventDefault();
+        uploadZone.classList.add("dragging");
+    });
+
+    uploadZone.addEventListener("dragleave", () => {
+        uploadZone.classList.remove("dragging");
+    });
+
+    uploadZone.addEventListener("drop", event => {
+        event.preventDefault();
+        uploadZone.classList.remove("dragging");
+
+        const file = event.dataTransfer.files[0];
+        if (file) setFile(file);
+    });
+
+    function renderCandidates(items) {
+        resultState.style.display = "none";
+        candidatesContainer.innerHTML = "";
+
+        candidateCount.textContent = `${items.length} ứng viên`;
+
+        if (items.length === 0) {
+            showState(
+                "Chưa tìm thấy ứng viên",
+                "Không có hồ sơ phù hợp trong gallery hiện tại. Hãy thử ảnh khác hoặc tìm thú cưng bằng thông tin thủ công.",
+                "bi-search"
+            );
+            resultDescription.textContent = "Không có kết quả phù hợp.";
+            return;
+        }
+
+        resultDescription.textContent =
+            "Kiểm tra thông tin chủ nuôi trước khi xác nhận.";
+
+        candidatesContainer.innerHTML = items.map((candidate, index) => {
+            const similarity = Number(candidate.similarity);
+            const safeSimilarity = Number.isFinite(similarity)
+                ? Math.max(0, Math.min(1, similarity))
+                : 0;
+
+            const percentage = (safeSimilarity * 100).toFixed(2);
+
+            return `
+                <article class="ai-candidate">
+                    <div class="ai-candidate-top">
+                        <div class="ai-pet-identity">
+                            <div class="ai-pet-avatar">
+                                <i class="bi bi-${String(candidate.species ?? "").toLowerCase().includes("mèo") || String(candidate.species ?? "").toLowerCase().includes("meo") ? "github" : "heart-pulse"}"></i>
+                            </div>
+
+                            <div>
+                                <div class="ai-pet-name">
+                                    ${escapeHtml(candidate.petName)}
+                                </div>
+                                <div class="ai-pet-code">
+                                    Ứng viên ${index + 1} ·
+                                    ${escapeHtml(candidate.petId)}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ai-similarity">
+                            <div class="ai-similarity-value">${percentage}%</div>
+                            <div class="ai-similarity-label">Độ tương đồng</div>
+                        </div>
+                    </div>
+
+                    <div class="ai-progress-track">
+                        <div class="ai-progress-bar"
+                             style="width:${percentage}%"></div>
+                    </div>
+
+                    <div class="ai-pet-details">
+                        <div>
+                            <div class="ai-detail-label">Loài</div>
+                            <div class="ai-detail-value">
+                                ${escapeHtml(candidate.species || "Chưa xác định")}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="ai-detail-label">Giống</div>
+                            <div class="ai-detail-value">
+                                ${escapeHtml(candidate.breed || "Chưa xác định")}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="ai-detail-label">Chủ nuôi</div>
+                            <div class="ai-detail-value">
+                                ${escapeHtml(candidate.ownerName || "Chưa xác định")}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="ai-detail-label">Mã hồ sơ</div>
+                            <div class="ai-detail-value">
+                                ${escapeHtml(candidate.petId)}
+                            </div>
+                        </div>
+
+                        <div class="ai-owner-contact">
+                            <span>
+                                <i class="bi bi-telephone"></i>
+                                ${escapeHtml(candidate.ownerPhone || "Chưa có số điện thoại")}
+                            </span>
+                            <span>
+                                <i class="bi bi-envelope"></i>
+                                ${escapeHtml(candidate.ownerEmail || "Chưa có email")}
+                            </span>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="ai-confirm-button"
+                        data-pet-id="${Number(candidate.databasePetId)}"
+                        data-similarity="${safeSimilarity}">
+                        <i class="bi bi-check-circle"></i>
+                        Xác nhận đây là thú cưng cần tìm
+                    </button>
+                </article>
+            `;
+        }).join("");
+    }
+
+    form.addEventListener("submit", async event => {
+        event.preventDefault();
+
+        if (recognizing || confirming) return;
+
+        if (!selectedFile) {
+            showNotice("Vui lòng chọn ảnh thú cưng trước.", "error");
+            return;
+        }
+
+        recognizing = true;
+        recognizeButton.disabled = true;
+        recognizeButton.innerHTML =
+            '<span class="ai-loading-spinner" style="width:16px;height:16px;border-width:2px;margin:0"></span> Đang nhận diện...';
+
+        hideNotice();
+
+        showState(
+            "AI đang phân tích hình ảnh",
+            "Đang tạo đặc trưng hình ảnh và tìm kiếm hồ sơ tương tự. Vui lòng chờ.",
+            "bi-fingerprint",
+            true
+        );
+
+        try {
+            const formData = new FormData();
+            formData.append("file", selectedFile);
+
+            const response = await fetch(recognizeUrl, {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Không thể nhận diện thú cưng.");
+            }
+
+            renderCandidates(data.candidates || []);
+
+            if (data.status === "NOT_RECOGNIZED") {
+                showNotice(
+                    "AI chưa tìm được kết quả đủ phù hợp. Hãy kiểm tra danh sách ứng viên hoặc tìm thủ công.",
+                    "error"
+                );
+            }
+        } catch (error) {
+            showState(
+                "Không thể nhận diện",
+                error.message || "Đã xảy ra lỗi khi xử lý ảnh.",
+                "bi-exclamation-triangle"
+            );
+            showNotice(
+                error.message || "Không thể kết nối tới dịch vụ nhận diện.",
+                "error"
+            );
+        } finally {
+            recognizing = false;
+            recognizeButton.disabled = !selectedFile;
+            recognizeButton.innerHTML =
+                '<i class="bi bi-stars"></i> Nhận diện lại';
+        }
+    });
+
+    candidatesContainer.addEventListener("click", async event => {
+        const button = event.target.closest(".ai-confirm-button");
+        if (!button || confirming) return;
+
+        if (!selectedFile) {
+            showNotice("Không tìm thấy ảnh nhận diện. Vui lòng chọn lại ảnh.", "error");
+            return;
+        }
+
+        const petId = Number(button.dataset.petId);
+        const similarity = Number(button.dataset.similarity);
+
+        if (!Number.isInteger(petId) || petId <= 0) {
+            showNotice("Mã thú cưng không hợp lệ.", "error");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        formData.append("petId", String(petId));
+        formData.append("similarity", String(similarity));
+
+        confirming = true;
+        button.disabled = true;
+        button.textContent = "Đang lưu xác nhận...";
+        hideNotice();
+
+        try {
+            const response = await fetch(confirmUrl, {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Không thể xác nhận thú cưng.");
+            }
+
+            button.innerHTML =
+                '<i class="bi bi-check-circle-fill"></i> Đã xác nhận thành công';
+            button.style.background = "#e7f8ef";
+            button.style.color = "#176b4b";
+            button.style.borderColor = "#bde7cf";
+
+            showNotice(
+                `${data.message} Mã lịch sử: ${data.historyId}.`,
+                "success"
+            );
+        } catch (error) {
+            button.disabled = false;
+            button.innerHTML =
+                '<i class="bi bi-check-circle"></i> Thử xác nhận lại';
+
+            showNotice(
+                error.message || "Không thể lưu xác nhận thú cưng.",
+                "error"
+            );
+        } finally {
+            confirming = false;
+        }
+    });
+})();
+</script>

@@ -121,9 +121,14 @@
                                                                                                                                                         </li>
 
                                                                                                                                                         <li class="nav-section">AI</li>
-                                                                                                                                                        <li>
-                                                                                                                                                            <span class="nav-note"><i class="bi bi-robot"></i><span>Dự đoán giống thú cưng</span></span>
-                                                                                                                                                        </li>
+
+                                                                                                                                                            <li class="@(ViewData["Active"] as string == "PetRecognition" ? "active" : "")">
+                                                                                                                                                                <a href="@Url.Action("Index", "PetRecognition")">
+                                                                                                                                                                    <i class="bi bi-camera"></i>
+                                                                                                                                                                    <span>Nhận diện thú cưng</span>
+                                                                                                                                                                </a>
+                                                                                                                                                            </li>
+                                                                                                         
                                                                                                                                                     </ul>
                                                                                                                                                 </nav>
 

@@ -80,6 +80,24 @@ builder.Services
 builder.Services.AddAuthorization();
 builder.Services.AddPermissionPolicies();
 
+builder.Services.AddHttpClient<IPetRecognitionService, PetRecognitionService>(
+    (serviceProvider, client) =>
+    {
+        var configuration = serviceProvider
+            .GetRequiredService<IConfiguration>();
+
+        var baseUrl = configuration["AIService:BaseUrl"];
+
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            throw new InvalidOperationException(
+                "AIService:BaseUrl is not configured.");
+        }
+
+        client.BaseAddress = new Uri(baseUrl);
+        client.Timeout = TimeSpan.FromSeconds(60);
+    });
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
