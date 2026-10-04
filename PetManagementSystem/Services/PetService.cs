@@ -48,6 +48,20 @@ public class PetService(
         }
     }
 
+    public async Task<Pet?> GetPetByTokenAsync(string token)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(token)) return null;
+            return await petRepository.GetByTokenAsync(token.Trim());
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Lỗi khi lấy thông tin thú cưng theo token: {Token}", token);
+            return null;
+        }
+    }
+
     public async Task<List<Pet>> GetPetsByUserIdAsync(int userId)
     {
         try

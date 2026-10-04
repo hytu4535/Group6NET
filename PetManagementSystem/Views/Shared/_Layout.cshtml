@@ -53,14 +53,14 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav mx-auto align-items-lg-center">
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Trang chủ</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Services">Dịch vụ</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Service" asp-action="Index">Dịch vụ</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Product" asp-action="Index">Sản phẩm</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Doctors">Bác sĩ thú y</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Blog">Bài viết & Tips</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Contact">Liên hệ</a></li>
                     </ul>
                     <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0">
-                        <a class="btn btn-custom-primary text-decoration-none" asp-controller="Home" asp-action="Booking">Đặt lịch ngay</a>
+                        <a class="btn btn-custom-primary text-decoration-none" asp-controller="Appointment" asp-action="Book">Đặt lịch ngay</a>
                         <div class="dropdown">
                             <a class="btn btn-light dropdown-toggle rounded-pill px-3 py-2 text-dark border" href="#" role="button" id="accountDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-person-circle text-danger me-1"></i> Tài khoản
@@ -69,7 +69,8 @@
                                 @if (User.Identity?.IsAuthenticated == true)
                                 {
                                     <li><a class="dropdown-item py-2" asp-controller="Account" asp-action="MyPets"><i class="bi bi-paw me-2 text-muted"></i>Thú cưng của tôi</a></li>
-                                    <li><a class="dropdown-item py-2" asp-controller="Account" asp-action="MyAppointments"><i class="bi bi-calendar-check me-2 text-muted"></i>Lịch hẹn của tôi</a></li>
+                                    <li><a class="dropdown-item py-2" asp-controller="Account" asp-action="MyPackages"><i class="bi bi-box-seam me-2 text-muted"></i>Gói dịch vụ đã mua</a></li>
+                                    <li><a class="dropdown-item py-2" asp-controller="Appointment" asp-action="MyAppointments"><i class="bi bi-calendar-check me-2 text-muted"></i>Lịch hẹn của tôi</a></li>
                                     <li><a class="dropdown-item py-2" asp-controller="Account" asp-action="MyOrders"><i class="bi bi-bag me-2 text-muted"></i>Đơn hàng của tôi</a></li>
                                     <li><a class="dropdown-item py-2" asp-controller="Cart" asp-action="Index"><i class="bi bi-cart me-2 text-muted"></i>Giỏ hàng</a></li>
                                     <li><hr class="dropdown-divider"></li>

@@ -44,6 +44,7 @@ builder.Services.AddScoped<IChatConversationRepository, ChatConversationReposito
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPetService, PetService>();
+builder.Services.AddScoped<IAppointmentManagerService, AppointmentManagerService>();
 builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IChatConversationService, ChatConversationService>();
@@ -85,6 +86,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dbContext.Database.Migrate();
+
     var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
     var adminUser = dbContext.Users.FirstOrDefault(x => x.Username == "admin01");
     if (adminUser != null)

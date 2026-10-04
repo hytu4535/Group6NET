@@ -1,0 +1,158 @@
+@model PetManagementSystem.ViewModels.Appointment.BookingInputModel
+@{
+    ViewData["Title"] = "Đặt lịch chăm sóc thú cưng";
+    var pets = ViewBag.Pets as IEnumerable<PetManagementSystem.Models.Pet> ?? Enumerable.Empty<PetManagementSystem.Models.Pet>();
+    var services = ViewBag.Services as IEnumerable<PetManagementSystem.Models.Service> ?? Enumerable.Empty<PetManagementSystem.Models.Service>();
+}
+
+<div class="container py-4">
+    <h2 class="mb-4 fw-bold text-primary">Đặt lịch chăm sóc & Khám bệnh cho thú cưng</h2>
+
+    @if (!pets.Any())
+    {
+        <div class="alert alert-warning">
+            Bạn chưa có thú cưng nào trong hệ thống. Vui lòng <a asp-controller="Pets" asp-action="Create" class="alert-link">thêm thú cưng</a> trước khi đặt lịch hẹn.
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm p-4">
+            <form asp-action="Book" method="post" novalidate>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <input type="hidden" asp-for="ServicePackageId" id="ServicePackageId" />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="PetId" class="form-label fw-semibold">Chọn thú cưng <span class="text-danger">*</span></label>
+                        <select asp-for="PetId" class="form-select" required>
+                            <option value="">-- Chọn thú cưng của bạn --</option>
+                            @foreach (var pet in pets)
+                            {
+                                <option value="@pet.Id" selected="@(Model.PetId == pet.Id ? "selected" : null)">@pet.Name (@pet.Species - @(pet.Breed ?? "Không rõ giống"))</option>
+                            }
+                        </select>
+                        <span asp-validation-for="PetId" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Combo / Package Selection Container -->
+                    <div class="col-md-6" id="petPackageContainer" style="display: none;">
+                        <label class="form-label fw-semibold"><i class="bi bi-box-seam text-success me-1"></i>Chọn gói Combo / Gói dịch vụ đã mua</label>
+                        <div id="petPackagesList" class="border rounded p-3 bg-light" style="max-height: 200px; overflow-y: auto;">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Chọn dịch vụ (Có thể chọn thêm dịch vụ riêng lẻ) <span class="text-danger">*</span></label>
+                        <div class="border rounded p-3 bg-light" style="max-height: 200px; overflow-y: auto;">
+                            @if (!services.Any())
+                            {
+                                <p class="text-muted mb-0">Hiện chưa có dịch vụ nào khả dụng.</p>
+                            }
+                            else
+                            {
+                                foreach (var service in services)
+                                {
+                                    var isChecked = Model.ServiceIds != null && Model.ServiceIds.Contains(service.Id);
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input service-checkbox" type="checkbox" name="ServiceIds" value="@service.Id" id="service_@service.Id" @(isChecked ? "checked" : "") />
+                                        <label class="form-check-label d-flex justify-content-between" for="service_@service.Id">
+                                            <span>@service.Name (@service.DurationMinutes phút)</span>
+                                            <span class="text-success fw-bold">@service.Price.ToString("N0") VNĐ</span>
+                                        </label>
+                                    </div>
+                                }
+                            }
+                        </div>
+                        <span asp-validation-for="ServiceIds" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="AppointmentDate" class="form-label fw-semibold">Ngày hẹn <span class="text-danger">*</span></label>
+                        <input asp-for="AppointmentDate" type="date" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                        <span asp-validation-for="AppointmentDate" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="AppointmentTime" class="form-label fw-semibold">Giờ hẹn (08:00 - 20:00) <span class="text-danger">*</span></label>
+                        <input asp-for="AppointmentTime" type="time" class="form-control" min="08:00" max="20:00" />
+                        <span asp-validation-for="AppointmentTime" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Reason" class="form-label fw-semibold">Lý do / Triệu chứng / Ghi chú</label>
+                        <textarea asp-for="Reason" class="form-control" rows="3" placeholder="Mô tả triệu chứng hoặc yêu cầu đặc biệt..."></textarea>
+                        <span asp-validation-for="Reason" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-end gap-2">
+                    <a asp-action="MyAppointments" class="btn btn-secondary px-4">Lịch hẹn của tôi</a>
+                    <button type="submit" class="btn btn-primary px-4">Gửi yêu cầu đặt lịch</button>
+                </div>
+            </form>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function() {
+            $('#PetId').on('change', function() {
+                let petId = $(this).val();
+                $('#petPackageContainer').hide();
+                $('#petPackagesList').empty();
+                $('#ServicePackageId').val('');
+                
+                // Reset service checkboxes
+                $('.service-checkbox').prop('checked', false);
+
+                if (!petId) return;
+
+                $.get('/Appointment/GetActivePetPackage', { petId: petId }, function(res) {
+                    if (res.hasPackage && res.packages && res.packages.length > 0) {
+                        let html = '<div class="form-check mb-2">' +
+                            '<input class="form-check-input package-radio" type="radio" name="selectedPackage" id="pkg_none" value="" checked>' +
+                            '<label class="form-check-label fw-semibold" for="pkg_none">Không sử dụng combo (Chỉ chọn dịch vụ riêng lẻ)</label>' +
+                            '</div>';
+
+                        res.packages.forEach(function(pkg) {
+                            html += '<div class="form-check mb-2">' +
+                                '<input class="form-check-input package-radio" type="radio" name="selectedPackage" value="' + pkg.packageId + '" id="pkg_' + pkg.packageId + '" data-services=\'' + JSON.stringify(pkg.serviceIds) + '\'>' +
+                                '<label class="form-check-label fw-semibold text-success" for="pkg_' + pkg.packageId + '">' + pkg.packageName + '</label>' +
+                                '</div>';
+                        });
+
+                        $('#petPackagesList').html(html);
+                        $('#petPackageContainer').show();
+
+                        let initialPkgId = '@Model.ServicePackageId';
+                        if (initialPkgId) {
+                            $('#pkg_' + initialPkgId).prop('checked', true).trigger('change');
+                        }
+                    }
+                });
+            });
+
+            $(document).on('change', '.package-radio', function() {
+                let packageId = $(this).val();
+                $('#ServicePackageId').val(packageId);
+
+                if (packageId) {
+                    let serviceIds = $(this).data('services');
+                    if (serviceIds && serviceIds.length > 0) {
+                        serviceIds.forEach(function(sId) {
+                            $('#service_' + sId).prop('checked', true);
+                        });
+                    }
+                }
+            });
+
+            if ($('#PetId').val()) {
+                $('#PetId').trigger('change');
+            }
+        });
+    </script>
+}

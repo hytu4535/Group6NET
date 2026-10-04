@@ -4,35 +4,143 @@
     ViewData["Title"] = "Thú cưng của tôi";
 }
 
-<h2 class="mb-4">Thú cưng của tôi</h2>
-
-@if (!Model.Any())
-{
-    <div class="alert alert-info">
-        Bạn chưa có thú cưng nào. <a asp-controller="Pets" asp-action="Create">Thêm thú cưng đầu tiên</a>
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 class="fw-bold mb-0" style="color: #4a2c2a;">
+            <i class="bi bi-paw text-danger me-2"></i>Thú cưng của tôi
+        </h2>
+        <a asp-controller="Pets" asp-action="Create" class="btn btn-custom-primary">
+            <i class="bi bi-plus-circle me-1"></i> Thêm thú cưng mới
+        </a>
     </div>
-}
-else
-{
-    <div class="row row-cols-1 row-cols-md-2 g-4">
-        @foreach (var pet in Model)
-        {
-            <div class="col">
-                <div class="card h-100 shadow-sm">
-                    <div class="ratio ratio-1x1">
-                        <img src="@(pet.PetImages.FirstOrDefault(pi => pi.IsAvatar == true)?.ImageUrl ?? "/images/default-pet.jpg")" class="card-img-top" alt="@pet.Name">
-                    </div>
-                    <div class="card-body d-flex flex-column">
-                        <h5 class="card-title">@pet.Name</h5>
-                        <p class="card-text">
-                            <strong>Giống:</strong> @pet.Breed<br>
-                            <strong>Loài:</strong> @pet.Species<br>
-                            <strong>Cân nặng:</strong> @pet.WeightKg kg
-                        </p>
-                        <a asp-controller="Pets" asp-action="Details" asp-route-id="@pet.Id" class="btn btn-primary mt-auto">Xem chi tiết</a>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="card border-0 shadow-sm rounded-4 text-center py-5 px-4 my-4 bg-white">
+            <div class="card-body py-4">
+                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 90px; height: 90px;">
+                    <i class="bi bi-heart text-danger display-5"></i>
+                </div>
+                <h4 class="fw-bold mb-2 text-dark">Bạn chưa có thú cưng nào</h4>
+                <p class="text-muted mb-4 mx-auto" style="max-width: 480px;">
+                    Hãy thêm thông tin thú cưng của bạn vào hệ thống để dễ dàng theo dõi sổ sức khỏe, lịch tiêm phòng và đặt lịch chăm sóc chuyên nghiệp.
+                </p>
+                <a asp-controller="Pets" asp-action="Create" class="btn btn-custom-primary btn-lg rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-plus-circle me-2"></i>Thêm thú cưng đầu tiên
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            @foreach (var pet in Model)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden">
+                        <div class="ratio ratio-1x1 bg-light position-relative">
+                            @{
+                                var petImagesList = ViewBag.PetImages as List<PetManagementSystem.Models.PetImage>;
+                                var avatarUrl = petImagesList?.FirstOrDefault(pi => pi.PetId == pet.Id)?.ImageUrl ?? "/images/default-pet.jpg";
+                            }
+                            <img src="@avatarUrl" class="card-img-top object-fit-cover" alt="@pet.Name">
+                            <div class="position-absolute top-0 end-0 p-3">
+                                <span class="badge bg-dark bg-opacity-75 px-3 py-2 rounded-pill">
+                                    @(pet.Gender == "Male" ? "Đực" : (pet.Gender == "Female" ? "Cái" : pet.Gender))
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body d-flex flex-column p-4">
+                            <h4 class="fw-bold text-dark mb-1">@pet.Name</h4>
+                            <p class="text-muted small mb-3">
+                                <i class="bi bi-tag text-danger me-1"></i>@pet.Species @(!string.IsNullOrEmpty(pet.Breed) ? $"• {pet.Breed}" : "")
+                            </p>
+
+                            <div class="p-3 bg-light rounded-3 mb-3 small">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">Cân nặng:</span>
+                                    <strong class="text-dark">@(pet.WeightKg.HasValue ? $"{pet.WeightKg} kg" : "Chưa cập nhật")</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Mã định danh QR:</span>
+                                    <span class="font-monospace text-primary text-truncate" style="max-width: 120px;" title="@pet.QrToken">@pet.QrToken</span>
+                                </div>
+                            </div>
+
+                            <!-- Active Packages / Combos Section -->
+                            <div class="mb-3">
+                                <span class="d-block small text-muted mb-2 fw-semibold"><i class="bi bi-box-seam text-primary me-1"></i>Gói combo dịch vụ đang hoạt động:</span>
+                                @{
+                                    var activePackagesList = ViewBag.ActivePackages as List<PetManagementSystem.Models.PetPackage>;
+                                    var petPackages = activePackagesList?.Where(pp => pp.PetId == pet.Id).ToList() ?? new List<PetManagementSystem.Models.PetPackage>();
+                                }
+                                @if (petPackages.Any())
+                                {
+                                    <div class="d-flex flex-column gap-2">
+                                        @foreach (var pp in petPackages)
+                                        {
+                                            <div class="p-2 bg-success bg-opacity-10 border border-success rounded-3 small">
+                                                <div class="fw-bold text-success mb-1">@pp.ServicePackage?.Name</div>
+                                                <div class="text-muted mb-1" style="font-size: 0.8rem;">Hạn: @pp.EndDate.ToString("dd/MM/yyyy")</div>
+                                                <a asp-controller="Appointment" asp-action="Book" asp-route-packageId="@pp.PackageId" class="btn btn-sm btn-success rounded-pill w-100 py-1" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-calendar-plus me-1"></i>Đặt lịch với gói này
+                                                </a>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-muted small fst-italic">Chưa có gói dịch vụ nào. <a asp-controller="Service" asp-action="Index" class="text-decoration-none">Mua ngay</a></div>
+                                }
+                            </div>
+
+                            <div class="text-center border-top pt-3 mb-3">
+                                @{
+                                    var publicUrl = Url.Action("PublicInfo", "Pets", new { token = pet.QrToken }, Context.Request.Scheme);
+                                    var qrImageUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={Uri.EscapeDataString(publicUrl ?? string.Empty)}";
+                                }
+                                <img src="@qrImageUrl" alt="QR Code" class="img-thumbnail mb-2 shadow-sm rounded-3" style="width: 90px; height: 90px;" />
+                                <br />
+                                <a href="@qrImageUrl" download="QR_@(pet.Name).png" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1">
+                                    <i class="bi bi-download me-1"></i>Tải mã QR vòng cổ
+                                </a>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-auto pt-2 border-top">
+                                <a asp-controller="Pets" asp-action="Details" asp-route-id="@pet.Id" class="btn btn-primary btn-sm rounded-pill flex-grow-1 py-2">
+                                    <i class="bi bi-eye me-1"></i>Xem chi tiết
+                                </a>
+                                <a asp-controller="Pets" asp-action="Edit" asp-route-id="@pet.Id" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2" title="Sửa thông tin">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form asp-controller="Pets" asp-action="Delete" asp-route-id="@pet.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa thú cưng @pet.Name không?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-2" title="Xóa thú cưng">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        }
-    </div>
-}
+            }
+        </div>
+    }
+</div>

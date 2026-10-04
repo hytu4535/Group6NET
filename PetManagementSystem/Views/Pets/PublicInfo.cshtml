@@ -1,0 +1,180 @@
+@model PetManagementSystem.Models.Pet
+@{
+    Layout = null; // Hoặc Layout chung nếu có
+    ViewData["Title"] = $"Hồ sơ thú cưng - {Model.Name}";
+    var avatarImage = Model.PetImages?.FirstOrDefault(pi => pi.IsAvatar == true)?.ImageUrl 
+                      ?? Model.PetImages?.FirstOrDefault()?.ImageUrl 
+                      ?? "/images/default-pet.png";
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .profile-header {
+            background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+            color: white;
+            padding: 2rem 1rem;
+            border-radius: 0 0 1.5rem 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .pet-avatar {
+            width: 140px;
+            height: 140px;
+            object-fit: cover;
+            border: 4px solid white;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        .card {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            margin-bottom: 1.5rem;
+        }
+        .sos-card {
+            background: #fff3cd;
+            border: 2px solid #ffecb5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4" style="max-width: 800px;">
+        <!-- Header -->
+        <div class="profile-header text-center">
+            <img src="@avatarImage" alt="@Model.Name" class="rounded-circle pet-avatar mb-3" />
+            <h1 class="fw-bold mb-1">@Model.Name</h1>
+            <p class="mb-0">
+                <span class="badge bg-light text-dark px-3 py-2 fs-6">@Model.Species</span>
+                @if (!string.IsNullOrEmpty(Model.Breed))
+                {
+                    <span class="badge bg-white text-primary px-3 py-2 fs-6 ms-2">@Model.Breed</span>
+                }
+            </p>
+        </div>
+
+        <!-- Thông tin cơ bản -->
+        <div class="card p-4">
+            <h5 class="card-title text-primary mb-3"><i class="bi bi-info-circle me-2"></i>Thông tin thú cưng</h5>
+            <div class="row g-3">
+                <div class="col-6 col-md-3">
+                    <span class="text-muted d-block">Giới tính</span>
+                    <strong class="fs-5">@Model.Gender</strong>
+                </div>
+                <div class="col-6 col-md-3">
+                    <span class="text-muted d-block">Cân nặng</span>
+                    <strong class="fs-5">@(Model.WeightKg.HasValue ? $"{Model.WeightKg} kg" : "Chưa cập nhật")</strong>
+                </div>
+                <div class="col-6 col-md-3">
+                    <span class="text-muted d-block">Ngày tạo hồ sơ</span>
+                    <strong class="fs-6">@Model.CreatedAt.ToString("dd/MM/yyyy")</strong>
+                </div>
+                <div class="col-6 col-md-3">
+                    <span class="text-muted d-block">Mã định danh</span>
+                    <strong class="fs-6 text-truncate d-block" title="@Model.QrToken">@Model.QrToken</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Khung SOS / Chủ nuôi -->
+        @if (Model.User != null)
+        {
+            <div class="card sos-card p-4 text-center">
+                <h4 class="text-warning-emphasis fw-bold mb-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>Liên hệ khẩn cấp (Thú cưng đi lạc)</h4>
+                <p class="mb-2">Nếu bạn tìm thấy thú cưng này, xin vui lòng gọi ngay cho chủ nhân:</p>
+                <h3 class="fw-bold text-dark mb-3">@(Model.User.FullName ?? Model.User.Username)</h3>
+                @if (!string.IsNullOrEmpty(Model.User.PhoneNumber))
+                {
+                    <a href="tel:@Model.User.PhoneNumber" class="btn btn-danger btn-lg rounded-pill px-5 py-3 shadow fw-bold">
+                        <i class="bi bi-telephone-fill me-2"></i>GỌI NGAY: @Model.User.PhoneNumber
+                    </a>
+                }
+                else
+                {
+                    <p class="text-muted fst-italic mb-0">Chủ nuôi chưa cập nhật số điện thoại.</p>
+                }
+            </div>
+        }
+
+        <!-- Lịch sử tiêm phòng -->
+        <div class="card p-4">
+            <h5 class="card-title text-success mb-3"><i class="bi bi-shield-check me-2"></i>Lịch sử tiêm phòng</h5>
+            @if (Model.VaccinationRecords == null || !Model.VaccinationRecords.Any())
+            {
+                <p class="text-muted mb-0">Chưa có thông tin tiêm phòng.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Vắc-xin</th>
+                                <th>Ngày tiêm</th>
+                                <th>Hẹn tiếp theo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var vac in Model.VaccinationRecords.OrderByDescending(v => v.AdministeredDate))
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@vac.VaccineName</td>
+                                    <td>@vac.AdministeredDate.ToString("dd/MM/yyyy")</td>
+                                    <td><span class="badge bg-warning text-dark">@vac.NextDueDate.ToString("dd/MM/yyyy")</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <!-- Hồ sơ sức khỏe gần đây -->
+        <div class="card p-4">
+            <h5 class="card-title text-info mb-3"><i class="bi bi-heart-pulse me-2"></i>Hồ sơ khám bệnh gần nhất</h5>
+            @if (Model.PetHealthRecords == null || !Model.PetHealthRecords.Any())
+            {
+                <p class="text-muted mb-0">Chưa có bản ghi khám bệnh nào.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ngày khám</th>
+                                <th>Chẩn đoán</th>
+                                <th>Điều trị</th>
+                                <th>Cân nặng</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var rec in Model.PetHealthRecords.OrderByDescending(r => r.VisitDate).Take(5))
+                            {
+                                <tr>
+                                    <td>@rec.VisitDate.ToString("dd/MM/yyyy")</td>
+                                    <td class="fw-semibold">@rec.Diagnosis</td>
+                                    <td>@rec.Treatment</td>
+                                    <td>@(rec.WeightKg.HasValue ? $"{rec.WeightKg} kg" : "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <footer class="text-center text-muted py-3">
+            <small>&copy; @DateTime.Now.Year - Pet Management System. Tất cả các quyền được bảo lưu.</small>
+        </footer>
+    </div>
+</body>
+</html>

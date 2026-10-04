@@ -319,7 +319,7 @@ namespace PetManagementSystem.Controllers
             }
         }
 
-        [Authorize(Roles = "member")]
+        [Authorize]
         [HttpGet("/Account/Profile")]
         public async Task<IActionResult> Profile()
         {
@@ -337,7 +337,7 @@ namespace PetManagementSystem.Controllers
             return View(user);
         }
 
-        [Authorize(Roles = "member")]
+        [Authorize]
         [HttpGet("/Account/EditProfile")]
         public async Task<IActionResult> EditProfile()
         {
@@ -363,7 +363,7 @@ namespace PetManagementSystem.Controllers
             return View(model);
         }
 
-        [Authorize(Roles = "member")]
+        [Authorize]
         [HttpPost("/Account/EditProfile")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditProfile(EditProfileViewModel model)
@@ -400,14 +400,14 @@ namespace PetManagementSystem.Controllers
             return RedirectToAction(nameof(Profile));
         }
 
-        [Authorize(Roles = "member")]
+        [Authorize]
         [HttpGet("/Account/ChangePassword")]
         public IActionResult ChangePassword()
         {
             return View();
         }
 
-        [Authorize(Roles = "member")]
+        [Authorize]
         [HttpPost("/Account/ChangePassword")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
@@ -455,15 +455,32 @@ namespace PetManagementSystem.Controllers
         }
 
         // New actions for client portal
-        [Authorize(Roles = "member")]
+        [Authorize]
         [HttpGet("/Account/MyPets")]
         public async Task<IActionResult> MyPets()
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var pets = await _dbContext.Pets
                 .Where(p => p.UserId == userId)
-                .Include(p => p.PetImages.Where(pi => pi.IsAvatar == true))
+                .AsNoTracking()
                 .ToListAsync();
+
+            var petIds = pets.Select(p => p.Id).ToList();
+            var activePackages = await _dbContext.PetPackages
+                .Include(pp => pp.ServicePackage)
+                    .ThenInclude(sp => sp.ServicePackageServices)
+                        .ThenInclude(sps => sps.Service)
+                .Where(pp => petIds.Contains(pp.PetId) && pp.Status == 1 && pp.EndDate >= DateTime.Now)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var petImages = await _dbContext.PetImages
+                .Where(pi => petIds.Contains(pi.PetId) && pi.IsAvatar == true)
+                .AsNoTracking()
+                .ToListAsync();
+
+            ViewBag.ActivePackages = activePackages;
+            ViewBag.PetImages = petImages;
 
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
@@ -472,7 +489,26 @@ namespace PetManagementSystem.Controllers
             return View(pets);
         }
 
-        [Authorize(Roles = "member")]
+        [Authorize]
+        [HttpGet("/Account/MyPackages")]
+        public async Task<IActionResult> MyPackages()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var userPetIds = await _dbContext.Pets.Where(p => p.UserId == userId).Select(p => p.Id).ToListAsync();
+
+            var petPackages = await _dbContext.PetPackages
+                .Include(pp => pp.ServicePackage)
+                    .ThenInclude(sp => sp.ServicePackageServices)
+                        .ThenInclude(sps => sps.Service)
+                .Include(pp => pp.Pet)
+                .Where(pp => userPetIds.Contains(pp.PetId))
+                .OrderByDescending(pp => pp.StartDate)
+                .ToListAsync();
+
+            return View(petPackages);
+        }
+
+        [Authorize]
         [HttpGet("/Account/MyAppointments")]
         public async Task<IActionResult> MyAppointments()
         {
@@ -492,7 +528,7 @@ namespace PetManagementSystem.Controllers
             return View(appointments);
         }
 
-        [Authorize(Roles = "member")]
+        [Authorize]
         [HttpGet("/Account/MyOrders")]
         public async Task<IActionResult> MyOrders()
         {

@@ -27,6 +27,12 @@ public class Appointment
 
     public byte Status { get; set; } = 1;
 
+    [NotMapped]
+    public string? CancelledBy { get; set; }
+
+    [NotMapped]
+    public string? CancelReason { get; set; }
+
     public Pet? Pet { get; set; }
     public User? User { get; set; }
     public Veterinarian? Veterinarian { get; set; }

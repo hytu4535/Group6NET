@@ -1,0 +1,80 @@
+@model PetManagementSystem.Models.Pet
+@{
+    ViewData["Title"] = $"Cập nhật thú cưng - {Model.Name}";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3 text-primary" style="width: 70px; height: 70px;">
+                            <i class="bi bi-pencil-square fs-2"></i>
+                        </div>
+                        <h3 class="fw-bold text-dark">Cập nhật thú cưng</h3>
+                        <p class="text-muted small">Chỉnh sửa thông tin cho @Model.Name</p>
+                    </div>
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger">
+                            <div asp-validation-summary="All" class="mb-0"></div>
+                        </div>
+                    }
+
+                    <form asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="UserId" />
+
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label fw-semibold">Tên thú cưng <span class="text-danger">*</span></label>
+                            <input asp-for="Name" class="form-control rounded-pill px-3 py-2" required />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Species" class="form-label fw-semibold">Loài <span class="text-danger">*</span></label>
+                            <input asp-for="Species" class="form-control rounded-pill px-3 py-2" required />
+                            <span asp-validation-for="Species" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Breed" class="form-label fw-semibold">Giống (Breed)</label>
+                            <input asp-for="Breed" class="form-control rounded-pill px-3 py-2" />
+                            <span asp-validation-for="Breed" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Gender" class="form-label fw-semibold">Giới tính <span class="text-danger">*</span></label>
+                            <select asp-for="Gender" class="form-select rounded-pill px-3 py-2" required>
+                                <option value="Male">Đực (Male)</option>
+                                <option value="Female">Cái (Female)</option>
+                            </select>
+                            <span asp-validation-for="Gender" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="WeightKg" class="form-label fw-semibold">Cân nặng (kg)</label>
+                            <input asp-for="WeightKg" type="number" step="0.1" class="form-control rounded-pill px-3 py-2" />
+                            <span asp-validation-for="WeightKg" class="text-danger small"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a asp-controller="Account" asp-action="MyPets" class="btn btn-outline-secondary rounded-pill px-4">
+                                <i class="bi bi-arrow-left me-1"></i>Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-primary rounded-pill px-5 shadow-sm">
+                                <i class="bi bi-check-lg me-1"></i>Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
