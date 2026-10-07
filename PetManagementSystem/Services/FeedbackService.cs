@@ -67,6 +67,25 @@ public class FeedbackService(
         }
     }
 
+    public async Task<PagedResult<Feedback>> GetMyFeedbacksPagedAsync(int page, int pageSize)
+    {
+        var userId = GetCurrentUserId();
+        if (!userId.HasValue)
+        {
+            throw new InvalidOperationException("Không xác định được tài khoản đang đăng nhập.");
+        }
+
+        try
+        {
+            return await feedbackRepository.GetByUserIdPagedAsync(userId.Value, page, pageSize);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Lỗi hệ thống khi lấy danh sách feedback phân trang của user {UserId}.", userId.Value);
+            throw;
+        }
+    }
+
     public async Task<(bool Success, string ErrorMessage)> CreateFeedbackAsync(string comment)
     {
         try

@@ -6,6 +6,10 @@
     <title>Trang chủ - PetCare</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("member"))
+    {
+        <link rel="stylesheet" href="~/css/ai-chat-widget.css" asp-append-version="true" />
+    }
     <style>
         body {
             background-color: #fde2e4;
@@ -61,6 +65,33 @@
                     </ul>
                     <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0">
                         <a class="btn btn-custom-primary text-decoration-none" asp-controller="Home" asp-action="Booking">Đặt lịch ngay</a>
+                        @if (User.Identity?.IsAuthenticated == true && User.IsInRole("member"))
+                        {
+                            <a class="btn btn-outline-primary rounded-pill text-nowrap"
+                               asp-controller="Account" asp-action="MyFeedback">
+                                <i class="bi bi-chat-left-text me-1"></i>Gửi phản hồi
+                            </a>
+                            <div class="dropdown">
+                                <button class="btn btn-light rounded-circle position-relative" type="button"
+                                        id="notificationBell" data-bs-toggle="dropdown" aria-expanded="false"
+                                        aria-label="Thông báo">
+                                    <i class="bi bi-bell fs-5"></i>
+                                    <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">0</span>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 mt-2 p-0"
+                                     aria-labelledby="notificationBell" style="width:min(360px, calc(100vw - 2rem));">
+                                    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                                        <strong>Thông báo</strong>
+                                        <button type="button" id="markAllNotificationsRead" class="btn btn-link btn-sm p-0 text-decoration-none">Đọc tất cả</button>
+                                    </div>
+                                    <div id="notificationItems" class="list-group list-group-flush">
+                                        <div class="px-3 py-3 small text-muted">Đang tải thông báo...</div>
+                                    </div>
+                                    <a class="d-block text-center small py-2 text-decoration-none border-top"
+                                       asp-controller="Account" asp-action="MyNotifications">Xem tất cả</a>
+                                </div>
+                            </div>
+                        }
                         <div class="dropdown">
                             <a class="btn btn-light dropdown-toggle rounded-pill px-3 py-2 text-dark border" href="#" role="button" id="accountDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-person-circle text-danger me-1"></i> Tài khoản
@@ -72,6 +103,10 @@
                                     <li><a class="dropdown-item py-2" asp-controller="Account" asp-action="MyAppointments"><i class="bi bi-calendar-check me-2 text-muted"></i>Lịch hẹn của tôi</a></li>
                                     <li><a class="dropdown-item py-2" asp-controller="Account" asp-action="MyOrders"><i class="bi bi-bag me-2 text-muted"></i>Đơn hàng của tôi</a></li>
                                     <li><a class="dropdown-item py-2" asp-controller="Cart" asp-action="Index"><i class="bi bi-cart me-2 text-muted"></i>Giỏ hàng</a></li>
+                                    @if (User.IsInRole("member"))
+                                    {
+                                        <li><a class="dropdown-item py-2" asp-controller="Account" asp-action="MyFeedback"><i class="bi bi-chat-left-text me-2 text-muted"></i>Gửi phản hồi</a></li>
+                                    }
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item py-2" asp-controller="Account" asp-action="Profile"><i class="bi bi-person me-2 text-muted"></i>Hồ sơ cá nhân</a></li>
                                     <li><a class="dropdown-item py-2" asp-controller="Account" asp-action="ChangePassword"><i class="bi bi-key me-2 text-muted"></i>Đổi mật khẩu</a></li>
@@ -95,6 +130,46 @@
         @RenderBody()
     </main>
 
+    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("member"))
+    {
+        @Html.AntiForgeryToken()
+        <section class="ai-chat-widget" id="aiChatWidget" aria-label="Trợ lý AI PetCare">
+            <div class="ai-chat-panel d-none" id="aiChatPanel">
+                <header class="ai-chat-header">
+                    <div>
+                        <h2 class="h6 mb-1">Trợ lý PetCare</h2>
+                        <span class="small opacity-75">Hỏi đáp chăm sóc thú cưng</span>
+                    </div>
+                    <button class="btn btn-sm btn-light rounded-circle" type="button" id="aiChatClose"
+                            aria-label="Đóng cửa sổ chat">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </header>
+                <div class="ai-chat-notice" role="status">
+                    Khung chat đã sẵn sàng. Kết nối AI chưa được cấu hình; tin nhắn hiện chưa được gửi hoặc lưu.
+                </div>
+                <div class="ai-chat-messages" id="aiChatMessages" aria-live="polite">
+                    <div class="ai-chat-empty">Xin chào! Bạn có thể nhập câu hỏi về chăm sóc thú cưng.</div>
+                </div>
+                <form class="ai-chat-compose" id="aiChatForm">
+                    <label class="visually-hidden" for="aiChatInput">Tin nhắn</label>
+                    <textarea id="aiChatInput" maxlength="2000" rows="1"
+                              placeholder="Nhập câu hỏi..." required></textarea>
+                    <button class="btn btn-custom-primary ai-chat-send" type="submit" id="aiChatSend"
+                            aria-label="Gửi tin nhắn">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </form>
+                <div class="ai-chat-footer">Thông tin chỉ mang tính tham khảo, không thay thế tư vấn thú y.</div>
+            </div>
+            <button class="ai-chat-launcher" id="aiChatLauncher" type="button"
+                    aria-label="Mở chat với trợ lý PetCare" aria-expanded="false" aria-controls="aiChatPanel">
+                <i class="bi bi-chat-dots-fill"></i>
+            </button>
+        </section>
+        <script src="~/js/ai-chat-widget.js" asp-append-version="true"></script>
+    }
+
     <footer class="text-center py-4 text-muted small">
         <div class="container">
             &copy; 2026 - PetCare - Hệ thống quản lý thú cưng
@@ -104,6 +179,97 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("member"))
+    {
+        <script>
+            (() => {
+                const bell = document.getElementById('notificationBell');
+                const badge = document.getElementById('notificationBadge');
+                const items = document.getElementById('notificationItems');
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                if (!bell || !badge || !items) return;
+
+                async function api(url, options = {}) {
+                    const headers = new Headers(options.headers || {});
+                    if (options.method) headers.set('RequestVerificationToken', token);
+                    const response = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+                    const body = await response.json();
+                    if (!response.ok || !body.success) {
+                        throw new Error(body.errors?.join(' ') || body.message || 'Không thể tải thông báo.');
+                    }
+                    return body;
+                }
+
+                async function refreshCount() {
+                    try {
+                        const result = await api('/api/client/notifications/unread-count');
+                        const count = result.data || 0;
+                        badge.textContent = count > 99 ? '99+' : count;
+                        badge.classList.toggle('d-none', count === 0);
+                    } catch (error) {
+                        console.error(error);
+                    }
+                }
+
+                async function loadNotifications() {
+                    items.replaceChildren();
+                    try {
+                        const result = await api('/api/client/notifications?page=1&pageSize=5');
+                        if (!result.data?.length) {
+                            const empty = document.createElement('div');
+                            empty.className = 'px-3 py-3 small text-muted';
+                            empty.textContent = 'Bạn chưa có thông báo nào.';
+                            items.append(empty);
+                            return;
+                        }
+
+                        for (const notification of result.data) {
+                            const link = document.createElement('button');
+                            link.type = 'button';
+                            link.className = `list-group-item list-group-item-action px-3 py-3 text-start ${notification.isRead ? '' : 'bg-light'}`;
+                            const message = document.createElement('div');
+                            message.className = 'small';
+                            message.textContent = notification.message;
+                            const date = document.createElement('div');
+                            date.className = 'text-muted mt-1';
+                            date.style.fontSize = '.75rem';
+                            date.textContent = new Date(notification.createdAt).toLocaleString('vi-VN');
+                            link.append(message, date);
+                            if (!notification.isRead) {
+                                link.addEventListener('click', async () => {
+                                    try {
+                                        await api(`/api/client/notifications/${notification.id}/read`, { method: 'PUT' });
+                                        await loadNotifications();
+                                        await refreshCount();
+                                    } catch (error) {
+                                        console.error(error);
+                                    }
+                                });
+                            }
+                            items.append(link);
+                        }
+                    } catch (error) {
+                        const failure = document.createElement('div');
+                        failure.className = 'px-3 py-3 small text-danger';
+                        failure.textContent = error.message;
+                        items.append(failure);
+                    }
+                }
+
+                bell.addEventListener('show.bs.dropdown', loadNotifications);
+                document.getElementById('markAllNotificationsRead')?.addEventListener('click', async () => {
+                    try {
+                        await api('/api/client/notifications/read-all', { method: 'PUT' });
+                        await loadNotifications();
+                        await refreshCount();
+                    } catch (error) {
+                        console.error(error);
+                    }
+                });
+                refreshCount();
+            })();
+        </script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

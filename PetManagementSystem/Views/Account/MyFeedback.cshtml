@@ -1,0 +1,167 @@
+@{
+    ViewData["Title"] = "Gửi phản hồi";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="mb-4">
+            <h2 class="mb-1">Gửi phản hồi</h2>
+            <p class="text-muted mb-0">Ý kiến của bạn giúp PetCare phục vụ tốt hơn.</p>
+        </div>
+
+        <div id="feedbackAlert" class="alert d-none" role="alert"></div>
+        @Html.AntiForgeryToken()
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
+                <form id="feedbackForm">
+                    <label for="feedbackComment" class="form-label fw-semibold">Nội dung phản hồi</label>
+                    <textarea id="feedbackComment" class="form-control" rows="5" maxlength="2000"
+                              placeholder="Hãy chia sẻ góp ý hoặc trải nghiệm của bạn..." required></textarea>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span id="feedbackLength" class="small text-muted">0 / 2.000</span>
+                        <button id="sendFeedbackButton" type="submit" class="btn btn-custom-primary">
+                            <i class="bi bi-send me-1"></i>Gửi phản hồi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">Phản hồi của tôi</h4>
+            <span id="feedbackTotal" class="small text-muted"></span>
+        </div>
+        <div id="feedbackList" class="d-flex flex-column gap-3" aria-live="polite"></div>
+        <div id="feedbackEmpty" class="alert alert-info d-none">Bạn chưa gửi phản hồi nào.</div>
+        <nav class="mt-4" aria-label="Phân trang phản hồi">
+            <ul id="feedbackPagination" class="pagination justify-content-center"></ul>
+        </nav>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const apiUrl = '/api/client/feedbacks';
+            const pageSize = 5;
+            const form = document.getElementById('feedbackForm');
+            const commentInput = document.getElementById('feedbackComment');
+            const feedbackList = document.getElementById('feedbackList');
+            const alertBox = document.getElementById('feedbackAlert');
+            const pagination = document.getElementById('feedbackPagination');
+            const emptyMessage = document.getElementById('feedbackEmpty');
+            let currentPage = 1;
+
+            function showAlert(message, isError = false) {
+                alertBox.textContent = message;
+                alertBox.className = `alert ${isError ? 'alert-danger' : 'alert-success'}`;
+            }
+
+            async function request(url, options = {}) {
+                const headers = new Headers(options.headers || {});
+                if (options.method) {
+                    headers.set('RequestVerificationToken',
+                        document.querySelector('input[name="__RequestVerificationToken"]').value);
+                }
+                const response = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.errors?.join(' ') || result.message || 'Đã xảy ra lỗi.');
+                }
+                return result;
+            }
+
+            async function loadFeedback(page = currentPage) {
+                try {
+                    const result = await request(`${apiUrl}?page=${page}&pageSize=${pageSize}`);
+                    currentPage = result.page;
+                    document.getElementById('feedbackTotal').textContent = `${result.totalItems} phản hồi`;
+                    renderFeedback(result.data || []);
+                    renderPagination(result.page, result.pageSize, result.totalItems);
+                } catch (error) {
+                    showAlert(error.message, true);
+                }
+            }
+
+            function renderFeedback(feedbacks) {
+                feedbackList.replaceChildren();
+                emptyMessage.classList.toggle('d-none', feedbacks.length !== 0);
+                for (const feedback of feedbacks) {
+                    const card = document.createElement('article');
+                    card.className = 'card border-0 shadow-sm rounded-4';
+                    const body = document.createElement('div');
+                    body.className = 'card-body p-4';
+                    const header = document.createElement('div');
+                    header.className = 'd-flex flex-wrap justify-content-between align-items-center gap-2 mb-3';
+                    const date = document.createElement('span');
+                    date.className = 'small text-muted';
+                    date.textContent = new Date(feedback.createdAt).toLocaleString('vi-VN');
+                    const status = document.createElement('span');
+                    status.className = feedback.status === 'resolved'
+                        ? 'badge rounded-pill text-bg-success'
+                        : 'badge rounded-pill text-bg-warning';
+                    status.textContent = feedback.status === 'resolved' ? 'Đã xử lý' : 'Đang chờ xử lý';
+                    header.append(date, status);
+                    const comment = document.createElement('p');
+                    comment.className = 'mb-0';
+                    comment.style.whiteSpace = 'pre-wrap';
+                    comment.textContent = feedback.comment;
+                    body.append(header, comment);
+                    card.append(body);
+                    feedbackList.append(card);
+                }
+            }
+
+            function renderPagination(page, size, total) {
+                pagination.replaceChildren();
+                if (size < 1 || total < 1) return;
+                const pages = Math.ceil(total / size);
+                for (let index = 1; index <= pages; index++) {
+                    const item = document.createElement('li');
+                    item.className = `page-item ${index === page ? 'active' : ''}`;
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'page-link';
+                    button.textContent = index;
+                    button.addEventListener('click', () => loadFeedback(index));
+                    item.append(button);
+                    pagination.append(item);
+                }
+            }
+
+            commentInput.addEventListener('input', () => {
+                document.getElementById('feedbackLength').textContent =
+                    `${commentInput.value.length.toLocaleString('vi-VN')} / 2.000`;
+            });
+
+            form.addEventListener('submit', async event => {
+                event.preventDefault();
+                if (!commentInput.value.trim()) {
+                    showAlert('Vui lòng nhập nội dung phản hồi.', true);
+                    return;
+                }
+
+                const button = document.getElementById('sendFeedbackButton');
+                button.disabled = true;
+                try {
+                    const result = await request(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ comment: commentInput.value })
+                    });
+                    form.reset();
+                    document.getElementById('feedbackLength').textContent = '0 / 2.000';
+                    currentPage = 1;
+                    await loadFeedback(1);
+                    showAlert(result.message);
+                } catch (error) {
+                    showAlert(error.message, true);
+                } finally {
+                    button.disabled = false;
+                }
+            });
+
+            loadFeedback();
+        })();
+    </script>
+}

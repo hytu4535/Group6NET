@@ -40,6 +40,7 @@ builder.Services.AddScoped<IPetRepository, PetRepository>();
 builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IChatConversationRepository, ChatConversationRepository>();
+builder.Services.AddScoped<IClientAiChatService, ClientAiChatService>();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -75,6 +76,26 @@ builder.Services
         options.AccessDeniedPath = "/Auth/AccessDenied";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
+        options.Events.OnRedirectToLogin = async context =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(ApiResponse<object>.Fail("Vui lòng đăng nhập."));
+                return;
+            }
+            context.Response.Redirect(context.RedirectUri);
+        };
+        options.Events.OnRedirectToAccessDenied = async context =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsJsonAsync(ApiResponse<object>.Fail("Bạn không có quyền thực hiện thao tác này."));
+                return;
+            }
+            context.Response.Redirect(context.RedirectUri);
+        };
     });
 
 builder.Services.AddAuthorization();

@@ -4,35 +4,373 @@
     ViewData["Title"] = "Thú cưng của tôi";
 }
 
-<h2 class="mb-4">Thú cưng của tôi</h2>
-
-@if (!Model.Any())
-{
-    <div class="alert alert-info">
-        Bạn chưa có thú cưng nào. <a asp-controller="Pets" asp-action="Create">Thêm thú cưng đầu tiên</a>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <h2 class="mb-1">Thú cưng của tôi</h2>
+        <p class="text-muted mb-0">Quản lý thông tin và hình ảnh các bé.</p>
     </div>
-}
-else
-{
-    <div class="row row-cols-1 row-cols-md-2 g-4">
-        @foreach (var pet in Model)
-        {
-            <div class="col">
-                <div class="card h-100 shadow-sm">
-                    <div class="ratio ratio-1x1">
-                        <img src="@(pet.PetImages.FirstOrDefault(pi => pi.IsAvatar == true)?.ImageUrl ?? "/images/default-pet.jpg")" class="card-img-top" alt="@pet.Name">
+    <button type="button" class="btn btn-custom-primary" id="addPetButton">
+        <i class="bi bi-plus-lg me-1"></i>Thêm thú cưng
+    </button>
+</div>
+
+<div id="petAlert" class="alert d-none" role="alert"></div>
+@Html.AntiForgeryToken()
+<div id="petList" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4" aria-live="polite"></div>
+<div id="emptyPets" class="alert alert-info d-none">
+    Bạn chưa có thú cưng nào. Hãy thêm hồ sơ đầu tiên nhé!
+</div>
+<nav class="mt-4" aria-label="Phân trang thú cưng">
+    <ul id="petPagination" class="pagination justify-content-center"></ul>
+</nav>
+
+<div class="modal fade" id="petFormModal" tabindex="-1" aria-labelledby="petFormTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <form id="petForm" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="petFormTitle">Thêm thú cưng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="petId">
+                    <div class="mb-3">
+                        <label for="petName" class="form-label">Tên thú cưng <span class="text-danger">*</span></label>
+                        <input id="petName" name="Name" class="form-control" maxlength="100" required>
                     </div>
-                    <div class="card-body d-flex flex-column">
-                        <h5 class="card-title">@pet.Name</h5>
-                        <p class="card-text">
-                            <strong>Giống:</strong> @pet.Breed<br>
-                            <strong>Loài:</strong> @pet.Species<br>
-                            <strong>Cân nặng:</strong> @pet.WeightKg kg
-                        </p>
-                        <a asp-controller="Pets" asp-action="Details" asp-route-id="@pet.Id" class="btn btn-primary mt-auto">Xem chi tiết</a>
+                    <div class="row">
+                        <div class="col-sm-6 mb-3">
+                            <label for="petSpecies" class="form-label">Loài <span class="text-danger">*</span></label>
+                            <input id="petSpecies" name="Species" class="form-control" maxlength="50" required>
+                        </div>
+                        <div class="col-sm-6 mb-3">
+                            <label for="petBreed" class="form-label">Giống</label>
+                            <input id="petBreed" name="Breed" class="form-control" maxlength="80">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-6 mb-3">
+                            <label for="petGender" class="form-label">Giới tính <span class="text-danger">*</span></label>
+                            <select id="petGender" name="Gender" class="form-select" required>
+                                <option value="">Chọn giới tính</option>
+                                <option value="Male">Đực</option>
+                                <option value="Female">Cái</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-6 mb-3">
+                            <label for="petWeight" class="form-label">Cân nặng (kg)</label>
+                            <input id="petWeight" name="WeightKg" type="number" min="0.01" max="999.99" step="0.01" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-1">
+                        <label for="petImage" class="form-label">Ảnh đại diện</label>
+                        <input id="petImage" name="Image" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="form-control">
+                        <div class="form-text">JPG, PNG hoặc WEBP; tối đa 5 MB.</div>
                     </div>
                 </div>
-            </div>
-        }
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-custom-primary" id="savePetButton">Lưu thú cưng</button>
+                </div>
+            </form>
+        </div>
     </div>
+</div>
+
+<div class="modal fade" id="petGalleryModal" tabindex="-1" aria-labelledby="petGalleryTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="petGalleryTitle">Ảnh thú cưng</h5>
+                    <div id="petGalleryMeta" class="small text-muted"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body">
+                <div id="petGallery" class="row row-cols-2 row-cols-md-3 g-3"></div>
+                <div id="emptyGallery" class="text-center text-muted py-4 d-none">Chưa có ảnh nào.</div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <form id="petImageForm" class="d-flex flex-wrap gap-2">
+                    <input type="file" id="galleryImage" class="form-control" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" required>
+                    <button type="submit" class="btn btn-outline-primary"><i class="bi bi-cloud-upload me-1"></i>Tải ảnh lên</button>
+                </form>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const apiUrl = '/api/client/pets';
+            const pageSize = 9;
+            const defaultPetImage = '/dist/assets/img/default-150x150.png';
+            const petList = document.getElementById('petList');
+            const petAlert = document.getElementById('petAlert');
+            const emptyPets = document.getElementById('emptyPets');
+            const pagination = document.getElementById('petPagination');
+            const formModal = new bootstrap.Modal(document.getElementById('petFormModal'));
+            const galleryModal = new bootstrap.Modal(document.getElementById('petGalleryModal'));
+            const form = document.getElementById('petForm');
+            let currentPage = 1;
+            let totalItems = 0;
+            let activePetId = null;
+
+            function showAlert(message, isError = false) {
+                petAlert.textContent = message;
+                petAlert.className = `alert ${isError ? 'alert-danger' : 'alert-success'}`;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            function clearAlert() {
+                petAlert.textContent = '';
+                petAlert.className = 'alert d-none';
+            }
+
+            async function request(url, options = {}) {
+                const headers = new Headers(options.headers || {});
+                if (options.method && options.method !== 'GET') {
+                    headers.set('RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                }
+                const response = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.errors?.join(' ') || result.message || 'Đã xảy ra lỗi.');
+                }
+                return result;
+            }
+
+            async function loadPets(page = currentPage) {
+                clearAlert();
+                try {
+                    const result = await request(`${apiUrl}?page=${page}&pageSize=${pageSize}`);
+                    currentPage = result.page;
+                    totalItems = result.totalItems;
+                    renderPets(result.data || []);
+                    renderPagination(result.page, result.pageSize, result.totalItems);
+                } catch (error) {
+                    showAlert(error.message, true);
+                }
+            }
+
+            function renderPets(pets) {
+                petList.replaceChildren();
+                emptyPets.classList.toggle('d-none', pets.length !== 0);
+                for (const pet of pets) {
+                    const col = document.createElement('div');
+                    col.className = 'col';
+                    const card = document.createElement('article');
+                    card.className = 'card h-100 border-0 shadow-sm overflow-hidden';
+                    const image = document.createElement('img');
+                    image.className = 'card-img-top';
+                    image.src = pet.avatarUrl || defaultPetImage;
+                    image.alt = `Ảnh ${pet.name}`;
+                    image.style.height = '230px';
+                    image.style.objectFit = 'cover';
+                    image.onerror = () => { image.src = defaultPetImage; };
+                    const body = document.createElement('div');
+                    body.className = 'card-body d-flex flex-column';
+                    const title = document.createElement('h5');
+                    title.className = 'card-title fw-bold';
+                    title.textContent = pet.name;
+                    const description = document.createElement('p');
+                    description.className = 'card-text text-muted small';
+                    description.textContent = `${pet.species}${pet.breed ? ` · ${pet.breed}` : ''} · ${pet.gender === 'Male' ? 'Đực' : 'Cái'}${pet.weightKg ? ` · ${pet.weightKg} kg` : ''}`;
+                    const actions = document.createElement('div');
+                    actions.className = 'd-flex gap-2 flex-wrap mt-auto';
+                    actions.append(
+                        makeButton('Ảnh', 'btn btn-sm btn-outline-secondary', () => openGallery(pet.id, pet.name)),
+                        makeButton('Sửa', 'btn btn-sm btn-outline-primary', () => openEdit(pet.id)),
+                        makeButton('Xóa', 'btn btn-sm btn-outline-danger', () => deletePet(pet.id, pet.name))
+                    );
+                    body.append(title, description, actions);
+                    card.append(image, body);
+                    col.append(card);
+                    petList.append(col);
+                }
+            }
+
+            function makeButton(text, className, handler) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = className;
+                button.textContent = text;
+                button.addEventListener('click', handler);
+                return button;
+            }
+
+            function renderPagination(page, size, total) {
+                pagination.replaceChildren();
+                const totalPages = Math.ceil(total / size);
+                if (totalPages <= 1) return;
+                for (let index = 1; index <= totalPages; index++) {
+                    const item = document.createElement('li');
+                    item.className = `page-item ${index === page ? 'active' : ''}`;
+                    const button = document.createElement('button');
+                    button.className = 'page-link';
+                    button.type = 'button';
+                    button.textContent = index;
+                    button.addEventListener('click', () => loadPets(index));
+                    item.append(button);
+                    pagination.append(item);
+                }
+            }
+
+            function resetForm() {
+                form.reset();
+                document.getElementById('petId').value = '';
+                document.getElementById('petFormTitle').textContent = 'Thêm thú cưng';
+            }
+
+            document.getElementById('addPetButton').addEventListener('click', () => {
+                clearAlert();
+                resetForm();
+                formModal.show();
+            });
+
+            async function openEdit(petId) {
+                clearAlert();
+                try {
+                    const result = await request(`${apiUrl}/${petId}`);
+                    const pet = result.data;
+                    document.getElementById('petId').value = pet.id;
+                    document.getElementById('petName').value = pet.name;
+                    document.getElementById('petSpecies').value = pet.species;
+                    document.getElementById('petBreed').value = pet.breed || '';
+                    document.getElementById('petGender').value = pet.gender;
+                    document.getElementById('petWeight').value = pet.weightKg ?? '';
+                    document.getElementById('petFormTitle').textContent = `Sửa thông tin ${pet.name}`;
+                    formModal.show();
+                } catch (error) {
+                    showAlert(error.message, true);
+                }
+            }
+
+            form.addEventListener('submit', async event => {
+                event.preventDefault();
+                const petId = document.getElementById('petId').value;
+                const button = document.getElementById('savePetButton');
+                button.disabled = true;
+                try {
+                    const result = await request(petId ? `${apiUrl}/${petId}` : apiUrl, {
+                        method: petId ? 'PUT' : 'POST',
+                        body: new FormData(form)
+                    });
+                    formModal.hide();
+                    if (!petId) currentPage = 1;
+                    await loadPets(currentPage);
+                    showAlert(result.message);
+                } catch (error) {
+                    showAlert(error.message, true);
+                } finally {
+                    button.disabled = false;
+                }
+            });
+
+            async function deletePet(petId, petName) {
+                if (!window.confirm(`Bạn có chắc muốn xóa ${petName}?`)) return;
+                try {
+                    const result = await request(`${apiUrl}/${petId}`, { method: 'DELETE' });
+                    const remaining = Math.max(0, totalItems - 1);
+                    if (currentPage > 1 && remaining <= (currentPage - 1) * pageSize) currentPage--;
+                    await loadPets(currentPage);
+                    showAlert(result.message);
+                } catch (error) {
+                    showAlert(error.message, true);
+                }
+            }
+
+            async function openGallery(petId, petName) {
+                clearAlert();
+                activePetId = petId;
+                document.getElementById('petGalleryTitle').textContent = `Ảnh của ${petName}`;
+                document.getElementById('petGalleryMeta').textContent = '';
+                await loadGallery();
+                galleryModal.show();
+            }
+
+            async function loadGallery() {
+                try {
+                    const result = await request(`${apiUrl}/${activePetId}/images`);
+                    const images = result.data || [];
+                    const gallery = document.getElementById('petGallery');
+                    const emptyGallery = document.getElementById('emptyGallery');
+                    gallery.replaceChildren();
+                    emptyGallery.classList.toggle('d-none', images.length !== 0);
+                    for (const image of images) {
+                        const col = document.createElement('div');
+                        col.className = 'col';
+                        const card = document.createElement('div');
+                        card.className = 'card h-100';
+                        const picture = document.createElement('img');
+                        picture.src = image.imageUrl;
+                        picture.alt = image.isAvatar ? 'Ảnh đại diện thú cưng' : 'Ảnh thú cưng';
+                        picture.className = 'card-img-top';
+                        picture.style.height = '180px';
+                        picture.style.objectFit = 'cover';
+                        const body = document.createElement('div');
+                        body.className = 'card-body p-2 d-flex flex-wrap gap-1';
+                        if (image.isAvatar) {
+                            const badge = document.createElement('span');
+                            badge.className = 'badge text-bg-primary';
+                            badge.textContent = 'Ảnh đại diện';
+                            body.append(badge);
+                        } else {
+                            body.append(makeButton('Đặt làm đại diện', 'btn btn-sm btn-outline-primary', () => setAvatar(image.id)));
+                        }
+                        body.append(makeButton('Xóa ảnh', 'btn btn-sm btn-outline-danger', () => deleteImage(image.id)));
+                        card.append(picture, body);
+                        col.append(card);
+                        gallery.append(col);
+                    }
+                } catch (error) {
+                    showAlert(error.message, true);
+                }
+            }
+
+            document.getElementById('petImageForm').addEventListener('submit', async event => {
+                event.preventDefault();
+                const imageInput = document.getElementById('galleryImage');
+                const data = new FormData();
+                data.append('Image', imageInput.files[0]);
+                try {
+                    const result = await request(`${apiUrl}/${activePetId}/images`, { method: 'POST', body: data });
+                    imageInput.value = '';
+                    await loadGallery();
+                    await loadPets(currentPage);
+                    showAlert(result.message);
+                } catch (error) {
+                    showAlert(error.message, true);
+                }
+            });
+
+            async function setAvatar(imageId) {
+                try {
+                    const result = await request(`${apiUrl}/${activePetId}/images/${imageId}/avatar`, { method: 'PUT' });
+                    await loadGallery();
+                    await loadPets(currentPage);
+                    showAlert(result.message);
+                } catch (error) {
+                    showAlert(error.message, true);
+                }
+            }
+
+            async function deleteImage(imageId) {
+                if (!window.confirm('Bạn có chắc muốn xóa ảnh này?')) return;
+                try {
+                    const result = await request(`${apiUrl}/${activePetId}/images/${imageId}`, { method: 'DELETE' });
+                    await loadGallery();
+                    await loadPets(currentPage);
+                    showAlert(result.message);
+                } catch (error) {
+                    showAlert(error.message, true);
+                }
+            }
+
+            loadPets();
+        })();
+    </script>
 }

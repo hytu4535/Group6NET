@@ -457,19 +457,23 @@ namespace PetManagementSystem.Controllers
         // New actions for client portal
         [Authorize(Roles = "member")]
         [HttpGet("/Account/MyPets")]
-        public async Task<IActionResult> MyPets()
+        public IActionResult MyPets()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var pets = await _dbContext.Pets
-                .Where(p => p.UserId == userId)
-                .Include(p => p.PetImages.Where(pi => pi.IsAvatar == true))
-                .ToListAsync();
+            return View(Array.Empty<Pet>());
+        }
 
-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-            {
-                return JsonResponse(true, "Danh sách thú cưng lấy thành công.", pets);
-            }
-            return View(pets);
+        [Authorize(Roles = "member")]
+        [HttpGet("/Account/MyFeedback")]
+        public IActionResult MyFeedback()
+        {
+            return View();
+        }
+
+        [Authorize(Roles = "member")]
+        [HttpGet("/Account/MyNotifications")]
+        public IActionResult MyNotifications()
+        {
+            return View();
         }
 
         [Authorize(Roles = "member")]
