@@ -1,0 +1,329 @@
+@model PetManagementSystem.ViewModels.PetRecognitionHistoryPageViewModel
+@{
+    ViewData["Title"] = "Lịch sử nhận diện";
+    ViewData["Active"] = "PetRecognition";
+    Layout = "_AdminLayout";
+    var fromDateValue = Model.Filter.FromDate?.ToString("yyyy-MM-dd");
+    var toDateValue = Model.Filter.ToDate?.ToString("yyyy-MM-dd");
+}
+
+<style>
+    .pr-history { color: #172b4d; }
+    .pr-history-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .pr-history-toolbar p { margin: 3px 0 0; color: #718096; font-size: 13px; }
+    .pr-history-filters { display: grid; grid-template-columns: minmax(190px,1.5fr) repeat(2,minmax(150px,1fr)) auto auto; align-items: end; gap: 12px; padding: 16px; border-bottom: 1px solid #e6ebf2; }
+    .pr-history-filters label { display: block; margin-bottom: 5px; color: #53647b; font-size: 12px; font-weight: 700; }
+    .pr-history-filters .form-control,.pr-history-filters .form-select { min-height: 39px; }
+    .pr-history-table th { padding-top: 13px; padding-bottom: 13px; color: #34465e; font-size: .92rem; font-weight: 700; white-space: nowrap; }
+    .pr-history-table td { padding-top: 13px; padding-bottom: 13px; vertical-align: middle; color: #27384e; font-size: .96rem; }
+    .pr-history-date { min-width: 125px; white-space: nowrap; }
+    .pr-history-date small,.pr-history-owner small,.pr-history-pet small,.pr-history-table td small { display: block; margin-top: 4px; color: #64748b; font-size: .85rem; }
+    .pr-history-thumb { display: block; width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: #f1f4f7; }
+    .pr-history-pet { display: flex; min-width: 130px; align-items: center; gap: 9px; }
+    .pr-history-pet img,.pr-history-avatar-placeholder { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%; object-fit: cover; background: #f1f4f7; }
+    .pr-history-avatar-placeholder { display: grid; place-items: center; color: #8190a0; }
+    .pr-history-owner { min-width: 125px; }
+    .pr-history-score { white-space: nowrap; }
+    .pr-history-score .badge { padding: .42rem .68rem; font-size: .88rem; font-weight: 700; }
+    .pr-history-table .btn { padding: .42rem .72rem; font-size: .9rem; }
+    .pr-detail-images { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .pr-detail-images img,.pr-detail-image-empty { width: 100%; height: 220px; border: 1px solid #e6ebf2; border-radius: 10px; object-fit: contain; background: #f7f9fb; }
+    .pr-detail-image-empty { display: grid; place-items: center; color: #8190a0; }
+    .pr-detail-images figcaption { margin-top: 6px; color: #718096; font-size: 12px; text-align: center; }
+    .pr-history-empty { padding: 40px 16px !important; color: #718096; text-align: center; }
+    .pr-history-pagination { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; border-top: 1px solid #e6ebf2; }
+    @@media(max-width: 850px) {
+        .pr-history-filters { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    }
+    @@media(max-width: 560px) {
+        .pr-history-toolbar { align-items: flex-start; flex-direction: column; }
+        .pr-history-filters { grid-template-columns: 1fr; }
+        .pr-detail-images { grid-template-columns: 1fr; }
+        .pr-detail-images img,.pr-detail-image-empty { height: 180px; }
+        .pr-history-pagination { align-items: flex-start; flex-direction: column; }
+    }
+</style>
+
+<main class="pr-history">
+    <header class="pr-history-toolbar">
+        <div>
+            <h2 class="h4 fw-bold mb-0">Lịch sử nhận diện cá thể</h2>
+            <p>Tra cứu kết quả nhận diện, ảnh đầu vào và hồ sơ thú cưng đã xác nhận.</p>
+        </div>
+        <a class="btn btn-outline-secondary" asp-controller="PetRecognition" asp-action="Index">
+            <i class="bi bi-arrow-left"></i> Quay lại nhận diện
+        </a>
+    </header>
+
+    <section class="card border-0 shadow-sm">
+        <form asp-controller="PetRecognition" asp-action="History" method="get" class="pr-history-filters">
+            <div>
+                <label for="petId">Thú cưng</label>
+                <select id="petId" name="petId" class="form-select">
+                    <option value="">Tất cả thú cưng</option>
+                    @foreach (var pet in Model.Pets)
+                    {
+                        if (Model.Filter.PetId == pet.Id)
+                        {
+                            <option value="@pet.Id" selected>PET@(pet.Id.ToString("000")) - @pet.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@pet.Id">PET@(pet.Id.ToString("000")) - @pet.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div>
+                <label for="fromDate">Từ ngày</label>
+                <input id="fromDate" name="fromDate" type="date" class="form-control" value="@fromDateValue" />
+            </div>
+            <div>
+                <label for="toDate">Đến ngày</label>
+                <input id="toDate" name="toDate" type="date" class="form-control" value="@toDateValue" />
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Lọc</button>
+            <a class="btn btn-outline-secondary" asp-controller="PetRecognition" asp-action="History">Xóa lọc</a>
+        </form>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger mx-3 mt-3 mb-0" role="alert">
+                <div asp-validation-summary="All"></div>
+            </div>
+        }
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 pr-history-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Thời gian &amp;</th>
+                        <th>Ảnh quét</th>
+                        <th>ID Pet</th>
+                        <th>Tên Pet</th>
+                        <th>Giống loài</th>
+                        <th>Tên chủ</th>
+                        <th>Độ tương đồng</th>
+                        <th>Nhân viên xử lý</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Items.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="9" class="pr-history-empty">
+                                <i class="bi bi-clock-history fs-3 d-block mb-2"></i>
+                                Không tìm thấy lịch sử nhận diện phù hợp.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var history in Model.Items)
+                        {
+                            var modalId = $"recognitionHistoryDetails{history.Id}";
+                            <tr>
+                                <td class="pr-history-date py-3">
+                                    @history.RecognizedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                    <small>Mã #@history.Id</small>
+                                </td>
+                                <td class="py-3">
+                                    @if (!string.IsNullOrWhiteSpace(history.InputImageUrl))
+                                    {
+                                        <a href="@history.InputImageUrl" target="_blank" rel="noopener noreferrer">
+                                            <img class="pr-history-thumb" src="@history.InputImageUrl" alt="Ảnh quét lịch sử #@history.Id" loading="lazy" />
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="pr-history-avatar-placeholder"><i class="bi bi-image"></i></span>
+                                    }
+                                </td>
+                                <td class="text-nowrap py-3">@(string.IsNullOrWhiteSpace(history.PetCode) ? "—" : history.PetCode)</td>
+                                <td class="py-3">
+                                    <div class="pr-history-pet">
+                                        @if (!string.IsNullOrWhiteSpace(history.PetImageUrl))
+                                        {
+                                            <img src="@history.PetImageUrl" alt="Ảnh @history.PetName" loading="lazy" />
+                                        }
+                                        else
+                                        {
+                                            <span class="pr-history-avatar-placeholder"><i class="bi bi-camera"></i></span>
+                                        }
+                                        <strong>@history.PetName</strong>
+                                    </div>
+                                </td>
+                                <td class="text-nowrap py-3">
+                                    @if (!string.IsNullOrWhiteSpace(history.PetSpecies) || !string.IsNullOrWhiteSpace(history.PetBreed))
+                                    {
+                                        <span>@(history.PetSpecies ?? "Chưa rõ")</span>
+                                        @if (!string.IsNullOrWhiteSpace(history.PetBreed))
+                                        {
+                                            <small class="d-block text-muted">@history.PetBreed</small>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Chưa cập nhật</span>
+                                    }
+                                </td>
+                                <td class="pr-history-owner py-3">
+                                    <strong>@history.OwnerName</strong>
+                                    <small>@(string.IsNullOrWhiteSpace(history.OwnerPhone) ? "Chưa có số điện thoại" : history.OwnerPhone)</small>
+                                </td>
+                                <td class="pr-history-score py-3">
+                                    @if (history.SimilarityScore.HasValue)
+                                    {
+                                        var confidencePercent = history.SimilarityScore.Value * 100;
+                                        var confidenceClass = history.SimilarityScore.Value < 0.4m
+                                            ? "text-bg-danger"
+                                            : history.SimilarityScore.Value < 0.7m
+                                                ? "text-bg-warning"
+                                                : "text-bg-success";
+                                        <span class="badge rounded-pill @confidenceClass">@confidencePercent.ToString("F1")%</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge rounded-pill text-bg-secondary">Thủ công</span>
+                                    }
+                                </td>
+                                <td class="py-3">@history.StaffName</td>
+                                <td class="text-end py-3">
+                                    <button type="button" class="btn btn-outline-primary text-nowrap"
+                                            data-bs-toggle="modal" data-bs-target="#@modalId">
+                                        <i class="bi bi-eye"></i> 
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="pr-history-pagination" aria-label="Phân trang lịch sử nhận diện">
+                <span class="text-muted small">Hiển thị @Model.Items.Count / @Model.TotalCount bản ghi</span>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                        <a class="page-link" asp-controller="PetRecognition" asp-action="History"
+                           asp-route-page="@(Model.Filter.Page - 1)"
+                           asp-route-petId="@Model.Filter.PetId"
+                           asp-route-fromDate="@fromDateValue"
+                           asp-route-toDate="@toDateValue">Trước</a>
+                    </li>
+                    @for (var pageNumber = 1; pageNumber <= Model.TotalPages; pageNumber++)
+                    {
+                        <li class="page-item @(pageNumber == Model.Filter.Page ? "active" : "")">
+                            <a class="page-link" asp-controller="PetRecognition" asp-action="History"
+                               asp-route-page="@pageNumber"
+                               asp-route-petId="@Model.Filter.PetId"
+                               asp-route-fromDate="@fromDateValue"
+                               asp-route-toDate="@toDateValue">@pageNumber</a>
+                        </li>
+                    }
+                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                        <a class="page-link" asp-controller="PetRecognition" asp-action="History"
+                           asp-route-page="@(Model.Filter.Page + 1)"
+                           asp-route-petId="@Model.Filter.PetId"
+                           asp-route-fromDate="@fromDateValue"
+                           asp-route-toDate="@toDateValue">Sau</a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </section>
+</main>
+
+@foreach (var history in Model.Items)
+{
+    var modalId = $"recognitionHistoryDetails{history.Id}";
+    <div class="modal fade" id="@modalId" tabindex="-1" aria-labelledby="@(modalId)Title" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title fs-5 fw-bold" id="@(modalId)Title">Chi tiết nhận diện #@history.Id</h2>
+                        <small class="text-muted">@history.RecognizedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <strong>Thú cưng</strong>
+                            <div>@history.PetName (@(string.IsNullOrWhiteSpace(history.PetCode) ? "Chưa có mã" : history.PetCode))</div>
+                            <div class="text-muted">@history.PetSpecies @(string.IsNullOrWhiteSpace(history.PetBreed) ? string.Empty : $"· {history.PetBreed}")</div>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Chủ nuôi</strong>
+                            <div>@history.OwnerName</div>
+                            <div class="text-muted">@(string.IsNullOrWhiteSpace(history.OwnerPhone) ? "Chưa có số điện thoại" : history.OwnerPhone)</div>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Nhân viên xử lý</strong>
+                            <div>@history.StaffName</div>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Độ tương đồng</strong>
+                            @if (history.SimilarityScore.HasValue)
+                            {
+                                var confidenceClass = history.SimilarityScore.Value < 0.4m
+                                    ? "text-bg-danger"
+                                    : history.SimilarityScore.Value < 0.7m
+                                        ? "text-bg-warning"
+                                        : "text-bg-success";
+                                <div><span class="badge rounded-pill @confidenceClass">@((history.SimilarityScore.Value * 100).ToString("F1"))%</span></div>
+                            }
+                            else
+                            {
+                                <div><span class="badge rounded-pill text-bg-secondary">Tra cứu thủ công</span></div>
+                            }
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(history.Notes))
+                        {
+                            <div class="col-12">
+                                <strong>Ghi chú</strong>
+                                <div>@history.Notes</div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="pr-detail-images">
+                        <figure class="mb-0">
+                            @if (!string.IsNullOrWhiteSpace(history.InputImageUrl))
+                            {
+                                <a href="@history.InputImageUrl" target="_blank" rel="noopener noreferrer">
+                                    <img src="@history.InputImageUrl" alt="Ảnh gốc đã quét" loading="lazy" />
+                                </a>
+                            }
+                            else
+                            {
+                                <div class="pr-detail-image-empty"><i class="bi bi-image fs-2"></i></div>
+                            }
+                            <figcaption>Ảnh gốc quét</figcaption>
+                        </figure>
+                        <figure class="mb-0">
+                            @if (!string.IsNullOrWhiteSpace(history.PetImageUrl))
+                            {
+                                <a href="@history.PetImageUrl" target="_blank" rel="noopener noreferrer">
+                                    <img src="@history.PetImageUrl" alt="Ảnh hồ sơ thú cưng" loading="lazy" />
+                                </a>
+                            }
+                            else
+                            {
+                                <div class="pr-detail-image-empty"><i class="bi bi-camera fs-2"></i></div>
+                            }
+                            <figcaption>Ảnh hồ sơ thú cưng</figcaption>
+                        </figure>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}

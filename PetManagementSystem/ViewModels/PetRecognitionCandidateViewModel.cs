@@ -4,7 +4,7 @@ public class PetRecognitionCandidateViewModel
 {
     public string PetId { get; set; } = string.Empty;
     public string? PetImageUrl { get; set; }
-    public double Similarity { get; set; }
+    public double? Similarity { get; set; }
 
     public int DatabasePetId { get; set; }
     public string PetName { get; set; } = string.Empty;

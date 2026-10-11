@@ -1,0 +1,98 @@
+@using System.Globalization
+@model IReadOnlyList<PetManagementSystem.ViewModels.PetRecognitionCandidateViewModel>
+@{
+    var mode = ViewData["CandidateMode"] as string ?? "manual";
+    var recognitionStatus = ViewData["RecognitionStatus"] as string ?? string.Empty;
+}
+
+<div class="pr-search-result-fragment"
+     data-result-count="@Model.Count"
+     data-mode="@mode"
+     data-recognition-status="@recognitionStatus">
+    @if (Model.Count == 0)
+    {
+        <div class="pr-empty">
+            <i class="bi bi-search"></i>
+            <strong>@(mode == "ai" ? "AI chưa tìm thấy hồ sơ phù hợp" : "Không tìm thấy hồ sơ")</strong>
+            <p>@(mode == "ai"
+                ? "Thử đổi góc ảnh hoặc sử dụng tìm kiếm thủ công."
+                : "Thử từ khóa khác hoặc kiểm tra lại tên thú cưng, chủ nuôi, số điện thoại hay email.")</p>
+        </div>
+    }
+    else
+    {
+        foreach (var candidate in Model)
+        {
+            var details = string.Join(" · ", new[] { candidate.Species, candidate.Breed }
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
+            <article class="pr-candidate">
+                @if (!string.IsNullOrWhiteSpace(candidate.PetImageUrl))
+                {
+                    <img class="pr-avatar"
+                         src="@candidate.PetImageUrl"
+                         alt="Ảnh @candidate.PetName"
+                         loading="lazy" />
+                }
+                else
+                {
+                    <div class="pr-avatar"><i class="bi bi-camera"></i></div>
+                }
+                <div class="pr-candidate-main">
+                    <div class="pr-candidate-heading">
+                        <h3 class="pr-pet-name">@candidate.PetName</h3>
+                        <span class="pr-pet-id">@candidate.PetId</span>
+                    </div>
+                    <div class="pr-sub">@(string.IsNullOrWhiteSpace(details) ? "Chưa cập nhật loài/giống" : details)</div>
+                    <div class="pr-owner-card">
+                        <span class="pr-owner-label">Chủ nuôi</span>
+                        <strong class="pr-owner-name">@candidate.OwnerName</strong>
+                        <div class="pr-owner-contact">
+                            @if (!string.IsNullOrWhiteSpace(candidate.OwnerPhone))
+                            {
+                                <span><i class="bi bi-telephone"></i>@candidate.OwnerPhone</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(candidate.OwnerEmail))
+                            {
+                                <span>@(!string.IsNullOrWhiteSpace(candidate.OwnerPhone) ? " · " : "")<i class="bi bi-envelope"></i>@candidate.OwnerEmail</span>
+                            }
+                            @if (string.IsNullOrWhiteSpace(candidate.OwnerPhone) && string.IsNullOrWhiteSpace(candidate.OwnerEmail))
+                            {
+                                <span>Chưa có thông tin liên hệ</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="pr-candidate-actions">
+                    @if (candidate.Similarity.HasValue)
+                    {
+                        var scoreClass = candidate.Similarity.Value >= 0.7
+                            ? "pr-score-success"
+                            : candidate.Similarity.Value >= 0.4
+                                ? "pr-score-warning"
+                                : "pr-score-danger";
+                        <div class="pr-score @scoreClass">@((candidate.Similarity.Value * 100).ToString("F1", CultureInfo.InvariantCulture))%<small>Độ tương đồng</small></div>
+                    }
+                    else
+                    {
+                        <div class="pr-score pr-score-secondary">Thủ công<small>Tra cứu hồ sơ</small></div>
+                    }
+                    <button type="button"
+                            class="pr-btn pr-btn-primary pr-select-btn"
+                            data-confirm
+                            data-pet-id="@candidate.PetId"
+                            data-database-pet-id="@candidate.DatabasePetId"
+                            data-pet-name="@candidate.PetName"
+                            data-species="@candidate.Species"
+                            data-breed="@candidate.Breed"
+                            data-owner-name="@candidate.OwnerName"
+                            data-owner-phone="@candidate.OwnerPhone"
+                            data-owner-email="@candidate.OwnerEmail"
+                            data-pet-image-url="@candidate.PetImageUrl"
+                            data-similarity="@(candidate.Similarity?.ToString(CultureInfo.InvariantCulture) ?? string.Empty)">
+                        <i class="bi bi-check2-circle"></i>Xác nhận
+                    </button>
+                </div>
+            </article>
+        }
+    }
+</div>

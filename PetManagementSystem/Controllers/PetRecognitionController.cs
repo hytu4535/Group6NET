@@ -3,302 +3,262 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PetManagementSystem.Data;
-using PetManagementSystem.Models;
+using PetManagementSystem.Filters;
 using PetManagementSystem.Services;
 using PetManagementSystem.ViewModels;
 
 namespace PetManagementSystem.Controllers;
 
 [Authorize]
+[NotMemberAuthorize]
 [Route("PetRecognition")]
 public class PetRecognitionController(
     IPetRecognitionService petRecognitionService,
-    AppDbContext dbContext,
-    IWebHostEnvironment environment,
-    ILogger<PetRecognitionController> logger) : Controller
+    AppDbContext dbContext) : Controller
 {
+    private const long MaximumUploadRequestBytes =
+        RecognitionImageFileAttribute.MaximumFileSizeBytes + 64 * 1024;
+
     [HttpGet("")]
     public IActionResult Index()
     {
+        ViewData["Active"] = "PetRecognition";
         return View();
     }
 
-    [HttpPost("Recognize")]
-    public async Task<IActionResult> Recognize(IFormFile file)
+    [HttpGet("History")]
+    public async Task<IActionResult> History(
+        [FromQuery] int? petId,
+        [FromQuery] DateTime? fromDate,
+        [FromQuery] DateTime? toDate,
+        CancellationToken cancellationToken,
+        [FromQuery] int page = 1)
     {
-        if (file is null || file.Length == 0)
+        if (petId is <= 0)
         {
-            return BadRequest(new
-            {
-                message = "Vui lòng chọn ảnh thú cưng."
-            });
+            ModelState.AddModelError(
+                nameof(petId),
+                "Mã thú cưng phải lớn hơn 0.");
         }
 
+        if (fromDate.HasValue &&
+            toDate.HasValue &&
+            fromDate.Value.Date > toDate.Value.Date)
+        {
+            ModelState.AddModelError(
+                nameof(toDate),
+                "Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.");
+        }
+
+        var filter = new PetRecognitionHistoryFilter
+        {
+            PetId = petId,
+            FromDate = fromDate.HasValue
+                ? DateOnly.FromDateTime(fromDate.Value)
+                : null,
+            ToDate = toDate.HasValue
+                ? DateOnly.FromDateTime(toDate.Value)
+                : null,
+            Page = page,
+            PageSize = 10
+        };
+
+        ViewData["Active"] = "PetRecognition";
+        var model = await petRecognitionService.GetRecognitionHistoriesAsync(
+            filter,
+            cancellationToken);
+        return View("History", model);
+    }
+
+    [HttpPost("Recognize")]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(MaximumUploadRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaximumUploadRequestBytes)]
+    public async Task<IActionResult> Recognize(
+        [FromForm] RecognizePetRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            return ValidationProblem(ModelState);
+        }
+
+        PetRecognitionResponse aiResult;
         try
         {
-            // 1. Gửi ảnh sang AI
-            var aiResult =
-                await petRecognitionService.RecognizeAsync(file);
-
-            // 2. Lấy danh sách candidate từ AI
-            var candidates = new List<PetRecognitionCandidateViewModel>();
-
-            foreach (var candidate in aiResult.Candidates)
-            {
-                if (!PetIdMappingService.TryGetDatabasePetId(
-                        candidate.PetId,
-                        out var databasePetId))
-                {
-                    continue;
-                }
-
-                // 3. Tìm Pet + Owner trong SQL Server
-                var pet = await dbContext.Pets
-                    .Include(p => p.User)
-                    .Include(p => p.PetImages)
-                    .FirstOrDefaultAsync(p => p.Id == databasePetId);
-
-                if (pet is null)
-                    continue;
-
-                candidates.Add(new PetRecognitionCandidateViewModel
-                {
-                    PetId = candidate.PetId,
-                    Similarity = candidate.Similarity,
-                    PetImageUrl = pet.PetImages
-                        .OrderByDescending(i => i.IsAvatar == true)
-                        .ThenByDescending(i => i.UploadedAt)
-                        .Select(i=> i.ImageUrl)
-                        .FirstOrDefault(),
-
-                    DatabasePetId = pet.Id,
-                    PetName = pet.Name,
-                    Species = pet.Species,
-                    Breed = pet.Breed,
-
-                    OwnerName = pet.User?.FullName ?? "Không xác định",
-                    OwnerPhone = pet.User?.PhoneNumber,
-                    OwnerEmail = pet.User?.Email
-                });
-            }
-
-            return Ok(new
-            {
-                status = aiResult.Status,
-                petId = aiResult.PetId,
-                similarity = aiResult.Similarity,
-                candidates
-            });
+            aiResult = await petRecognitionService.RecognizeAsync(
+                request.File,
+                cancellationToken);
         }
-        catch (Exception ex)
+        catch (InvalidDataException exception)
         {
-            logger.LogError(
-                ex,
-                "Pet recognition request failed.");
-
-            return StatusCode(500, new
-            {
-                message = "Không thể nhận diện thú cưng."
-            });
+            ModelState.AddModelError(nameof(request.File), exception.Message);
+            return ValidationProblem(ModelState);
         }
+
+        var mappedCandidates = new List<(PetRecognitionCandidate Candidate, int DatabasePetId)>();
+        foreach (var candidate in aiResult.Candidates)
+        {
+            if (PetIdMappingService.TryGetDatabasePetId(
+                    candidate.PetId,
+                    out var databasePetId))
+            {
+                mappedCandidates.Add((candidate, databasePetId));
+            }
+        }
+
+        var petIds = mappedCandidates
+            .Select(candidate => candidate.DatabasePetId)
+            .Distinct()
+            .ToArray();
+
+        var pets = await dbContext.Pets
+            .AsNoTracking()
+            .Where(pet => petIds.Contains(pet.Id))
+            .Select(pet => new PetRecognitionCandidateViewModel
+            {
+                DatabasePetId = pet.Id,
+                PetId = $"PET{pet.Id:000}",
+                PetName = pet.Name,
+                Species = pet.Species,
+                Breed = pet.Breed,
+                OwnerName = pet.User == null
+                    ? "Không xác định"
+                    : pet.User.FullName ?? "Không xác định",
+                OwnerPhone = pet.User == null ? null : pet.User.PhoneNumber,
+                OwnerEmail = pet.User == null ? null : pet.User.Email,
+                PetImageUrl = pet.PetImages
+                    .OrderByDescending(image => image.IsAvatar)
+                    .ThenByDescending(image => image.UploadedAt)
+                    .Select(image => image.ImageUrl)
+                    .FirstOrDefault()
+            })
+            .ToListAsync(cancellationToken);
+
+        var petsById = pets.ToDictionary(pet => pet.DatabasePetId);
+        var candidates = new List<PetRecognitionCandidateViewModel>(mappedCandidates.Count);
+        foreach (var (candidate, databasePetId) in mappedCandidates)
+        {
+            if (petsById.TryGetValue(databasePetId, out var pet))
+            {
+                pet.PetId = candidate.PetId;
+                pet.Similarity = candidate.Similarity;
+                candidates.Add(pet);
+            }
+        }
+
+        ViewData["CandidateMode"] = "ai";
+        ViewData["RecognitionStatus"] = aiResult.Status;
+        return PartialView("_PetCandidateList", candidates);
     }
 
     [HttpGet("SearchOwners")]
-    public async Task<IActionResult> SearchOwners([FromQuery] string? q)
+    public async Task<IActionResult> SearchOwners(
+        [FromQuery] string? q,
+        CancellationToken cancellationToken)
     {
         q = q?.Trim();
         if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
-            return Ok(new { candidates = Array.Empty<object>() });
-
-        try
         {
-            var pets = await dbContext.Pets
-                .AsNoTracking()
-                .Include(p => p.User)
-                .Include(p => p.PetImages)
-                .Where(p => p.Name.Contains(q) ||
-                    (p.User != null &&
-                     ((p.User.FullName != null && p.User.FullName.Contains(q)) ||
-                      (p.User.PhoneNumber != null && p.User.PhoneNumber.Contains(q)) ||
-                      (p.User.Email != null && p.User.Email.Contains(q)))))
-                .OrderBy(p => p.Name)
-                .Take(20)
-                .ToListAsync();
+            ViewData["CandidateMode"] = "manual";
+            return PartialView("_PetCandidateList", new List<PetRecognitionCandidateViewModel>());
+        }
 
-            var candidates = pets.Select(p => new
+        var results = await dbContext.Pets
+            .AsNoTracking()
+            .Where(pet => pet.Name.Contains(q) ||
+                (pet.User != null &&
+                 ((pet.User.FullName != null && pet.User.FullName.Contains(q)) ||
+                  (pet.User.PhoneNumber != null && pet.User.PhoneNumber.Contains(q)) ||
+                  (pet.User.Email != null && pet.User.Email.Contains(q)))))
+            .OrderBy(pet => pet.Name)
+            .Take(20)
+            .Select(pet => new PetRecognitionCandidateViewModel
             {
-                petId = $"PET{p.Id:000}",
-                databasePetId = p.Id,
-                petName = p.Name,
-                species = p.Species,
-                breed = p.Breed,
-                ownerName = p.User?.FullName ?? "Không xác định",
-                ownerPhone = p.User?.PhoneNumber,
-                ownerEmail = p.User?.Email,
-                petImageUrl = p.PetImages
-                    .OrderByDescending(i => i.IsAvatar == true)
-                    .ThenByDescending(i => i.UploadedAt)
-                    .Select(i => i.ImageUrl)
+                PetId = $"PET{pet.Id:000}",
+                DatabasePetId = pet.Id,
+                PetName = pet.Name,
+                Species = pet.Species,
+                Breed = pet.Breed,
+                OwnerName = pet.User == null
+                    ? "Không xác định"
+                    : pet.User.FullName ?? "Không xác định",
+                OwnerPhone = pet.User == null ? null : pet.User.PhoneNumber,
+                OwnerEmail = pet.User == null ? null : pet.User.Email,
+                PetImageUrl = pet.PetImages
+                    .OrderByDescending(image => image.IsAvatar)
+                    .ThenByDescending(image => image.UploadedAt)
+                    .Select(image => image.ImageUrl)
                     .FirstOrDefault()
-            });
+            })
+            .ToListAsync(cancellationToken);
 
-            return Ok(new { candidates });
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Pet owner search failed.");
-            return StatusCode(500, new { message = "Không thể tìm kiếm hồ sơ thú cưng." });
-        }
+        ViewData["CandidateMode"] = "manual";
+        return PartialView("_PetCandidateList", results);
     }
 
     [HttpPost("Confirm")]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(MaximumUploadRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaximumUploadRequestBytes)]
     public async Task<IActionResult> Confirm(
-        IFormFile file,
-        int petId,
-        double? similarity)
+        [FromForm] ConfirmRecognitionRequest request,
+        CancellationToken cancellationToken)
     {
-        if (file is null || file.Length == 0)
+        if (!ModelState.IsValid)
         {
-            return BadRequest(new
-            {
-                message = "Không tìm thấy ảnh nhận diện."
-            });
+            return ValidationProblem(ModelState);
         }
-        if (petId <= 0)
+
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdValue, out var userId))
         {
-            return BadRequest(new
+            return Unauthorized(new ProblemDetails
             {
-                message = "Mã thú cưng không hợp lệ."
-            });
-        }
-        
-        if (similarity.HasValue &&
-            (double.IsNaN(similarity.Value) ||
-             double.IsInfinity(similarity.Value) ||
-             similarity.Value < 0 ||
-             similarity.Value > 1))
-        {
-            return BadRequest(new
-            {
-                message = "Độ tương đồng không hợp lệ."
+                Title = "Không xác định được tài khoản đăng nhập.",
+                Status = StatusCodes.Status401Unauthorized
             });
         }
 
-        try
+        var result = await petRecognitionService.ConfirmAsync(
+            request.File,
+            request.PetId,
+            userId,
+            request.Similarity,
+            cancellationToken);
+
+        if (result.Status != PetRecognitionConfirmationStatus.Confirmed)
         {
-            // 1. Lấy User.Id từ tài khoản đang đăng nhập
-            var userIdClaim =
-                User.FindFirst(ClaimTypes.NameIdentifier);
-
-            if (userIdClaim is null ||
-                !int.TryParse(userIdClaim.Value, out var userId))
+            return result.Status switch
             {
-                return Unauthorized(new
-                {
-                    message = "Không xác định được tài khoản đăng nhập."
-                });
-            }
-
-            // 2. Tìm Staff tương ứng với User hiện tại
-            var staff = await dbContext.Staff
-                .FirstOrDefaultAsync(s => s.UserId == userId);
-
-            if (staff is null)
-            {
-                return BadRequest(new
-                {
-                    message = "Tài khoản hiện tại chưa được liên kết với nhân viên."
-                });
-            }
-
-            // 3. Kiểm tra Pet có tồn tại không
-            var pet = await dbContext.Pets
-                .FirstOrDefaultAsync(p => p.Id == petId);
-
-            if (pet is null)
-            {
-                return NotFound(new
-                {
-                    message = "Không tìm thấy thú cưng."
-                });
-            }
-
-            // 4. Tạo thư mục lưu ảnh
-            var webRoot = environment.WebRootPath;
-            if (string.IsNullOrWhiteSpace(webRoot))
-                webRoot = Path.Combine(environment.ContentRootPath, "wwwroot");
-
-            var uploadFolder = Path.Combine(
-                webRoot,
-                "uploads",
-                "pet-recognition");
-
-            Directory.CreateDirectory(uploadFolder);
-
-            // 5. Tạo tên file mới để tránh trùng
-            var extension = Path.GetExtension(file.FileName);
-
-            if (string.IsNullOrWhiteSpace(extension) ||
-                !new[] { ".jpg", ".jpeg", ".png", ".webp" }.Contains(extension, StringComparer.OrdinalIgnoreCase))
-            {
-                extension = ".jpg";
-            }
-
-            var fileName =
-                $"{Guid.NewGuid():N}{extension}";
-
-            var filePath =
-                Path.Combine(uploadFolder, fileName);
-
-            // 6. Lưu ảnh
-            await using (var stream = new FileStream(
-                filePath,
-                FileMode.CreateNew))
-            {
-                await file.CopyToAsync(stream);
-            }
-
-            // URL để lưu vào database
-            var imageUrl =
-                $"/uploads/pet-recognition/{fileName}";
-
-            // 7. Tạo lịch sử nhận diện
-            var history = new PetRecognitionHistory
-            {
-                StaffId = staff.Id,
-                ImageUrl = imageUrl,
-                SelectedPetId = pet.Id,
-                DetectedSpecies = pet.Species,
-                DetectedBreed = pet.Breed,
-                TopSimilarity = similarity.HasValue ? Convert.ToDecimal(similarity.Value) : null,
-                CreatedAt = DateTime.UtcNow
+                PetRecognitionConfirmationStatus.InvalidImage =>
+                    BadRequest(new ProblemDetails
+                    {
+                        Title = result.Message,
+                        Status = StatusCodes.Status400BadRequest
+                    }),
+                PetRecognitionConfirmationStatus.StaffNotFound =>
+                    BadRequest(new ProblemDetails
+                    {
+                        Title = result.Message,
+                        Status = StatusCodes.Status400BadRequest
+                    }),
+                PetRecognitionConfirmationStatus.PetNotFound =>
+                    NotFound(new ProblemDetails
+                    {
+                        Title = result.Message,
+                        Status = StatusCodes.Status404NotFound
+                    }),
+                _ => throw new InvalidOperationException("Unknown pet recognition confirmation status.")
             };
-
-            dbContext.PetRecognitionHistories.Add(history);
-
-            // 8. Lưu database
-            await dbContext.SaveChangesAsync();
-
-            return Ok(new
-            {
-                message = similarity.HasValue
-                    ? "Đã xác nhận thú cưng và lưu lịch sử nhận diện AI."
-                    : "Đã xác nhận hồ sơ thủ công và lưu lịch sử.",
-                historyId = history.Id,
-                petId = pet.Id,
-                imageUrl
-            });
         }
-        catch (Exception ex)
+
+        return Ok(new
         {
-            logger.LogError(
-                ex,
-                "Confirm pet recognition failed.");
-
-            return StatusCode(500, new
-            {
-                message = "Không thể lưu xác nhận thú cưng."
-            });
-        }
+            message = result.Message,
+            historyId = result.HistoryId,
+            petId = result.PetId,
+            imageUrl = result.ImageUrl
+        });
     }
 }
