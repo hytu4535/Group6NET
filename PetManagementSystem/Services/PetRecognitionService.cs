@@ -212,10 +212,14 @@ public class PetRecognitionService(
                 PetImageUrl = history.SelectedPet == null
                     ? null
                     : history.SelectedPet.PetImages
-                        .OrderByDescending(image => image.IsAvatar)
-                        .ThenByDescending(image => image.UploadedAt)
+                        .Where(image => image.IsAvatar)
+                        .OrderByDescending(image => image.Id)
                         .Select(image => image.ImageUrl)
-                        .FirstOrDefault(),
+                        .FirstOrDefault()
+                        ?? history.SelectedPet.PetImages
+                            .OrderByDescending(image => image.Id)
+                            .Select(image => image.ImageUrl)
+                            .FirstOrDefault(),
                 SimilarityScore = history.TopSimilarity,
                 RecognizedAt = history.CreatedAt,
                 StaffName = history.Staff == null || history.Staff.User == null

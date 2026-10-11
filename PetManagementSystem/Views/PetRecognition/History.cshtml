@@ -145,11 +145,13 @@
                                     <div class="pr-history-pet">
                                         @if (!string.IsNullOrWhiteSpace(history.PetImageUrl))
                                         {
-                                            <img src="@history.PetImageUrl" alt="Ảnh @history.PetName" loading="lazy" />
+                                            <img src="@history.PetImageUrl" alt="Ảnh @history.PetName" loading="lazy"
+                                                 onerror="this.onerror=null;this.src='@Url.Content("~/images/pet-avatar-default.jpeg")';" />
                                         }
                                         else
                                         {
-                                            <span class="pr-history-avatar-placeholder"><i class="bi bi-camera"></i></span>
+                                            <img src="@Url.Content("~/images/pet-avatar-default.jpeg")"
+                                                 alt="Ảnh mặc định @history.PetName" class="rounded-circle" width="42" height="42" />
                                         }
                                         <strong>@history.PetName</strong>
                                     </div>
@@ -309,12 +311,14 @@
                             @if (!string.IsNullOrWhiteSpace(history.PetImageUrl))
                             {
                                 <a href="@history.PetImageUrl" target="_blank" rel="noopener noreferrer">
-                                    <img src="@history.PetImageUrl" alt="Ảnh hồ sơ thú cưng" loading="lazy" />
+                                    <img src="@history.PetImageUrl" alt="Ảnh hồ sơ thú cưng" loading="lazy"
+                                         onerror="this.onerror=null;this.src='@Url.Content("~/images/pet-avatar-default.jpeg")';" />
                                 </a>
                             }
                             else
                             {
-                                <div class="pr-detail-image-empty"><i class="bi bi-camera fs-2"></i></div>
+                                <img src="@Url.Content("~/images/pet-avatar-default.jpeg")"
+                                     alt="Ảnh hồ sơ mặc định" class="pr-detail-image-empty" />
                             }
                             <figcaption>Ảnh hồ sơ thú cưng</figcaption>
                         </figure>

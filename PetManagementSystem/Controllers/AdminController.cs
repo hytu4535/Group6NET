@@ -5,6 +5,7 @@ using PetManagementSystem.Data;
 using PetManagementSystem.Models;
 using PetManagementSystem.Repositories;
 using PetManagementSystem.Services;
+using PetManagementSystem.ViewModels;
 
 namespace PetManagementSystem.Controllers
 {
@@ -15,6 +16,9 @@ namespace PetManagementSystem.Controllers
       IFeedbackService feedbackService,
       IUserRepository userRepository) : Controller
     {
+        private const long MaximumAvatarRequestBytes =
+            RecognitionImageFileAttribute.MaximumFileSizeBytes + 64 * 1024;
+
         // Bỏ dòng: private readonly AppDbContext _context = context;
         private readonly IPetService _petService = petService;
         private readonly IFeedbackService _feedbackService = feedbackService;
@@ -43,11 +47,22 @@ namespace PetManagementSystem.Controllers
         // POST: /Admin/CreatePet
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreatePet(Pet pet)
+        [RequestSizeLimit(MaximumAvatarRequestBytes)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaximumAvatarRequestBytes)]
+        public async Task<IActionResult> CreatePet(CreatePetViewModel model)
         {
             if (ModelState.IsValid)
             {
-                var (success, errorMessage) = await _petService.CreatePetAsync(pet);
+                var pet = new Pet
+                {
+                    UserId = model.UserId,
+                    Name = model.Name,
+                    Species = model.Species,
+                    Breed = model.Breed,
+                    Gender = model.Gender,
+                    WeightKg = model.WeightKg
+                };
+                var (success, errorMessage) = await _petService.CreatePetAsync(pet, model.AvatarFile);
                 if (success)
                 {
                     TempData["SuccessMessage"] = "Thêm thú cưng mới thành công!";
@@ -68,15 +83,27 @@ namespace PetManagementSystem.Controllers
         // POST: /Admin/UpdatePet
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequestSizeLimit(MaximumAvatarRequestBytes)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaximumAvatarRequestBytes)]
         public async Task<IActionResult> UpdatePet(
-            Pet pet,
+            EditPetViewModel model,
             string? searchKeyword,
             int page = 1,
             int pageSize = 10)
         {
             if (ModelState.IsValid)
             {
-                var (success, errorMessage) = await _petService.UpdatePetAsync(pet);
+                var pet = new Pet
+                {
+                    Id = model.Id,
+                    UserId = model.UserId,
+                    Name = model.Name,
+                    Species = model.Species,
+                    Breed = model.Breed,
+                    Gender = model.Gender,
+                    WeightKg = model.WeightKg
+                };
+                var (success, errorMessage) = await _petService.UpdatePetAsync(pet, model.AvatarFile);
                 if (success)
                 {
                     TempData["SuccessMessage"] = "Cập nhật thông tin thú cưng thành công!";

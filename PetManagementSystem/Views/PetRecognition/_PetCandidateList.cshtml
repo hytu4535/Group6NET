@@ -31,11 +31,13 @@
                     <img class="pr-avatar"
                          src="@candidate.PetImageUrl"
                          alt="Ảnh @candidate.PetName"
-                         loading="lazy" />
+                         loading="lazy"
+                         onerror="this.onerror=null;this.src='@Url.Content("~/images/pet-avatar-default.jpeg")';" />
                 }
                 else
                 {
-                    <div class="pr-avatar"><i class="bi bi-camera"></i></div>
+                    <img class="pr-avatar" src="@Url.Content("~/images/pet-avatar-default.jpeg")"
+                         alt="Ảnh mặc định @candidate.PetName" loading="lazy" />
                 }
                 <div class="pr-candidate-main">
                     <div class="pr-candidate-heading">

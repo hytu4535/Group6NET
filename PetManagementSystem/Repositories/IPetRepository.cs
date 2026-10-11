@@ -8,7 +8,8 @@ public interface IPetRepository
     Task<PagedResult<Pet>> GetPagedAsync(string? searchKeyword, int page, int pageSize);
     Task<Pet?> GetByIdAsync(int id);
     Task<List<Pet>> GetByUserIdAsync(int userId);
-    Task AddAsync(Pet pet);
-    Task UpdateAsync(Pet pet);
+    Task AddAsync(Pet pet, string? avatarUrl = null);
+    Task UpdateAsync(Pet pet, string? avatarUrl = null);
+    Task<bool> SetAvatarAsync(int petId, int imageId);
     Task DeleteAsync(int id);
 }

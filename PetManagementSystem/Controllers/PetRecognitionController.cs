@@ -128,10 +128,14 @@ public class PetRecognitionController(
                 OwnerPhone = pet.User == null ? null : pet.User.PhoneNumber,
                 OwnerEmail = pet.User == null ? null : pet.User.Email,
                 PetImageUrl = pet.PetImages
-                    .OrderByDescending(image => image.IsAvatar)
-                    .ThenByDescending(image => image.UploadedAt)
+                    .Where(image => image.IsAvatar)
+                    .OrderByDescending(image => image.Id)
                     .Select(image => image.ImageUrl)
                     .FirstOrDefault()
+                    ?? pet.PetImages
+                        .OrderByDescending(image => image.Id)
+                        .Select(image => image.ImageUrl)
+                        .FirstOrDefault()
             })
             .ToListAsync(cancellationToken);
 
@@ -186,10 +190,14 @@ public class PetRecognitionController(
                 OwnerPhone = pet.User == null ? null : pet.User.PhoneNumber,
                 OwnerEmail = pet.User == null ? null : pet.User.Email,
                 PetImageUrl = pet.PetImages
-                    .OrderByDescending(image => image.IsAvatar)
-                    .ThenByDescending(image => image.UploadedAt)
+                    .Where(image => image.IsAvatar)
+                    .OrderByDescending(image => image.Id)
                     .Select(image => image.ImageUrl)
                     .FirstOrDefault()
+                    ?? pet.PetImages
+                        .OrderByDescending(image => image.Id)
+                        .Select(image => image.ImageUrl)
+                        .FirstOrDefault()
             })
             .ToListAsync(cancellationToken);
 

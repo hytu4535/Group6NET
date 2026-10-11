@@ -10,6 +10,7 @@ public class PetRepository(AppDbContext dbContext) : IPetRepository
     {
         var query = dbContext.Pets
             .Include(x => x.User)
+            .Include(x => x.PetImages)
             .AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(searchKeyword))
@@ -28,6 +29,7 @@ public class PetRepository(AppDbContext dbContext) : IPetRepository
     {
         var query = dbContext.Pets
             .Include(x => x.User)
+            .Include(x => x.PetImages)
             .AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(searchKeyword))
@@ -53,6 +55,7 @@ public class PetRepository(AppDbContext dbContext) : IPetRepository
     {
         return await dbContext.Pets
             .Include(x => x.User)
+            .Include(x => x.PetImages)
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 
@@ -60,27 +63,72 @@ public class PetRepository(AppDbContext dbContext) : IPetRepository
     {
         return await dbContext.Pets
             .Include(x => x.User)
+            .Include(x => x.PetImages)
             .Where(x => x.UserId == userId)
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync();
     }
 
-    public async Task AddAsync(Pet pet)
+    public async Task AddAsync(Pet pet, string? avatarUrl = null)
     {
         pet.CreatedAt = DateTime.Now;
         if (string.IsNullOrEmpty(pet.QrToken))
         {
             pet.QrToken = Guid.NewGuid().ToString("N");
         }
+        if (!string.IsNullOrWhiteSpace(avatarUrl))
+        {
+            pet.PetImages.Add(new PetImage
+            {
+                ImageUrl = avatarUrl,
+                IsAvatar = true,
+                UploadedAt = DateTime.UtcNow
+            });
+        }
+
         await dbContext.Pets.AddAsync(pet);
         await dbContext.SaveChangesAsync();
     }
 
-    public async Task UpdateAsync(Pet pet)
+    public async Task UpdateAsync(Pet pet, string? avatarUrl = null)
     {
         pet.UpdatedAt = DateTime.Now;
-        dbContext.Pets.Update(pet);
+        if (!string.IsNullOrWhiteSpace(avatarUrl))
+        {
+            foreach (var existingAvatar in pet.PetImages.Where(image => image.IsAvatar))
+            {
+                existingAvatar.IsAvatar = false;
+            }
+
+            pet.PetImages.Add(new PetImage
+            {
+                PetId = pet.Id,
+                ImageUrl = avatarUrl,
+                IsAvatar = true,
+                UploadedAt = DateTime.UtcNow
+            });
+        }
+
         await dbContext.SaveChangesAsync();
+    }
+
+    public async Task<bool> SetAvatarAsync(int petId, int imageId)
+    {
+        var images = await dbContext.PetImages
+            .Where(image => image.PetId == petId)
+            .ToListAsync();
+        if (images.All(image => image.Id != imageId))
+        {
+            return false;
+        }
+
+        foreach (var image in images)
+        {
+            image.IsAvatar = image.Id == imageId;
+        }
+
+        await dbContext.SaveChangesAsync();
+        return true;
     }
 
     public async Task DeleteAsync(int id)

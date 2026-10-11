@@ -433,6 +433,7 @@
     const appointmentsUrl = '@Url.Action("Appointments", "Admin")';
     const vaccinationRecordsUrl = '@Url.Action("VaccinationRecords", "Admin")';
     const healthRecordsUrl = '@Url.Action("PetHealthRecords", "Admin")';
+    const defaultPetAvatarUrl = '@Url.Content("~/images/pet-avatar-default.jpeg")';
 
     let cameraStream = null;
     let selectedFile = null;
@@ -462,10 +463,7 @@
     }
     function createAvatar(imageUrl, altText = "Ảnh thú cưng") {
         if (!imageUrl) {
-            const placeholderAvatar = document.createElement("div");
-            placeholderAvatar.className = "pr-avatar";
-            placeholderAvatar.append(createIcon("bi bi-camera"));
-            return placeholderAvatar;
+            imageUrl = defaultPetAvatarUrl;
         }
 
         const image = document.createElement("img");
@@ -473,7 +471,18 @@
         image.src = imageUrl;
         image.alt = altText;
         image.loading = "lazy";
-        image.addEventListener("error", () => image.replaceWith(createAvatar()));
+        image.addEventListener("error", () => {
+            if (image.dataset.fallbackAttempted !== "true" && image.src !== defaultPetAvatarUrl) {
+                image.dataset.fallbackAttempted = "true";
+                image.src = defaultPetAvatarUrl;
+                return;
+            }
+
+            const placeholderAvatar = document.createElement("div");
+            placeholderAvatar.className = "pr-avatar";
+            placeholderAvatar.append(createIcon("bi bi-camera"));
+            image.replaceWith(placeholderAvatar);
+        });
         return image;
     }
     function createEmptyState(message, loading = false) {
@@ -633,9 +642,22 @@
     });
     candidatesContainer.addEventListener("error", event => {
         if (event.target.matches(".pr-candidate .pr-avatar")) {
-            event.target.replaceWith(createAvatar());
+            if (event.target.dataset.fallbackAttempted !== "true") {
+                event.target.dataset.fallbackAttempted = "true";
+                event.target.src = defaultPetAvatarUrl;
+                return;
+            }
+
+            event.target.replaceWith(createAvatarPlaceholder());
         }
     }, true);
+
+    function createAvatarPlaceholder() {
+        const placeholderAvatar = document.createElement("div");
+        placeholderAvatar.className = "pr-avatar";
+        placeholderAvatar.append(createIcon("bi bi-camera"));
+        return placeholderAvatar;
+    }
 
     function selectCandidate(candidate, card) {
         if (!candidate.databasePetId) {

@@ -462,7 +462,7 @@ namespace PetManagementSystem.Controllers
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var pets = await _dbContext.Pets
                 .Where(p => p.UserId == userId)
-                .Include(p => p.PetImages.Where(pi => pi.IsAvatar == true))
+                .Include(p => p.PetImages)
                 .ToListAsync();
 
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
