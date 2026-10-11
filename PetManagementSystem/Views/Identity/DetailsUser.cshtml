@@ -1,0 +1,53 @@
+@model PetManagementSystem.Models.User
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white"><h5 class="mb-0">Chi tiết người dùng</h5></div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Tên tài khoản</label>
+                <p class="form-control-plaintext">@Model.Username</p>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Vai trò</label>
+                <p class="form-control-plaintext">@Model.Role?.Name</p>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Họ và tên</label>
+                <p class="form-control-plaintext">@Model.FullName</p>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <p class="form-control-plaintext">@Model.Email</p>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Số điện thoại</label>
+                <p class="form-control-plaintext">@Model.PhoneNumber</p>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Địa chỉ</label>
+                <p class="form-control-plaintext">@Model.Address</p>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Trạng thái</label>
+                <span class="badge @(Model.Status == "active" ? "text-bg-success" : (Model.Status == "inactive" ? "text-bg-warning" : "text-bg-danger"))">
+                    @Model.Status
+                </span>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Ngày tạo</label>
+                <p class="form-control-plaintext">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Ngày cập nhật</label>
+                <p class="form-control-plaintext">@(Model.UpdatedAt.HasValue ? Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm") : "-")</p>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer d-flex justify-content-end">
+        <a class="btn btn-outline-secondary" asp-action="Users">Quay lại danh sách</a>
+    </div>
+</div>

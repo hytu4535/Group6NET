@@ -1,0 +1,37 @@
+@model PetManagementSystem.ViewModels.Commerce.CategoryUpsertViewModel
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white"><h5 class="mb-0">Cập nhật danh mục</h5></div>
+    <div class="card-body">
+        <form asp-action="EditCategory" method="post" novalidate>
+            @Html.AntiForgeryToken()
+            <input asp-for="Id" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="CategoryName" class="form-label">Tên danh mục</label>
+                    <input asp-for="CategoryName" class="form-control" />
+                    <span asp-validation-for="CategoryName" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Description" class="form-label">Mô tả</label>
+                    <input asp-for="Description" class="form-control" />
+                    <span asp-validation-for="Description" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                <a class="btn btn-outline-secondary" asp-action="Categories">Quay lại</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

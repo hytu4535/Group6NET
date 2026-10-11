@@ -1,0 +1,58 @@
+@model PetManagementSystem.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Đăng nhập người dùng";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h4 class="mb-4">Đăng nhập người dùng</h4>
+
+                    @if (TempData["SuccessMessage"] is string successMessage)
+                    {
+                        <div class="alert alert-success">@successMessage</div>
+                    }
+
+                    <form asp-action="UserLogin" method="post">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Username" class="form-label"></label>
+                            <input asp-for="Username" class="form-control" autocomplete="username" />
+                            <span asp-validation-for="Username" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label"></label>
+                            <input asp-for="Password" class="form-control" autocomplete="current-password" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input asp-for="RememberMe" class="form-check-input" />
+                            <label asp-for="RememberMe" class="form-check-label"></label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <span>Chưa có tài khoản?</span>
+                        <a asp-action="Register" class="text-decoration-none">Đăng ký</a>
+                    </div>
+
+                    <div class="text-center mt-2">
+                        <a href="/Admin/Login" class="text-decoration-none">Đăng nhập quản trị</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

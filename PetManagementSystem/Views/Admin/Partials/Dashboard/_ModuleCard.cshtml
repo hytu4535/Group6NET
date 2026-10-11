@@ -1,0 +1,24 @@
+@using System.Collections.Generic
+@{
+    var title = ViewData["CardTitle"] as string ?? string.Empty;
+    var iconClass = ViewData["CardIcon"] as string ?? "bi bi-grid";
+    var description = ViewData["CardDescription"] as string ?? string.Empty;
+    var linkUrl = ViewData["CardLinkUrl"] as string ?? "#";
+    var linkText = ViewData["CardLinkText"] as string ?? "Mở module";
+    var cardClass = ViewData["CardThemeClass"] as string ?? string.Empty;
+    var tags = ViewData["CardTags"] as IEnumerable<string> ?? new List<string>();
+}
+
+<div class="module-card @cardClass">
+    <div class="module-card-header">
+        <h5><i class="@iconClass"></i> @title</h5>
+        <a class="btn btn-sm btn-outline-light" href="@linkUrl">@linkText</a>
+    </div>
+    <p>@description</p>
+    <div class="module-tags">
+        @foreach (var tag in tags)
+        {
+            <span>@tag</span>
+        }
+    </div>
+</div>

@@ -1,0 +1,79 @@
+@using PetManagementSystem.Helpers
+@model PetManagementSystem.ViewModels.Commerce.InvoiceDetailsViewModel
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Hóa đơn #@Model.Id</h5>
+        <div class="d-flex gap-2">
+            @if (User.HasPermission("invoices.update"))
+            {
+                <a class="btn btn-sm btn-outline-primary" asp-action="EditInvoice" asp-route-id="@Model.Id">Sửa</a>
+            }
+            <a class="btn btn-sm btn-outline-secondary" asp-action="OrderDetails" asp-route-id="@Model.OrderId">Xem đơn hàng</a>
+            <a class="btn btn-sm btn-outline-secondary" asp-action="Invoices">Quay lại</a>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert alert-success">@success</div>
+        }
+
+        <dl class="row">
+            <dt class="col-sm-2">Đơn hàng</dt>
+            <dd class="col-sm-4">#@Model.OrderId</dd>
+            <dt class="col-sm-2">Khách hàng</dt>
+            <dd class="col-sm-4">@Model.CustomerName</dd>
+
+            <dt class="col-sm-2">Email</dt>
+            <dd class="col-sm-4">@(Model.Email ?? "-")</dd>
+            <dt class="col-sm-2">SĐT</dt>
+            <dd class="col-sm-4">@Model.Phone</dd>
+
+            <dt class="col-sm-2">Địa chỉ giao hàng</dt>
+            <dd class="col-sm-10">@Model.ShippingAddress</dd>
+
+            <dt class="col-sm-2">Ngày lập</dt>
+            <dd class="col-sm-4">@CommerceFormat.DateTimeText(Model.InvoiceDate)</dd>
+            <dt class="col-sm-2">Người lập</dt>
+            <dd class="col-sm-4">@Model.IssuedByName</dd>
+
+            <dt class="col-sm-2">Tổng tiền</dt>
+            <dd class="col-sm-4 fw-semibold">@CommerceFormat.Money(Model.TotalAmount)</dd>
+            <dt class="col-sm-2">Tiền thuế</dt>
+            <dd class="col-sm-4">@CommerceFormat.Money(Model.TaxAmount)</dd>
+
+            <dt class="col-sm-2">Tiền hàng (chưa thuế)</dt>
+            <dd class="col-sm-4">@CommerceFormat.Money(Model.NetAmount)</dd>
+        </dl>
+
+        <div class="table-responsive mt-3">
+            <table class="table table-striped align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th>Đơn vị</th>
+                        <th>Số lượng</th>
+                        <th>Đơn giá</th>
+                        <th>Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>@item.ProductName</td>
+                            <td>@(item.Unit ?? "-")</td>
+                            <td>@item.Quantity</td>
+                            <td>@CommerceFormat.Money(item.Price)</td>
+                            <td>@CommerceFormat.Money(item.Subtotal)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

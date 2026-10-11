@@ -1,0 +1,18 @@
+@{
+    ViewData["Title"] = "Admin Home";
+}
+
+<div class="container py-4">
+    <h2 class="mb-3">Admin Home</h2>
+    <p class="text-muted">Bạn đã đăng nhập thành công bằng Cookie Authentication.</p>
+
+    <div class="d-flex gap-2 mb-3">
+        <a class="btn btn-outline-primary" asp-action="AdminOnly">Trang role admin</a>
+        <a class="btn btn-outline-secondary" asp-action="UsersViewOnly">Trang policy users.view</a>
+    </div>
+
+    <form asp-controller="Auth" asp-action="Logout" method="post">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-danger">Đăng xuất</button>
+    </form>
+</div>

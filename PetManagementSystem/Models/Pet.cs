@@ -1,0 +1,22 @@
+namespace PetManagementSystem.Models;
+
+public class Pet
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public string QrToken { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Species { get; set; } = string.Empty;
+    public string? Breed { get; set; }
+    public string Gender { get; set; } = string.Empty; // Male / Female
+    public decimal? WeightKg { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+
+    // Navigation properties
+    public User? User { get; set; }
+    public ICollection<PetPackage> PetPackages { get; set; } = new List<PetPackage>();
+    public ICollection<PetImage> PetImages { get; set; } = new List<PetImage>();
+    public ICollection<PetHealthRecord> PetHealthRecords { get; set; } = new List<PetHealthRecord>();
+    public ICollection<VaccinationRecord> VaccinationRecords { get; set; } = new List<VaccinationRecord>();
+}
