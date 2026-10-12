@@ -25,6 +25,7 @@ namespace PetManagementSystem.Controllers
             return View();
         }
 
+        [Authorize(Policy = "pets.view")]
         public async Task<IActionResult> Pets(string? searchKeyword, int page = 1, int pageSize = 10)
         {
             SetNav("Quản lý Thú cưng", "Pets", "PetCare");
@@ -43,6 +44,7 @@ namespace PetManagementSystem.Controllers
         // POST: /Admin/CreatePet
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "pets.create")]
         public async Task<IActionResult> CreatePet(Pet pet)
         {
             if (ModelState.IsValid)
@@ -68,6 +70,7 @@ namespace PetManagementSystem.Controllers
         // POST: /Admin/UpdatePet
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "pets.update")]
         public async Task<IActionResult> UpdatePet(
             Pet pet,
             string? searchKeyword,
@@ -98,6 +101,7 @@ namespace PetManagementSystem.Controllers
         // POST: /Admin/DeletePet
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "pets.delete")]
         public async Task<IActionResult> DeletePet(int id, string? searchKeyword, int page = 1, int pageSize = 10)
         {
             var (success, errorMessage) = await _petService.DeletePetAsync(id);
@@ -114,6 +118,7 @@ namespace PetManagementSystem.Controllers
         }
 
 
+        [Authorize(Policy = "feedbacks.view")]
         public async Task<IActionResult> Feedbacks(int page = 1, int pageSize = 10)
         {
             SetNav("Phản hồi Khách hàng", "Feedbacks", "CustomerCare");
@@ -127,6 +132,7 @@ namespace PetManagementSystem.Controllers
         }
 
         // Alias cho Feedback (giữ tương thích)
+        [Authorize(Policy = "feedbacks.view")]
         public async Task<IActionResult> Feedback()
         {
             return RedirectToAction(nameof(Feedbacks));
@@ -135,6 +141,7 @@ namespace PetManagementSystem.Controllers
         // POST: /Admin/UpdateFeedbackStatus (Admin đổi trạng thái 'pending' <-> 'resolved')
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "feedbacks.update")]
         public async Task<IActionResult> UpdateFeedbackStatus(int id, string status, int page = 1, int pageSize = 10)
         {
             var (success, errorMessage) = await _feedbackService.UpdateStatusAsync(id, status);
@@ -188,9 +195,11 @@ namespace PetManagementSystem.Controllers
         public IActionResult Veterinarians() { SetNav("Veterinarians", "Veterinarians", "Identity"); return View(); }
 
         // PetCare
+        [Authorize(Policy = "pet_images.view")]
         public IActionResult PetImages() { SetNav("Pet Images", "PetImages", "PetCare"); return View(); }
 
         // Service & Medical - 3 Trang yêu cầu chính
+        [Authorize(Policy = "services.view")]
         public async Task<IActionResult> Services()
         {
             SetNav("Quản lý Dịch vụ", "Services", "ServiceMedical");
@@ -200,6 +209,7 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "services.update")]
         public async Task<IActionResult> SaveService(Service model, List<int>? selectedServiceIds)
         {
             if (!ModelState.IsValid)
@@ -239,18 +249,22 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "services.create")]
         public Task<IActionResult> CreateService(Service model, List<int>? selectedServiceIds) => SaveService(model, selectedServiceIds);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "services.update")]
         public Task<IActionResult> EditService(Service model, List<int>? selectedServiceIds) => SaveService(model, selectedServiceIds);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "services.update")]
         public Task<IActionResult> EditService(int id, Service model, List<int>? selectedServiceIds) => SaveService(model, selectedServiceIds);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "services.delete")]
         public async Task<IActionResult> DeleteService(int id)
         {
             var service = await context.Services.FindAsync(id);
@@ -263,6 +277,7 @@ namespace PetManagementSystem.Controllers
             return RedirectToAction(nameof(Services));
         }
 
+        [Authorize(Policy = "service_packages.view")]
         public async Task<IActionResult> ServicePackages()
         {
             SetNav("Quản lý Gói dịch vụ", "ServicePackages", "ServiceMedical");
@@ -278,6 +293,7 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "service_packages.update")]
         public async Task<IActionResult> SaveServicePackage(ServicePackage model, List<int>? serviceIds)
         {
             serviceIds ??= new List<int>();
@@ -351,18 +367,22 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "service_packages.create")]
         public Task<IActionResult> CreateServicePackage(ServicePackage model, List<int>? serviceIds) => SaveServicePackage(model, serviceIds);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "service_packages.update")]
         public Task<IActionResult> EditServicePackage(ServicePackage model, List<int>? serviceIds) => SaveServicePackage(model, serviceIds);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "service_packages.update")]
         public Task<IActionResult> EditServicePackage(int id, ServicePackage model, List<int>? serviceIds) => SaveServicePackage(model, serviceIds);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "service_packages.delete")]
         public async Task<IActionResult> DeleteServicePackage(int id)
         {
             var package = await context.ServicePackages.FindAsync(id);
@@ -375,6 +395,7 @@ namespace PetManagementSystem.Controllers
             return RedirectToAction(nameof(ServicePackages));
         }
 
+        [Authorize(Policy = "pet_packages.view")]
         public async Task<IActionResult> PetPackages()
         {
             SetNav("Gói dịch vụ của thú cưng", "PetPackages", "ServiceMedical");
@@ -484,6 +505,7 @@ namespace PetManagementSystem.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "pet_packages.view")]
         public async Task<IActionResult> GetActivePetPackage(int petId)
         {
             var activePp = await context.PetPackages
@@ -510,6 +532,7 @@ namespace PetManagementSystem.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "pet_packages.view")]
         public async Task<IActionResult> GetPetPackageDetails(int id)
         {
             var pp = await context.PetPackages
@@ -549,6 +572,7 @@ namespace PetManagementSystem.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "appointments.view")]
         public async Task<IActionResult> Appointments()
         {
             SetNav("Quản lý Lịch hẹn", "Appointments", "ServiceMedical");
@@ -571,6 +595,7 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "appointments.update")]
         public async Task<IActionResult> SaveAppointment(Appointment model, int? ServicePackageId, List<int>? serviceIds)
         {
             serviceIds ??= new List<int>();
@@ -709,13 +734,16 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "appointments.create")]
         public Task<IActionResult> CreateAppointment(Appointment model, int? ServicePackageId, List<int>? serviceIds) => SaveAppointment(model, ServicePackageId, serviceIds);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "appointments.update")]
         public Task<IActionResult> EditAppointment(Appointment model, int? ServicePackageId, List<int>? serviceIds) => SaveAppointment(model, ServicePackageId, serviceIds);
 
         [HttpGet]
+        [Authorize(Policy = "appointments.view")]
         public async Task<IActionResult> GetAppointmentById(int id)
         {
             var appt = await context.Appointments
@@ -753,6 +781,7 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "appointments.delete")]
         public async Task<IActionResult> DeleteAppointment(int id)
         {
             var appt = await context.Appointments.FindAsync(id);
@@ -770,6 +799,7 @@ namespace PetManagementSystem.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "services.view")]
         public async Task<IActionResult> GetServicePrice(int serviceId)
         {
             var service = await context.Services.AsNoTracking().FirstOrDefaultAsync(s => s.Id == serviceId);
@@ -781,6 +811,7 @@ namespace PetManagementSystem.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "pet_health_records.view")]
         public async Task<IActionResult> PetHealthRecords()
         {
             SetNav("Hồ sơ sức khỏe", "PetHealthRecords", "ServiceMedical");
@@ -799,6 +830,7 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "pet_health_records.update")]
         public async Task<IActionResult> SavePetHealthRecord(PetHealthRecord model)
         {
             if (!ModelState.IsValid)
@@ -854,13 +886,16 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "pet_health_records.create")]
         public Task<IActionResult> CreatePetHealthRecord(PetHealthRecord model) => SavePetHealthRecord(model);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "pet_health_records.update")]
         public Task<IActionResult> EditPetHealthRecord(PetHealthRecord model) => SavePetHealthRecord(model);
 
         [HttpGet]
+        [Authorize(Policy = "pet_health_records.create")]
         public async Task<IActionResult> CreatePetHealthRecord()
         {
             var pets = await context.Pets.AsNoTracking().ToListAsync();
@@ -869,9 +904,11 @@ namespace PetManagementSystem.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "pet_health_records.update")]
         public async Task<IActionResult> EditPetHealthRecord(int id) => await GetPetHealthRecordById(id);
 
         [HttpGet]
+        [Authorize(Policy = "pet_health_records.view")]
         public async Task<IActionResult> GetPetHealthRecordById(int id)
         {
             var hr = await context.PetHealthRecords.AsNoTracking().FirstOrDefaultAsync(h => h.Id == id);
@@ -911,6 +948,7 @@ namespace PetManagementSystem.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "vaccination_records.view")]
         public async Task<IActionResult> VaccinationRecords()
         {
             SetNav("Lịch sử tiêm phòng", "VaccinationRecords", "ServiceMedical");
@@ -929,6 +967,7 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "vaccination_records.update")]
         public async Task<IActionResult> SaveVaccinationRecord(VaccinationRecord model)
         {
             if (model.NextDueDate <= model.AdministeredDate)
@@ -986,10 +1025,12 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "vaccination_records.create")]
         public Task<IActionResult> CreateVaccinationRecord(VaccinationRecord model) => SaveVaccinationRecord(model);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "vaccination_records.update")]
         public Task<IActionResult> EditVaccinationRecord(VaccinationRecord model) => SaveVaccinationRecord(model);
 
         [HttpGet]
@@ -1014,6 +1055,7 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "vaccination_records.delete")]
         public async Task<IActionResult> DeleteVaccinationRecord(int id)
         {
             var vr = await context.VaccinationRecords.FindAsync(id);
@@ -1031,6 +1073,7 @@ namespace PetManagementSystem.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "medical_prescriptions.view")]
         public async Task<IActionResult> MedicalPrescriptions()
         {
             SetNav("Đơn thuốc", "MedicalPrescriptions", "ServiceMedical");
@@ -1054,6 +1097,7 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "medical_prescriptions.update")]
         public async Task<IActionResult> SaveMedicalPrescription(MedicalPrescription model)
         {
             if (!ModelState.IsValid)
@@ -1110,10 +1154,12 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "medical_prescriptions.create")]
         public Task<IActionResult> CreateMedicalPrescription(MedicalPrescription model) => SaveMedicalPrescription(model);
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "medical_prescriptions.update")]
         public Task<IActionResult> EditMedicalPrescription(MedicalPrescription model) => SaveMedicalPrescription(model);
 
         [HttpGet]
@@ -1137,6 +1183,7 @@ namespace PetManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = "medical_prescriptions.delete")]
         public async Task<IActionResult> DeleteMedicalPrescription(int id)
         {
             var mp = await context.MedicalPrescriptions.FindAsync(id);

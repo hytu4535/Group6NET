@@ -6,14 +6,20 @@ namespace PetManagementSystem.Repositories;
 
 public class VeterinarianRepository(AppDbContext dbContext) : IVeterinarianRepository
 {
-    public async Task<List<Veterinarian>> GetAllWithUserAsync()
+    public async Task<List<Veterinarian>> GetAllWithUserAsync(bool includeInactive = false)
     {
-        return await dbContext.Veterinarians
+        var query = dbContext.Veterinarians
             .Include(x => x.User)
                 .ThenInclude(u => u!.Role)
-            .Where(x => x.Status == "active" && x.User != null && x.User.Status == "active")
-            .OrderByDescending(x => x.CreatedAt)
-            .ToListAsync();
+            .Where(x => x.User != null)
+            .AsQueryable();
+
+        if (!includeInactive)
+        {
+            query = query.Where(x => x.Status == "active" && x.User!.Status == "active");
+        }
+
+        return await query.OrderByDescending(x => x.CreatedAt).ToListAsync();
     }
 
     public async Task<Veterinarian?> GetByIdAsync(int id)

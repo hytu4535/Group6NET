@@ -8,6 +8,7 @@ namespace PetManagementSystem.Controllers;
 public class ChatConversationsController(IChatConversationService chatConversationService) : Controller
 {
     [HttpGet]
+    [Authorize(Policy = "chats.view")]
     public async Task<IActionResult> Index(
         string? search, DateTime? fromDate, DateTime? toDate, int page = 1, int pageSize = 10)
     {
@@ -29,6 +30,7 @@ public class ChatConversationsController(IChatConversationService chatConversati
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = "chats.delete")]
     public async Task<IActionResult> Delete(
         int id, string? search, DateTime? fromDate, DateTime? toDate, int page = 1, int pageSize = 10)
     {

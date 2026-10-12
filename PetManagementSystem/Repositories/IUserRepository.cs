@@ -8,7 +8,7 @@ public interface IUserRepository
     Task<User?> GetByEmailAsync(string email);
     Task<User?> GetByIdAsync(int id);
     Task<User?> GetUserWithRoleAndPermissionsAsync(string username);
-    Task<List<User>> GetAllWithRoleAsync();
+    Task<List<User>> GetAllWithRoleAsync(bool includeInactive = false);
     Task<bool> ExistsUsernameAsync(string username, int? excludeId = null);
     Task<bool> ExistsEmailAsync(string email, int? excludeId = null);
     Task AddAsync(User user);

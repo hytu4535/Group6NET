@@ -11,6 +11,7 @@ public class NotificationsController(
     INotificationService notificationService) : Controller
 {
     [HttpGet]
+    [Authorize(Policy = "notifications.view")]
     public async Task<IActionResult> Index(int page = 1, int pageSize = 10)
     {
         page = Math.Max(page, 1);
@@ -33,6 +34,7 @@ public class NotificationsController(
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = "notifications.create")]
     public async Task<IActionResult> SendNotification(
         int? userId, string message, string type, bool sendToAll, int page = 1, int pageSize = 10)
     {
@@ -71,6 +73,7 @@ public class NotificationsController(
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = "notifications.update")]
     public async Task<IActionResult> MarkAsRead(int id, int page = 1, int pageSize = 10)
     {
         var notifications = await notificationService.GetCustomerNotificationsAsync();
@@ -85,6 +88,7 @@ public class NotificationsController(
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Policy = "notifications.update")]
     public async Task<IActionResult> MarkAllAsRead(int page = 1, int pageSize = 10)
     {
         await notificationService.MarkAllCustomerNotificationsAsReadAsync();

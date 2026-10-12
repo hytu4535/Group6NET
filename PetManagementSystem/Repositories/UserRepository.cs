@@ -26,6 +26,8 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
     {
         return await dbContext.Users
             .Include(x => x.Role)
+            .Include(x => x.Staff)
+            .Include(x => x.Veterinarian)
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 
@@ -51,13 +53,18 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
         return user;
     }
 
-    public async Task<List<User>> GetAllWithRoleAsync()
+    public async Task<List<User>> GetAllWithRoleAsync(bool includeInactive = false)
     {
-        return await dbContext.Users
+        var query = dbContext.Users
             .Include(x => x.Role)
-            .Where(x => x.Status == "active")
-            .OrderByDescending(x => x.CreatedAt)
-            .ToListAsync();
+            .AsQueryable();
+
+        if (!includeInactive)
+        {
+            query = query.Where(x => x.Status == "active");
+        }
+
+        return await query.OrderByDescending(x => x.CreatedAt).ToListAsync();
     }
 
     public async Task<bool> ExistsUsernameAsync(string username, int? excludeId = null)

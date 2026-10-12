@@ -1,6 +1,14 @@
 @model List<PetManagementSystem.Models.Staff>
 @{
     Layout = "_AdminLayout";
+    var items = ViewData["PageItems"] as List<PetManagementSystem.Models.Staff> ?? Model;
+    var page = (int?)ViewData["Page"] ?? 1;
+    var totalPages = (int?)ViewData["TotalPages"] ?? 1;
+    var search = ViewData["Search"] as string;
+    var position = ViewData["Position"] as string;
+    var hireDateFrom = ViewData["HireDateFrom"] as string;
+    var hireDateTo = ViewData["HireDateTo"] as string;
+    var status = ViewData["Status"] as string ?? "active";
 }
 
 <div class="card shadow-sm border-0">
@@ -9,6 +17,7 @@
         <a class="btn btn-primary" asp-action="CreateStaff"><i class="bi bi-plus-circle me-1"></i>Tạo nhân viên</a>
     </div>
     <div class="card-body">
+        <form method="get" class="row g-2 mb-3"><div class="col-md-3"><input name="search" value="@search" class="form-control" placeholder="Username hoặc họ tên..." /></div><div class="col-md-2"><input name="position" value="@position" class="form-control" placeholder="Chức vụ..." /></div><div class="col-md-2"><input type="date" name="hireDateFrom" value="@hireDateFrom" class="form-control" title="Từ ngày tuyển" /></div><div class="col-md-2"><input type="date" name="hireDateTo" value="@hireDateTo" class="form-control" title="Đến ngày tuyển" /></div><div class="col-md-2"><select name="status" class="form-select"><option value="all" selected="@(status == "all")">Tất cả trạng thái</option><option value="active" selected="@(status == "active")">Hoạt động</option><option value="inactive" selected="@(status == "inactive")">Khóa</option><option value="deleted" selected="@(status == "deleted")">Đã xóa</option></select></div><div class="col-md-1"><button class="btn btn-outline-secondary w-100" type="submit">Lọc</button></div><div class="col-12"><a asp-action="Staff" class="btn btn-sm btn-outline-secondary">Xóa lọc</a></div></form>
         @if (TempData["Success"] is string success)
         {
             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -43,8 +52,15 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in Model)
+                    @foreach (var item in items)
                     {
+                        var statusText = item.Status switch
+                        {
+                            "active" => "Hoạt động",
+                            "inactive" => "Khóa",
+                            "deleted" => "Đã xóa",
+                            _ => item.Status
+                        };
                         <tr>
                             <td>@item.User?.Username</td>
                             <td>@item.User?.FullName</td>
@@ -55,21 +71,7 @@
                                               item.Status == "inactive" ? "text-bg-warning" :
                                               item.Status == "deleted" ? "text-bg-danger" :
                                               "text-bg-secondary")">
-                                    @switch (item.Status)
-                                    {
-                                        case "active":
-                                            @:"Hoạt động";
-                                            break;
-                                        case "inactive":
-                                            @:"Khóa";
-                                            break;
-                                        case "deleted":
-                                            @:"Đã xóa";
-                                            break;
-                                        default:
-                                            @:item.Status;
-                                            break;
-                                    }
+                                    @statusText
                                 </span>
                             </td>
                             <td class="text-end">
@@ -92,5 +94,14 @@
                 </tbody>
             </table>
         </div>
+        @if (totalPages > 1)
+        {
+            <nav class="mt-3"><ul class="pagination justify-content-center">
+                @for (var i = 1; i <= totalPages; i++)
+                {
+                    <li class="page-item @(i == page ? "active" : "")"><a class="page-link" asp-action="Staff" asp-route-page="@i" asp-route-search="@search" asp-route-position="@position" asp-route-hireDateFrom="@hireDateFrom" asp-route-hireDateTo="@hireDateTo" asp-route-status="@status">@i</a></li>
+                }
+            </ul></nav>
+        }
     </div>
 </div>

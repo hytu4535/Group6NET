@@ -19,11 +19,27 @@ public class IdentityController(
     IPasswordHasher<User> passwordHasher) : Controller
 {
     [Authorize(Policy = "users.view")]
-    public async Task<IActionResult> Users()
+    public async Task<IActionResult> Users(string? search, int? roleId, string? status = "active", int page = 1, int pageSize = 10)
     {
         SetNav("Quản lý người dùng", "Users", "Identity");
-        var users = await userRepository.GetAllWithRoleAsync();
-        users = users.Where(u => u.Status != "deleted").ToList();
+        var users = await userRepository.GetAllWithRoleAsync(includeInactive: true);
+        var normalizedSearch = search?.Trim();
+        if (!string.IsNullOrWhiteSpace(normalizedSearch))
+        {
+            users = users.Where(u =>
+                u.Username.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) ||
+                (u.FullName?.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (u.Email?.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (u.PhoneNumber?.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+        }
+        if (roleId.HasValue) users = users.Where(u => u.RoleId == roleId.Value).ToList();
+        if (!string.IsNullOrWhiteSpace(status) && !status.Equals("all", StringComparison.OrdinalIgnoreCase)) users = users.Where(u => u.Status == status).ToList();
+        ViewData["Search"] = search;
+        ViewData["RoleId"] = roleId;
+        ViewData["Status"] = status;
+        ViewData["RoleOptions"] = (await roleRepository.GetAllAsync(includeInactive: false));
+        SetPagination(users.Count, ref page, pageSize);
+        ViewData["PageItems"] = users.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         return View(users);
     }
 
@@ -224,11 +240,20 @@ public class IdentityController(
     }
 
 [Authorize(Policy = "roles.view")]
-    public async Task<IActionResult> Roles()
+    public async Task<IActionResult> Roles(string? search, string? status = "active", int page = 1, int pageSize = 10)
     {
         SetNav("Quản lý vai trò", "Roles", "Identity");
-        var roles = await roleRepository.GetAllAsync();
-        roles = roles.Where(r => r.Status != "deleted").ToList();
+        var roles = await roleRepository.GetAllAsync(includeInactive: true);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            roles = roles.Where(r => r.Name.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                (r.Description?.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+        }
+        if (!string.IsNullOrWhiteSpace(status) && !status.Equals("all", StringComparison.OrdinalIgnoreCase)) roles = roles.Where(r => r.Status == status).ToList();
+        ViewData["Search"] = search;
+        ViewData["Status"] = status;
+        SetPagination(roles.Count, ref page, pageSize);
+        ViewData["PageItems"] = roles.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         return View(roles);
     }
 
@@ -332,13 +357,20 @@ public class IdentityController(
     public async Task<IActionResult> DetailsRole(int id)
     {
         SetNav("Chi tiết vai trò", "Roles", "Identity");
-        var role = await roleRepository.GetByIdAsync(id);
+        var role = await roleRepository.GetRoleWithPermissionsAsync(id);
         if (role is null)
         {
             return NotFound();
         }
 
-        return View(role);
+        var permissions = await EnsureCrudPermissionsAsync();
+        var model = new RoleDetailsViewModel
+        {
+            Role = role,
+            PermissionMatrix = BuildRolePermissionsMatrix(role, permissions)
+        };
+
+        return View(model);
     }
 
     [Authorize(Policy = "roles.update")]
@@ -409,10 +441,12 @@ public class IdentityController(
     }
 
     [Authorize(Policy = "permissions.view")]
-    public async Task<IActionResult> Permissions()
+    public async Task<IActionResult> Permissions(int page = 1, int pageSize = 10)
     {
         SetNav("Phân quyền", "Permissions", "Identity");
         var permissions = await permissionRepository.GetAllAsync();
+        SetPagination(permissions.Count, ref page, pageSize);
+        ViewData["PageItems"] = permissions.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         return View(permissions);
     }
 
@@ -557,11 +591,26 @@ public class IdentityController(
     }
 
     [Authorize(Policy = "staff.view")]
-    public async Task<IActionResult> Staff()
+    public async Task<IActionResult> Staff(string? search, string? position, DateTime? hireDateFrom, DateTime? hireDateTo, string? status = "active", int page = 1, int pageSize = 10)
     {
         SetNav("Quản lý nhân viên", "Staff", "Identity");
-        var staffList = await staffRepository.GetAllWithUserAsync();
-        staffList = staffList.Where(s => s.Status != "deleted").ToList();
+        var staffList = await staffRepository.GetAllWithUserAsync(includeInactive: true);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            staffList = staffList.Where(s => (s.User?.Username?.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (s.User?.FullName?.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+        }
+        if (!string.IsNullOrWhiteSpace(position)) staffList = staffList.Where(s => s.Position?.Contains(position.Trim(), StringComparison.OrdinalIgnoreCase) == true).ToList();
+        if (hireDateFrom.HasValue) staffList = staffList.Where(s => s.HireDate >= hireDateFrom).ToList();
+        if (hireDateTo.HasValue) staffList = staffList.Where(s => s.HireDate <= hireDateTo.Value.Date.AddDays(1).AddTicks(-1)).ToList();
+        if (!string.IsNullOrWhiteSpace(status) && !status.Equals("all", StringComparison.OrdinalIgnoreCase)) staffList = staffList.Where(s => s.Status == status).ToList();
+        ViewData["Search"] = search;
+        ViewData["Position"] = position;
+        ViewData["HireDateFrom"] = hireDateFrom?.ToString("yyyy-MM-dd");
+        ViewData["HireDateTo"] = hireDateTo?.ToString("yyyy-MM-dd");
+        ViewData["Status"] = status;
+        SetPagination(staffList.Count, ref page, pageSize);
+        ViewData["PageItems"] = staffList.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         return View(staffList);
     }
 
@@ -626,6 +675,8 @@ public class IdentityController(
             Status = staff.Status
         };
 
+        ViewData["LinkedUsername"] = staff.User?.Username ?? string.Empty;
+
         return View(await BuildStaffVmAsync(vm));
     }
 
@@ -647,6 +698,8 @@ public class IdentityController(
         {
             return NotFound();
         }
+
+        model.UserId = staff.UserId;
 
         if (await staffRepository.ExistsByUserIdAsync(model.UserId, staff.Id))
         {
@@ -731,11 +784,28 @@ public class IdentityController(
     }
 
 [Authorize(Policy = "veterinarians.view")]
-    public async Task<IActionResult> Veterinarians()
+    public async Task<IActionResult> Veterinarians(string? search, string? specialty, string? licenseNo, int? minExperience, int? maxExperience, string? status = "active", int page = 1, int pageSize = 10)
     {
         SetNav("Quản lý bác sĩ thú y", "Veterinarians", "Identity");
-        var vets = await veterinarianRepository.GetAllWithUserAsync();
-        vets = vets.Where(v => v.Status != "deleted").ToList();
+        var vets = await veterinarianRepository.GetAllWithUserAsync(includeInactive: true);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            vets = vets.Where(v => (v.User?.Username?.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (v.User?.FullName?.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+        }
+        if (!string.IsNullOrWhiteSpace(specialty)) vets = vets.Where(v => v.Specialty?.Contains(specialty.Trim(), StringComparison.OrdinalIgnoreCase) == true).ToList();
+        if (!string.IsNullOrWhiteSpace(licenseNo)) vets = vets.Where(v => v.LicenseNo?.Contains(licenseNo.Trim(), StringComparison.OrdinalIgnoreCase) == true).ToList();
+        if (minExperience.HasValue) vets = vets.Where(v => v.YearsOfExperience >= minExperience).ToList();
+        if (maxExperience.HasValue) vets = vets.Where(v => v.YearsOfExperience <= maxExperience).ToList();
+        if (!string.IsNullOrWhiteSpace(status) && !status.Equals("all", StringComparison.OrdinalIgnoreCase)) vets = vets.Where(v => v.Status == status).ToList();
+        ViewData["Search"] = search;
+        ViewData["Specialty"] = specialty;
+        ViewData["LicenseNo"] = licenseNo;
+        ViewData["MinExperience"] = minExperience;
+        ViewData["MaxExperience"] = maxExperience;
+        ViewData["Status"] = status;
+        SetPagination(vets.Count, ref page, pageSize);
+        ViewData["PageItems"] = vets.Skip((page - 1) * pageSize).Take(pageSize).ToList();
         return View(vets);
     }
 
@@ -802,6 +872,8 @@ public class IdentityController(
             Status = vet.Status
         };
 
+        ViewData["LinkedUsername"] = vet.User?.Username ?? string.Empty;
+
         return View(await BuildVeterinarianVmAsync(vm));
     }
 
@@ -823,6 +895,8 @@ public class IdentityController(
         {
             return NotFound();
         }
+
+        model.UserId = vet.UserId;
 
         if (await veterinarianRepository.ExistsByUserIdAsync(model.UserId, vet.Id))
         {
@@ -867,6 +941,15 @@ public class IdentityController(
     private async Task<List<Permission>> EnsureCrudPermissionsAsync()
     {
         var permissions = await permissionRepository.GetAllAsync();
+        foreach (var permission in permissions)
+        {
+            var separatorIndex = permission.Code.IndexOf('.');
+            if (separatorIndex > 0)
+            {
+                permission.Module = permission.Code[..separatorIndex];
+            }
+        }
+
         var requiredModules = new[]
         {
             (Module: "users", DisplayName: "Quản lý người dùng", Codes: new[] { "view", "create", "update", "delete" }),
@@ -878,10 +961,22 @@ public class IdentityController(
             (Module: "suppliers", DisplayName: "Nhà cung cấp", Codes: new[] { "view", "create", "update", "delete" }),
             (Module: "products", DisplayName: "Sản phẩm", Codes: new[] { "view", "create", "update", "delete" }),
             (Module: "import_receipts", DisplayName: "Phiếu nhập kho", Codes: new[] { "view", "create", "update", "delete" }),
-            (Module: "carts", DisplayName: "Giỏ hàng", Codes: new[] { "view", "delete" }),
-            (Module: "orders", DisplayName: "Đơn hàng", Codes: new[] { "view", "create", "update" }),
+            (Module: "carts", DisplayName: "Giỏ hàng", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "orders", DisplayName: "Đơn hàng", Codes: new[] { "view", "create", "update", "delete" }),
             (Module: "payments", DisplayName: "Thanh toán", Codes: new[] { "view", "create", "update", "delete" }),
-            (Module: "invoices", DisplayName: "Hóa đơn", Codes: new[] { "view", "create", "update" })
+            (Module: "invoices", DisplayName: "Hóa đơn", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "pets", DisplayName: "Thú cưng", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "appointments", DisplayName: "Lịch hẹn", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "services", DisplayName: "Dịch vụ", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "service_packages", DisplayName: "Gói dịch vụ", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "pet_packages", DisplayName: "Gói dịch vụ thú cưng", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "pet_images", DisplayName: "Hình ảnh thú cưng", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "pet_health_records", DisplayName: "Hồ sơ sức khỏe", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "vaccination_records", DisplayName: "Lịch sử tiêm phòng", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "medical_prescriptions", DisplayName: "Đơn thuốc", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "feedbacks", DisplayName: "Phản hồi", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "notifications", DisplayName: "Thông báo", Codes: new[] { "view", "create", "update", "delete" }),
+            (Module: "chats", DisplayName: "Chat", Codes: new[] { "view", "create", "update", "delete" })
         };
 
         var hasChanges = false;
@@ -893,6 +988,12 @@ public class IdentityController(
                 var existing = permissions.FirstOrDefault(x => string.Equals(x.Code, code, StringComparison.OrdinalIgnoreCase));
                 if (existing is not null)
                 {
+                    if (!string.Equals(existing.Module, module.Module, StringComparison.OrdinalIgnoreCase))
+                    {
+                        existing.Module = module.Module;
+                        existing.UpdatedAt = DateTime.UtcNow;
+                        await permissionRepository.UpdateAsync(existing);
+                    }
                     continue;
                 }
 
@@ -990,6 +1091,18 @@ public class IdentityController(
         "orders" => "Đơn hàng",
         "payments" => "Thanh toán",
         "invoices" => "Hóa đơn",
+        "pets" => "Thú cưng",
+        "appointments" => "Lịch hẹn",
+        "services" => "Dịch vụ",
+        "service_packages" => "Gói dịch vụ",
+        "pet_packages" => "Gói dịch vụ thú cưng",
+        "pet_images" => "Hình ảnh thú cưng",
+        "pet_health_records" => "Hồ sơ sức khỏe",
+        "vaccination_records" => "Lịch sử tiêm phòng",
+        "medical_prescriptions" => "Đơn thuốc",
+        "feedbacks" => "Phản hồi",
+        "notifications" => "Thông báo",
+        "chats" => "Chat",
         _ => module
     };
 
@@ -1087,5 +1200,15 @@ public class IdentityController(
         ViewData["Title"] = title;
         ViewData["Active"] = active;
         ViewData["ActiveParent"] = activeParent;
+    }
+
+    private void SetPagination(int totalItems, ref int page, int pageSize)
+    {
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var totalPages = Math.Max(1, (int)Math.Ceiling(totalItems / (double)pageSize));
+        page = Math.Clamp(page, 1, totalPages);
+        ViewData["Page"] = page;
+        ViewData["PageSize"] = pageSize;
+        ViewData["TotalPages"] = totalPages;
     }
 }

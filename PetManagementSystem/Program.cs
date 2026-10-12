@@ -86,7 +86,6 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    dbContext.Database.Migrate();
 
     var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
     var adminUser = dbContext.Users.FirstOrDefault(x => x.Username == "admin01");
@@ -95,6 +94,31 @@ using (var scope = app.Services.CreateScope())
         adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "Huy123456");
         dbContext.SaveChanges();
         Console.WriteLine("[SETUP] Updated admin01 password hash for Huy123456 successfully.");
+    }
+
+    var adminRole = dbContext.Roles
+        .Include(role => role.RolePermissions)
+        .FirstOrDefault(role => role.Name.ToLower() == "admin" && role.Status == "active");
+    if (adminRole != null)
+    {
+        var permissionIds = dbContext.Permissions.Select(permission => permission.Id).ToList();
+        var assignedPermissionIds = adminRole.RolePermissions.Select(rolePermission => rolePermission.PermissionId).ToHashSet();
+        var missingRolePermissions = permissionIds
+            .Where(permissionId => !assignedPermissionIds.Contains(permissionId))
+            .Select(permissionId => new RolePermission
+            {
+                RoleId = adminRole.Id,
+                PermissionId = permissionId,
+                CreatedAt = DateTime.UtcNow
+            })
+            .ToList();
+
+        if (missingRolePermissions.Count > 0)
+        {
+            dbContext.RolePermissions.AddRange(missingRolePermissions);
+            dbContext.SaveChanges();
+            Console.WriteLine($"[SETUP] Granted admin role {missingRolePermissions.Count} additional permissions.");
+        }
     }
 }
 

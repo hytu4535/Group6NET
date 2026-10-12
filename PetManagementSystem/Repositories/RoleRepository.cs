@@ -16,18 +16,24 @@ public class RoleRepository(AppDbContext dbContext) : IRoleRepository
 
     public async Task<Role?> GetByNameAsync(string roleName)
     {
+        var normalizedRoleName = roleName.Trim().ToLower();
         return await dbContext.Roles
-            .FirstOrDefaultAsync(x => x.Name.ToLower() == roleName.ToLower());
+            .FirstOrDefaultAsync(x => x.Status == "active" && x.Name.Trim().ToLower() == normalizedRoleName);
     }
 
-    public async Task<List<Role>> GetAllAsync()
+    public async Task<List<Role>> GetAllAsync(bool includeInactive = false)
     {
-        return await dbContext.Roles
+        var query = dbContext.Roles
             .Include(x => x.RolePermissions)
                 .ThenInclude(rp => rp.Permission)
-            .Where(x => x.Status == "active")
-            .OrderBy(x => x.Name)
-            .ToListAsync();
+            .AsQueryable();
+
+        if (!includeInactive)
+        {
+            query = query.Where(x => x.Status == "active");
+        }
+
+        return await query.OrderBy(x => x.Name).ToListAsync();
     }
 
     public async Task<Role?> GetByIdAsync(int roleId)

@@ -6,7 +6,7 @@ public interface IRoleRepository
 {
     Task<Role?> GetRoleWithPermissionsAsync(int roleId);
     Task<Role?> GetByNameAsync(string roleName);
-    Task<List<Role>> GetAllAsync();
+    Task<List<Role>> GetAllAsync(bool includeInactive = false);
     Task<Role?> GetByIdAsync(int roleId);
     Task<bool> ExistsNameAsync(string roleName, int? excludeId = null);
     Task AddAsync(Role role, IEnumerable<int> permissionIds);

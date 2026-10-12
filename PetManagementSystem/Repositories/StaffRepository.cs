@@ -6,14 +6,20 @@ namespace PetManagementSystem.Repositories;
 
 public class StaffRepository(AppDbContext dbContext) : IStaffRepository
 {
-    public async Task<List<Staff>> GetAllWithUserAsync()
+    public async Task<List<Staff>> GetAllWithUserAsync(bool includeInactive = false)
     {
-        return await dbContext.Staff
+        var query = dbContext.Staff
             .Include(x => x.User)
                 .ThenInclude(u => u!.Role)
-            .Where(x => x.Status == "active" && x.User != null && x.User.Status == "active")
-            .OrderByDescending(x => x.CreatedAt)
-            .ToListAsync();
+            .Where(x => x.User != null)
+            .AsQueryable();
+
+        if (!includeInactive)
+        {
+            query = query.Where(x => x.Status == "active" && x.User!.Status == "active");
+        }
+
+        return await query.OrderByDescending(x => x.CreatedAt).ToListAsync();
     }
 
     public async Task<Staff?> GetByIdAsync(int id)

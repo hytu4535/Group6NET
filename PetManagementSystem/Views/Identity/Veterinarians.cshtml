@@ -1,6 +1,15 @@
 @model List<PetManagementSystem.Models.Veterinarian>
 @{
     Layout = "_AdminLayout";
+    var items = ViewData["PageItems"] as IEnumerable<PetManagementSystem.Models.Veterinarian> ?? Model;
+    var page = (int?)ViewData["Page"] ?? 1;
+    var totalPages = (int?)ViewData["TotalPages"] ?? 1;
+    var search = ViewData["Search"] as string;
+    var specialty = ViewData["Specialty"] as string;
+    var licenseNo = ViewData["LicenseNo"] as string;
+    var minExperience = ViewData["MinExperience"] as int?;
+    var maxExperience = ViewData["MaxExperience"] as int?;
+    var status = ViewData["Status"] as string ?? "active";
 }
 
 <div class="card shadow-sm border-0">
@@ -9,6 +18,7 @@
         <a class="btn btn-primary" asp-action="CreateVeterinarian"><i class="bi bi-plus-circle me-1"></i>Tạo bác sĩ</a>
     </div>
     <div class="card-body">
+        <form method="get" class="row g-2 mb-3"><div class="col-md-3"><input name="search" value="@search" class="form-control" placeholder="Username hoặc họ tên..." /></div><div class="col-md-2"><input name="specialty" value="@specialty" class="form-control" placeholder="Chuyên môn..." /></div><div class="col-md-2"><input name="licenseNo" value="@licenseNo" class="form-control" placeholder="Số chứng chỉ..." /></div><div class="col-md-1"><input type="number" name="minExperience" value="@minExperience" class="form-control" min="0" placeholder="KN từ" /></div><div class="col-md-1"><input type="number" name="maxExperience" value="@maxExperience" class="form-control" min="0" placeholder="KN đến" /></div><div class="col-md-2"><select name="status" class="form-select"><option value="all" selected="@(status == "all")">Tất cả trạng thái</option><option value="active" selected="@(status == "active")">Hoạt động</option><option value="inactive" selected="@(status == "inactive")">Khóa</option><option value="deleted" selected="@(status == "deleted")">Đã xóa</option></select></div><div class="col-md-1"><button class="btn btn-outline-secondary w-100" type="submit">Lọc</button></div><div class="col-12"><a asp-action="Veterinarians" class="btn btn-sm btn-outline-secondary">Xóa lọc</a></div></form>
         @if (TempData["Success"] is string success)
         {
             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -37,15 +47,22 @@
                         <th>Username</th>
                         <th>Họ tên</th>
                         <th>Chuyên môn</th>
-                        <th>License</th>
+                        <th>Số chứng chỉ</th>
                         <th>Kinh nghiệm</th>
                         <th>Trạng thái</th>
                         <th class="text-end">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in Model)
+                    @foreach (var item in items)
                     {
+                        var statusText = item.Status switch
+                        {
+                            "active" => "Hoạt động",
+                            "inactive" => "Khóa",
+                            "deleted" => "Đã xóa",
+                            _ => item.Status
+                        };
                         <tr>
                             <td>@item.User?.Username</td>
                             <td>@item.User?.FullName</td>
@@ -57,21 +74,7 @@
                                               item.Status == "inactive" ? "text-bg-warning" :
                                               item.Status == "deleted" ? "text-bg-danger" :
                                               "text-bg-secondary")">
-                                    @switch (item.Status)
-                                    {
-                                        case "active":
-                                            @:"Hoạt động";
-                                            break;
-                                        case "inactive":
-                                            @:"Khóa";
-                                            break;
-                                        case "deleted":
-                                            @:"Đã xóa";
-                                            break;
-                                        default:
-                                            @:item.Status;
-                                            break;
-                                    }
+                                    @statusText
                                 </span>
                             </td>
                             <td class="text-end">
@@ -94,5 +97,14 @@
                 </tbody>
             </table>
         </div>
+        @if (totalPages > 1)
+        {
+            <nav class="mt-3"><ul class="pagination justify-content-center">
+                @for (var i = 1; i <= totalPages; i++)
+                {
+                    <li class="page-item @(i == page ? "active" : "")"><a class="page-link" asp-action="Veterinarians" asp-route-page="@i" asp-route-search="@search" asp-route-specialty="@specialty" asp-route-licenseNo="@licenseNo" asp-route-minExperience="@minExperience" asp-route-maxExperience="@maxExperience" asp-route-status="@status">@i</a></li>
+                }
+            </ul></nav>
+        }
     </div>
 </div>

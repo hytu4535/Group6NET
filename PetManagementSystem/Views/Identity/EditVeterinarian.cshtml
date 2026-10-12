@@ -13,8 +13,9 @@
 
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label asp-for="UserId" class="form-label">User</label>
-                    <select asp-for="UserId" asp-items="Model.UserOptions" class="form-select"></select>
+                    <label class="form-label">Tài khoản</label>
+                    <input class="form-control" value="@ViewData["LinkedUsername"]" readonly />
+                    <div class="form-text">Username được liên kết cố định và không thể thay đổi khi sửa bác sĩ thú y.</div>
                 </div>
                 <div class="col-md-6">
                     <label asp-for="Specialty" class="form-label">Chuyên môn</label>
