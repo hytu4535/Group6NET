@@ -121,3 +121,10 @@
         </form>
     </div>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('input[type="checkbox"]').forEach(function (checkbox) {
+            checkbox.indeterminate = false;
+        });
+    });
+</script>
