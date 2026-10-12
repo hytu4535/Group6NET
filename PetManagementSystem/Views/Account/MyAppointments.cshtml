@@ -4,82 +4,124 @@
     ViewData["Title"] = "Lịch hẹn của tôi";
 }
 
-<h2 class="mb-4">Lịch hẹn của tôi</h2>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h2 class="fw-bold mb-0" style="color: #4a2c2a;">
+        <i class="bi bi-calendar-check text-danger me-2"></i>Lịch hẹn của tôi
+    </h2>
+    @if (Model.Any())
+    {
+        <a asp-controller="Appointment" asp-action="Book" class="btn btn-custom-primary">
+            <i class="bi bi-calendar-plus me-1"></i> Đặt lịch mới
+        </a>
+    }
+</div>
 
 @if (!Model.Any())
 {
-    <div class="alert alert-info">
-        Bạn chưa có lịch hẹn nào. <a asp-controller="Home" asp-action="Booking">Đặt lịch hẹn</a>
+    <div class="card border-0 shadow-sm rounded-4 text-center py-5 px-4 my-4 bg-white">
+        <div class="card-body py-4">
+            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 90px; height: 90px;">
+                <i class="bi bi-calendar-x text-danger display-5"></i>
+            </div>
+            <h4 class="fw-bold mb-2 text-dark">Bạn chưa có lịch hẹn nào</h4>
+            <p class="text-muted mb-4 mx-auto" style="max-width: 480px;">
+                Hãy đặt lịch khám, tiêm phòng hoặc chăm sóc sức khỏe cho thú cưng của bạn ngay hôm nay để nhận được sự tư vấn và chăm sóc tận tâm từ đội ngũ bác sĩ thú y chuyên nghiệp.
+            </p>
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a asp-controller="Appointment" asp-action="Book" class="btn btn-custom-primary btn-lg rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-calendar-plus me-2"></i>Đặt lịch ngay
+                </a>
+                <a asp-controller="Service" asp-action="Index" class="btn btn-outline-secondary btn-lg rounded-pill px-4">
+                    <i class="bi bi-grid me-2"></i>Xem dịch vụ
+                </a>
+            </div>
+        </div>
     </div>
 }
 else
 {
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>Ngày</th>
-                    <th>Giờ</th>
-                    <th>Thú cưng</th>
-                    <th>Bác sĩ</th>
-                    <th>Lý do</th>
-                    <th>Trạng thái</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var appt in Model)
-                {
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive mb-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-uppercase fs-7 text-muted">
                     <tr>
-                        <td>@appt.AppointmentDate.ToString("dd/MM/yyyy")</td>
-                        <td>@appt.AppointmentTime.ToString(@"hh\:mm")</td>
-                        <td>
-                            @if (appt.Pet != null)
-                            {
-                                <strong>@appt.Pet.Name</strong>
-                            }
-                            else
-                            {
-                                <span class="text-muted">Không có thông tin</span>
-                            }
-                        </td>
-                        <td>
-                            @if (appt.Veterinarian != null)
-                            {
-                                <strong>@appt.Veterinarian.User?.FullName ?? "Bác sĩ"</strong>
-                            }
-                            else
-                            {
-                                <span class="text-muted">Chưa chỉ định</span>
-                            }
-                        </td>
-                        <td>@appt.Reason</td>
-                        <td>
-                            @switch (appt.Status)
-                            {
-                                case 0:
-                                    <span class="badge bg-secondary">Chờ xác nhận</span>
-                                    break;
-                                case 1:
-                                    <span class="badge bg-success">Đã xác nhận</span>
-                                    break;
-                                case 2:
-                                    <span class="badge bg-info">Đã hoàn thành</span>
-                                    break;
-                                case 3:
-                                    <span class="badge bg-danger">Đã hủy</span>
-                                    break;
-                                default:
-                                    <span class="badge bg-secondary">Khác</span>
-                                    break;
-                            }
-                        </td>
-                        <td>
-                            <a asp-controller="Appointment" asp-action="Details" asp-route-id="@appt.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a>
-                        </td>
+                        <th class="py-3 ps-4">Ngày</th>
+                        <th class="py-3">Giờ</th>
+                        <th class="py-3">Thú cưng</th>
+                        <th class="py-3">Bác sĩ</th>
+                        <th class="py-3">Lý do</th>
+                        <th class="py-3">Trạng thái</th>
+                        <th class="py-3 text-end pe-4">Thao tác</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var appt in Model)
+                    {
+                        <tr>
+                            <td class="ps-4 fw-semibold">@appt.AppointmentDate.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                <span class="badge bg-light text-dark border px-2 py-1">
+                                    <i class="bi bi-clock me-1 text-muted"></i>@appt.AppointmentTime.ToString(@"hh\:mm")
+                                </span>
+                            </td>
+                            <td>
+                                @if (appt.Pet != null)
+                                {
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="bg-light rounded-circle p-1 text-danger d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                            <i class="bi bi-paw"></i>
+                                        </div>
+                                        <strong class="text-dark">@appt.Pet.Name</strong>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted fst-italic">Không có thông tin</span>
+                                }
+                            </td>
+                            <td>
+                                @if (appt.Veterinarian != null)
+                                {
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-person-badge text-muted"></i>
+                                        <span>@appt.Veterinarian.User?.FullName ?? "Bác sĩ"</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted fst-italic">Chưa chỉ định</span>
+                                }
+                            </td>
+                            <td class="text-truncate" style="max-width: 200px;" title="@appt.Reason">@appt.Reason</td>
+                            <td>
+                                @switch (appt.Status)
+                                {
+                                    case 0:
+                                        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="bi bi-hourglass-split me-1"></i>Chờ xác nhận</span>
+                                        break;
+                                    case 1:
+                                        <span class="badge bg-success px-3 py-2 rounded-pill"><i class="bi bi-check-circle me-1"></i>Đã xác nhận</span>
+                                        break;
+                                    case 2:
+                                        <span class="badge bg-info text-dark px-3 py-2 rounded-pill"><i class="bi bi-check2-all me-1"></i>Đã hoàn thành</span>
+                                        break;
+                                    case 3:
+                                        <span class="badge bg-danger px-3 py-2 rounded-pill"><i class="bi bi-x-circle me-1"></i>Đã hủy</span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-secondary px-3 py-2 rounded-pill">Khác</span>
+                                        break;
+                                }
+                            </td>
+                            <td class="text-end pe-4">
+                                <a asp-controller="Appointment" asp-action="Details" asp-route-id="@appt.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                    <i class="bi bi-eye me-1"></i>Chi tiết
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 }

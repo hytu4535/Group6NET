@@ -1,40 +1,426 @@
-@model IEnumerable<PetManagementSystem.Models.Service>
+@model PetManagementSystem.ViewModels.ServiceIndexViewModel
 
 @{
-    ViewData["Title"] = "Dịch vụ";
+    ViewData["Title"] = "Dịch vụ & Gói dịch vụ";
 }
 
-<h2 class="mb-4">Dịch vụ của chúng tôi</h2>
-
-@if (!Model.Any())
-{
-    <div class="alert alert-info">
-        Hiện tại chưa có dịch vụ nào được đăng ký.
+<div class="container py-4">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold text-primary mb-2">Dịch vụ & Gói chăm sóc thú cưng</h2>
+        <p class="text-muted">Khám phá các dịch vụ chuyên nghiệp và gói ưu đãi đặc biệt dành riêng cho thú cưng của bạn.</p>
     </div>
-}
-else
-{
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-        @foreach (var service in Model)
-        {
-            <div class="col">
-                <div class="card h-100 shadow-sm">
-                    <div class="ratio ratio-16x9">
-                        <img src="@(service.ImageUrl ?? "/images/default-service.jpg")" class="card-img-top" alt="@service.Name">
-                    </div>
-                    <div class="card-body d-flex flex-column">
-                        <h5 class="card-title">@service.Name</h5>
-                        <p class="card-text flex-grow-1">
-                            @service.Description
-                        </p>
-                        <div class="mt-3">
-                            <strong>Giá:</strong> @service.Price.ToString("#,##0") đ<br>
-                            <strong>Thời lượng:</strong> @service.DurationMinutes phút
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Bootstrap Nav Pills for 2 Tabs -->
+    <ul class="nav nav-pills justify-content-center mb-4 gap-2" id="serviceTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active px-4 py-2 rounded-pill fw-semibold shadow-sm" id="packages-tab" data-bs-toggle="pill" data-bs-target="#packages-pane" type="button" role="tab" aria-controls="packages-pane" aria-selected="true">
+                <i class="bi bi-box-seam me-2"></i> Gói Dịch Vụ Combo
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link px-4 py-2 rounded-pill fw-semibold shadow-sm" id="services-tab" data-bs-toggle="pill" data-bs-target="#services-pane" type="button" role="tab" aria-controls="services-pane" aria-selected="false">
+                <i class="bi bi-scissors me-2"></i> Dịch Vụ Lẻ
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="serviceTabsContent">
+        <!-- TAB 1: GÓI DỊCH VỤ COMBO -->
+        <div class="tab-pane fade show active" id="packages-pane" role="tabpanel" aria-labelledby="packages-tab">
+            @if (Model.Packages == null || !Model.Packages.Any())
+            {
+                <div class="alert alert-info text-center py-4">
+                    <i class="bi bi-info-circle fs-4 d-block mb-2"></i> Hiện tại chưa có gói dịch vụ combo nào.
+                </div>
+            }
+            else
+            {
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    @foreach (var pkg in Model.Packages)
+                    {
+                        var serviceNames = pkg.ServicePackageServices?.Select(sps => sps.Service?.Name ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList() ?? new List<string>();
+                        <div class="col">
+                            <div class="card h-100 shadow-sm border-0 rounded-4 transition-card">
+                                <div class="card-body d-flex flex-column p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h5 class="card-title fw-bold text-dark fs-4 mb-0">@pkg.Name</h5>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill fw-bold">Combo</span>
+                                    </div>
+                                    <p class="card-text text-muted small flex-grow-1 mb-3">
+                                        @(string.IsNullOrEmpty(pkg.Description) ? "Chưa có mô tả chi tiết cho gói này." : pkg.Description)
+                                    </p>
+                                    
+                                    <div class="mb-3 p-3 bg-light rounded-3">
+                                        <div class="d-flex justify-content-between text-muted small mb-1">
+                                            <span><i class="bi bi-calendar3 me-1 text-primary"></i> Thời hạn:</span>
+                                            <span class="fw-semibold text-dark">@pkg.ValidityDays ngày</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between text-muted small">
+                                            <span><i class="bi bi-clock me-1 text-primary"></i> Thời lượng:</span>
+                                            <span class="fw-semibold text-dark">@pkg.DurationMinutes phút</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <span class="d-block small text-muted mb-2 fw-semibold">Dịch vụ thành phần:</span>
+                                        @if (serviceNames.Any())
+                                        {
+                                            <div class="d-flex flex-wrap gap-1">
+                                                @foreach (var name in serviceNames)
+                                                {
+                                                    <span class="badge bg-white text-dark border px-2 py-1">@name</span>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Không có dịch vụ thành phần</span>
+                                        }
+                                    </div>
+
+                                    <div class="d-flex align-items-center justify-content-between mt-auto pt-3 border-top">
+                                        <div>
+                                            <span class="text-muted small d-block">Giá gói</span>
+                                            <span class="fs-4 fw-bold text-danger">@pkg.Price.ToString("#,##0") đ</span>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 btn-pkg-detail" 
+                                                    data-id="@pkg.Id"
+                                                    data-name="@pkg.Name"
+                                                    data-description="@pkg.Description"
+                                                    data-price="@pkg.Price"
+                                                    data-duration="@pkg.DurationMinutes"
+                                                    data-validity="@pkg.ValidityDays"
+                                                    data-services='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(serviceNames))'>
+                                                Chi tiết
+                                            </button>
+                                            @if (User.Identity?.IsAuthenticated == true)
+                                            {
+                                                <button type="button" class="btn btn-primary btn-sm rounded-pill px-3" 
+                                                        onclick="openBuyPackageModal(@pkg.Id, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(pkg.Name))', @pkg.Price)">
+                                                    Mua gói
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <a asp-controller="Auth" asp-action="UserLogin" class="btn btn-primary btn-sm rounded-pill px-3">
+                                                    Mua gói
+                                                </a>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <a asp-controller="Service" asp-action="Details" asp-route-id="@service.Id" class="btn btn-primary mt-auto">Xem chi tiết</a>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- TAB 2: DỊCH VỤ LẺ -->
+        <div class="tab-pane fade" id="services-pane" role="tabpanel" aria-labelledby="services-tab">
+            @if (Model.Services == null || !Model.Services.Any())
+            {
+                <div class="alert alert-info text-center py-4">
+                    <i class="bi bi-info-circle fs-4 d-block mb-2"></i> Hiện tại chưa có dịch vụ lẻ nào.
+                </div>
+            }
+            else
+            {
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    @foreach (var s in Model.Services)
+                    {
+                        <div class="col">
+                            <div class="card h-100 shadow-sm border-0 rounded-4 transition-card">
+                                <div class="card-body d-flex flex-column p-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h5 class="card-title fw-bold text-dark fs-5 mb-0">@s.Name</h5>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-bold">Dịch vụ</span>
+                                    </div>
+                                    <p class="card-text text-muted small flex-grow-1 mb-3">
+                                        @(string.IsNullOrEmpty(s.Description) ? "Chưa có mô tả chi tiết cho dịch vụ này." : s.Description)
+                                    </p>
+
+                                    <div class="mb-3 p-3 bg-light rounded-3">
+                                        <div class="d-flex justify-content-between text-muted small">
+                                            <span><i class="bi bi-clock me-1 text-primary"></i> Thời lượng thực hiện:</span>
+                                            <span class="fw-semibold text-dark">@s.DurationMinutes phút</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex align-items-center justify-content-between mt-auto pt-3 border-top">
+                                        <div>
+                                            <span class="text-muted small d-block">Giá dịch vụ</span>
+                                            <span class="fs-5 fw-bold text-danger">@s.Price.ToString("#,##0") đ</span>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 btn-service-detail" 
+                                                    data-id="@s.Id"
+                                                    data-name="@s.Name"
+                                                    data-description="@s.Description"
+                                                    data-price="@s.Price"
+                                                    data-duration="@s.DurationMinutes">
+                                                Chi tiết
+                                            </button>
+                                            <a asp-controller="Appointment" asp-action="Create" asp-route-serviceId="@s.Id" class="btn btn-primary btn-sm rounded-pill px-3">
+                                                Đặt lịch ngay
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xem Chi Tiết Gói Dịch Vụ -->
+<div class="modal fade" id="packageDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="modalPkgName">Chi tiết gói dịch vụ</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted" id="modalPkgDesc"></p>
+                <div class="mb-3 p-3 bg-light rounded-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted"><i class="bi bi-calendar3 me-1"></i> Thời hạn sử dụng:</span>
+                        <strong id="modalPkgValidity"></strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted"><i class="bi bi-clock me-1"></i> Thời lượng ước tính:</span>
+                        <strong id="modalPkgDuration"></strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted"><i class="bi bi-tag me-1"></i> Giá gói:</span>
+                        <strong class="text-danger fs-5" id="modalPkgPrice"></strong>
+                    </div>
+                </div>
+                <h6 class="fw-bold mb-2">Các dịch vụ bao gồm trong gói:</h6>
+                <ul class="list-group" id="modalPkgServicesList">
+                </ul>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <button type="button" class="btn btn-primary rounded-pill px-4" id="modalPkgBuyBtn" onclick="triggerBuyPackageFromModal()">Mua gói ngay</button>
+                }
+                else
+                {
+                    <a asp-controller="Auth" asp-action="UserLogin" class="btn btn-primary rounded-pill px-4">Đăng nhập để mua</a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xem Chi Tiết Dịch Vụ Lẻ -->
+<div class="modal fade" id="serviceDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="modalServiceName">Chi tiết dịch vụ</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted" id="modalServiceDesc"></p>
+                <div class="p-3 bg-light rounded-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted"><i class="bi bi-clock me-1"></i> Thời lượng:</span>
+                        <strong id="modalServiceDuration"></strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted"><i class="bi bi-tag me-1"></i> Giá dịch vụ:</span>
+                        <strong class="text-danger fs-5" id="modalServicePrice"></strong>
                     </div>
                 </div>
             </div>
-        }
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Đóng</button>
+                <a id="modalServiceBookBtn" href="#" class="btn btn-primary rounded-pill px-4">Đặt lịch ngay</a>
+            </div>
+        </div>
     </div>
+</div>
+
+<!-- Modal Đăng Ký Gói Dịch Vụ Combo -->
+<div class="modal fade" id="buyPackageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <form asp-controller="Service" asp-action="BuyPackage" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="buyPackageId" name="packageId" />
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">Đăng ký Gói Dịch Vụ Combo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3 p-3 bg-light rounded-3">
+                        <div class="mb-2">
+                            <span class="text-muted small">Gói dịch vụ:</span>
+                            <h5 class="fw-bold text-dark mb-0" id="buyPackageName"></h5>
+                        </div>
+                        <div>
+                            <span class="text-muted small">Giá thanh toán:</span>
+                            <h4 class="fw-bold text-danger mb-0" id="buyPackagePriceText"></h4>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Chọn thú cưng nhận gói <span class="text-danger">*</span></label>
+                        <select class="form-select" id="buyPackagePetId" name="petId" required>
+                            <option value="">-- Chọn thú cưng của bạn --</option>
+                            @if (ViewBag.UserPets is List<PetManagementSystem.Models.Pet> pList && pList.Any())
+                            {
+                                foreach (var pet in pList)
+                                {
+                                    <option value="@pet.Id">@pet.Name (@pet.Species - @(pet.Breed ?? "Không rõ"))</option>
+                                }
+                            }
+                        </select>
+                        @if (!(ViewBag.UserPets is List<PetManagementSystem.Models.Pet> pList2 && pList2.Any()))
+                        {
+                            <div class="form-text text-danger mt-1">Bạn chưa có thú cưng nào. Vui lòng thêm thú cưng trước khi mua gói. <a asp-controller="Pets" asp-action="Create">Thêm thú cưng</a></div>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Phương thức thanh toán <span class="text-danger">*</span></label>
+                        <select class="form-select" name="paymentMethod" required>
+                            <option value="Cash">Tiền mặt tại cửa hàng</option>
+                            <option value="Banking">Chuyển khoản ngân hàng (QR Code)</option>
+                            <option value="Momo">Ví điện tử MoMo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Xác nhận đăng ký</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentModalPkgId = 0;
+        let currentModalPkgName = '';
+        let currentModalPkgPrice = 0;
+
+        function openBuyPackageModal(id, name, price) {
+            currentModalPkgId = id;
+            currentModalPkgName = name;
+            currentModalPkgPrice = price;
+            
+            $('#buyPackageId').val(id);
+            $('#buyPackageName').text(name);
+            $('#buyPackagePriceText').text(price.toLocaleString('vi-VN') + ' đ');
+            
+            // Hide detail modal if open
+            var detailModalEl = document.getElementById('packageDetailModal');
+            var detailModal = bootstrap.Modal.getInstance(detailModalEl);
+            if (detailModal) {
+                detailModal.hide();
+            }
+
+            var modal = new bootstrap.Modal(document.getElementById('buyPackageModal'));
+            modal.show();
+        }
+
+        function triggerBuyPackageFromModal() {
+            openBuyPackageModal(currentModalPkgId, currentModalPkgName, currentModalPkgPrice);
+        }
+
+        $(document).ready(function() {
+            $('.btn-pkg-detail').on('click', function() {
+                let id = $(this).data('id');
+                let name = $(this).data('name');
+                let desc = $(this).data('description');
+                let price = parseFloat($(this).data('price')) || 0;
+                let duration = $(this).data('duration');
+                let validity = $(this).data('validity');
+                
+                currentModalPkgId = id;
+                currentModalPkgName = name;
+                currentModalPkgPrice = price;
+
+                let servicesRaw = $(this).attr('data-services');
+                let services = [];
+                try {
+                    services = JSON.parse(servicesRaw || '[]');
+                } catch (e) {
+                    services = [];
+                }
+
+                $('#modalPkgName').text(name);
+                $('#modalPkgDesc').text(desc || 'Không có mô tả chi tiết.');
+                $('#modalPkgValidity').text(validity + ' ngày');
+                $('#modalPkgDuration').text(duration + ' phút');
+                $('#modalPkgPrice').text(price.toLocaleString('vi-VN') + ' đ');
+                
+                let listHtml = '';
+                if (services && services.length > 0) {
+                    services.forEach(function(s) {
+                        listHtml += '<li class="list-group-item d-flex align-items-center py-2"><i class="bi bi-check2-circle text-success me-2 fs-5"></i><span>' + s + '</span></li>';
+                    });
+                } else {
+                    listHtml = '<li class="list-group-item text-muted py-2">Không có dịch vụ thành phần nào trong gói này.</li>';
+                }
+                $('#modalPkgServicesList').html(listHtml);
+
+                var modal = new bootstrap.Modal(document.getElementById('packageDetailModal'));
+                modal.show();
+            });
+
+            $('.btn-service-detail').on('click', function() {
+                let id = $(this).data('id');
+                let name = $(this).data('name');
+                let desc = $(this).data('description');
+                let price = parseFloat($(this).data('price')) || 0;
+                let duration = $(this).data('duration');
+
+                $('#modalServiceName').text(name);
+                $('#modalServiceDesc').text(desc || 'Không có mô tả chi tiết.');
+                $('#modalServiceDuration').text(duration + ' phút');
+                $('#modalServicePrice').text(price.toLocaleString('vi-VN') + ' đ');
+                $('#modalServiceBookBtn').attr('href', '/Appointment/Create?serviceId=' + id);
+
+                var modal = new bootstrap.Modal(document.getElementById('serviceDetailModal'));
+                modal.show();
+            });
+        });
+    </script>
 }
+
+<style>
+    .transition-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .transition-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+    }
+</style>

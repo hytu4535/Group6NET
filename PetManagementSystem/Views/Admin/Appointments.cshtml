@@ -214,7 +214,7 @@
             $('#AppointmentTime').val('09:00');
             $('#AppointmentPackageId').prop('disabled', true).val('');
             $('#AppointmentStatus').val('1');
-            $('.service-checkbox').prop('checked', false);
+            $('.service-checkbox').prop('checked', false).prop('disabled', false);
             $('#appointmentForm button[type="submit"]').prop('disabled', false);
             $('[data-valmsg-for="PackageId"]').text('');
             $('#appointmentModalTitle').text('Đặt lịch hẹn mới');
@@ -232,25 +232,31 @@
                 if (petId) {
                     $.get('/Admin/GetActivePetPackage', { petId: petId }, function(res) {
                         if (res.success && res.packageId) {
-                            $('#AppointmentPackageId').val(res.packageId);
+                            // Trường hợp 1: Thú cưng ĐÃ CÓ gói dịch vụ active
+                            $('#AppointmentPackageId').val(res.packageId).prop('disabled', true);
                             $('#ServicePackageId').val(res.packageId);
-                            $('#AppointmentPackageId').prop('disabled', true);
+                            // Tự động tích chọn và khóa toàn bộ checkbox dịch vụ trong combo
+                            $('.service-checkbox').prop('checked', false).prop('disabled', true);
+                            if (res.serviceIds && Array.isArray(res.serviceIds)) {
+                                res.serviceIds.forEach(function(sId) {
+                                    $('#appt_service_' + sId).prop('checked', true);
+                                });
+                            }
                             $('[data-valmsg-for="PackageId"]').text('');
-                            $('#appointmentForm button[type="submit"]').prop('disabled', false);
                         } else {
-                            $('#AppointmentPackageId').val('');
+                            // Trường hợp 2: Thú cưng CHƯA MUA gói dịch vụ hoặc gói hết hạn
+                            $('#AppointmentPackageId').val('').prop('disabled', true);
                             $('#ServicePackageId').val('');
-                            $('#AppointmentPackageId').prop('disabled', true);
-                            $('[data-valmsg-for="PackageId"]').text('Thú cưng này chưa đăng ký gói dịch vụ nào!');
-                            $('#appointmentForm button[type="submit"]').prop('disabled', true);
+                            // Bỏ chọn và mở khóa toàn bộ checkbox dịch vụ lẻ
+                            $('.service-checkbox').prop('checked', false).prop('disabled', false);
+                            $('[data-valmsg-for="PackageId"]').text('');
                         }
                     });
                 } else {
-                    $('#AppointmentPackageId').val('');
+                    $('#AppointmentPackageId').val('').prop('disabled', true);
                     $('#ServicePackageId').val('');
-                    $('#AppointmentPackageId').prop('disabled', true);
+                    $('.service-checkbox').prop('checked', false).prop('disabled', false);
                     $('[data-valmsg-for="PackageId"]').text('');
-                    $('#appointmentForm button[type="submit"]').prop('disabled', false);
                 }
             });
 
@@ -270,6 +276,9 @@
                         if (res.packageId) {
                             $('#AppointmentPackageId').val(res.packageId);
                             $('#ServicePackageId').val(res.packageId);
+                            $('.service-checkbox').prop('disabled', true);
+                        } else {
+                            $('.service-checkbox').prop('disabled', false);
                         }
                         $('.service-checkbox').prop('checked', false);
                         if (Array.isArray(res.serviceIds)) {
@@ -298,9 +307,36 @@
             $('#appointmentForm').on('submit', function (e) {
                 e.preventDefault();
                 $('#ServicePackageId').val($('#AppointmentPackageId').val());
+
+                let isValid = true;
+                $('.text-danger.small').text('');
+
+                // 1. Validate VetId
+                let vetId = $('#AppointmentVetId').val();
+                if (!vetId || vetId == '') {
+                    $('[data-valmsg-for="VetId"]').text('Vui lòng chọn bác sĩ phụ trách.');
+                    isValid = false;
+                }
+
+                // 2. Validate ServiceIds if no package
+                let hasPackage = $('#AppointmentPackageId').val() !== '';
+                let checkedServicesCount = $('.service-checkbox:checked').length;
+                if (!hasPackage && checkedServicesCount === 0) {
+                    alert('Vui lòng chọn ít nhất một dịch vụ đi kèm.');
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    return false;
+                }
+
                 if (!$(this).valid()) {
                     return false;
                 }
+
+                // Enable service checkboxes so they serialize properly
+                $('.service-checkbox').prop('disabled', false);
+
                 var form = $(this);
                 $.ajax({
                     type: 'POST',

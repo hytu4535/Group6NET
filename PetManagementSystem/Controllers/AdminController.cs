@@ -488,6 +488,7 @@ namespace PetManagementSystem.Controllers
         {
             var activePp = await context.PetPackages
                 .Include(pp => pp.ServicePackage)
+                    .ThenInclude(sp => sp.ServicePackageServices)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(pp => pp.PetId == petId && pp.Status == 1);
 
@@ -496,10 +497,54 @@ namespace PetManagementSystem.Controllers
                 return Json(new { success = false });
             }
 
+            var serviceIds = activePp.ServicePackage?.ServicePackageServices?
+                .Select(sps => sps.ServiceId)
+                .ToList() ?? new();
+
             return Json(new {
                 success = true,
                 packageId = activePp.PackageId,
-                packageName = activePp.ServicePackage?.Name
+                packageName = activePp.ServicePackage?.Name,
+                serviceIds = serviceIds
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPetPackageDetails(int id)
+        {
+            var pp = await context.PetPackages
+                .Include(p => p.Pet)
+                    .ThenInclude(u => u!.User)
+                .Include(p => p.ServicePackage)
+                    .ThenInclude(sp => sp.ServicePackageServices)
+                        .ThenInclude(sps => sps.Service)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (pp == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy thông tin gói dịch vụ thú cưng." });
+            }
+
+            var services = pp.ServicePackage?.ServicePackageServices?
+                .Select(sps => new {
+                    name = sps.Service?.Name ?? "N/A",
+                    price = sps.Service?.Price ?? 0,
+                    duration = sps.Service?.DurationMinutes ?? 0
+                })
+                .ToList() ?? new();
+
+            return Json(new {
+                success = true,
+                petName = pp.Pet?.Name ?? "N/A",
+                species = pp.Pet?.Species ?? "N/A",
+                ownerName = pp.Pet?.User?.FullName ?? pp.Pet?.User?.Username ?? "N/A",
+                packageName = pp.ServicePackage?.Name ?? "N/A",
+                packagePrice = pp.ServicePackage?.Price ?? 0,
+                status = pp.Status == 1 ? "Hoạt động" : "Hết hạn / Ngừng",
+                startDate = pp.StartDate.ToString("dd/MM/yyyy"),
+                endDate = pp.EndDate.ToString("dd/MM/yyyy"),
+                services = services
             });
         }
 
@@ -529,6 +574,34 @@ namespace PetManagementSystem.Controllers
         public async Task<IActionResult> SaveAppointment(Appointment model, int? ServicePackageId, List<int>? serviceIds)
         {
             serviceIds ??= new List<int>();
+
+            if (model.VetId == null || model.VetId == 0)
+            {
+                ModelState.AddModelError("VetId", "Vui lòng chọn bác sĩ phụ trách.");
+            }
+
+            var activePpCheck = await context.PetPackages
+                .Include(pp => pp.ServicePackage)
+                    .ThenInclude(sp => sp.ServicePackageServices)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(pp => pp.PetId == model.PetId && pp.Status == 1);
+
+            bool hasActivePkg = activePpCheck != null;
+            if (hasActivePkg && activePpCheck.ServicePackage?.ServicePackageServices != null)
+            {
+                foreach (var sps in activePpCheck.ServicePackage.ServicePackageServices)
+                {
+                    if (!serviceIds.Contains(sps.ServiceId))
+                    {
+                        serviceIds.Add(sps.ServiceId);
+                    }
+                }
+            }
+
+            if (!hasActivePkg && !serviceIds.Any())
+            {
+                ModelState.AddModelError("ServiceIds", "Vui lòng chọn ít nhất một dịch vụ đi kèm.");
+            }
 
             bool isPetBusy = await context.Appointments
                 .AsNoTracking()

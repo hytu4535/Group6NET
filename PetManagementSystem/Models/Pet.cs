@@ -17,4 +17,6 @@ public class Pet
     public User? User { get; set; }
     public ICollection<PetPackage> PetPackages { get; set; } = new List<PetPackage>();
     public ICollection<PetImage> PetImages { get; set; } = new List<PetImage>();
+    public ICollection<PetHealthRecord> PetHealthRecords { get; set; } = new List<PetHealthRecord>();
+    public ICollection<VaccinationRecord> VaccinationRecords { get; set; } = new List<VaccinationRecord>();
 }

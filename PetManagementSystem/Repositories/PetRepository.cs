@@ -56,6 +56,25 @@ public class PetRepository(AppDbContext dbContext) : IPetRepository
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 
+    public async Task<Pet?> GetByTokenAsync(string token)
+    {
+        var pet = await dbContext.Pets
+            .Include(x => x.User)
+            .Include(x => x.PetImages)
+            .Include(x => x.PetHealthRecords)
+            .Include(x => x.VaccinationRecords)
+            .FirstOrDefaultAsync(x => x.QrToken == token);
+
+        if (pet != null && string.IsNullOrWhiteSpace(pet.QrToken))
+        {
+            pet.QrToken = Guid.NewGuid().ToString("N");
+            dbContext.Pets.Update(pet);
+            await dbContext.SaveChangesAsync();
+        }
+
+        return pet;
+    }
+
     public async Task<List<Pet>> GetByUserIdAsync(int userId)
     {
         return await dbContext.Pets

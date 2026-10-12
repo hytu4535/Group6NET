@@ -51,6 +51,7 @@
                         <th>Giống</th>
                         <th>Giới tính</th>
                         <th>Cân nặng</th>
+                        <th>Mã QR</th>
                         <th class="text-end">Thao tác</th>
                     </tr>
                 </thead>
@@ -58,7 +59,7 @@
                     @if (Model is null || !Model.Any())
                     {
                         <tr>
-                            <td colspan="8" class="text-center text-muted">Chưa có dữ liệu.</td>
+                            <td colspan="9" class="text-center text-muted">Chưa có dữ liệu.</td>
                         </tr>
                     }
                     else
@@ -73,6 +74,15 @@
                                 <td>@(pet.Breed ?? "-")</td>
                                 <td>@pet.Gender</td>
                                 <td>@(pet.WeightKg.HasValue ? $"{pet.WeightKg} kg" : "-")</td>
+                                <td>
+                                    @{
+                                        var publicUrl = Url.Action("PublicInfo", "Pets", new { token = pet.QrToken }, Context.Request.Scheme);
+                                        var qrImageUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={Uri.EscapeDataString(publicUrl ?? string.Empty)}";
+                                    }
+                                    <img src="@qrImageUrl" alt="QR" style="width: 45px; height: 45px;" class="img-thumbnail" />
+                                    <br />
+                                    <a href="@qrImageUrl" download="QR_@(pet.Name).png" class="btn btn-xs btn-success mt-1" style="font-size: 0.7rem; padding: 1px 5px;">Tải QR</a>
+                                </td>
                                 <td class="text-end">
                                     <button type="button" class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal"
                                             data-bs-target="#editPetModal-@pet.Id">

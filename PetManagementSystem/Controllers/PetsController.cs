@@ -1,13 +1,34 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using PetManagementSystem.Data;
 using PetManagementSystem.Models;
 using PetManagementSystem.Services;
 
 namespace PetManagementSystem.Controllers;
 
 [Authorize]
-public class PetsController(IPetService petService) : Controller
+public class PetsController(IPetService petService, AppDbContext dbContext) : Controller
 {
+    // GET: /Pets/Public/{token}
+    [AllowAnonymous]
+    [HttpGet("Pets/Public/{token}")]
+    public async Task<IActionResult> PublicInfo(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return NotFound("Mã QR không hợp lệ.");
+        }
+
+        var pet = await petService.GetPetByTokenAsync(token);
+        if (pet is null)
+        {
+            return NotFound("Không tìm thấy thông tin thú cưng hoặc mã QR không hợp lệ.");
+        }
+
+        return View(pet);
+    }
+
     // GET: /Pets
     public async Task<IActionResult> Index(string? searchKeyword)
     {
@@ -21,6 +42,25 @@ public class PetsController(IPetService petService) : Controller
     {
         var pet = await petService.GetPetByIdAsync(id);
         if (pet is null) return NotFound();
+
+        ViewBag.ActivePetPackage = await dbContext.PetPackages
+            .Include(pp => pp.ServicePackage)
+                .ThenInclude(sp => sp.ServicePackageServices)
+                    .ThenInclude(sps => sps.Service)
+            .FirstOrDefaultAsync(pp => pp.PetId == id && pp.Status == 1 && pp.EndDate >= DateTime.Now);
+
+        ViewBag.HealthRecords = await dbContext.PetHealthRecords
+            .Include(hr => hr.MedicalPrescriptions)
+            .Include(hr => hr.Veterinarian).ThenInclude(v => v!.User)
+            .Where(hr => hr.PetId == id)
+            .OrderByDescending(hr => hr.VisitDate)
+            .ToListAsync();
+
+        ViewBag.VaccinationRecords = await dbContext.VaccinationRecords
+            .Include(vr => vr.Veterinarian).ThenInclude(v => v!.User)
+            .Where(vr => vr.PetId == id)
+            .OrderByDescending(vr => vr.AdministeredDate)
+            .ToListAsync();
 
         return View(pet);
     }
@@ -46,7 +86,11 @@ public class PetsController(IPetService petService) : Controller
         }
 
         TempData["SuccessMessage"] = "Thêm thú cưng thành công!";
-        return RedirectToAction(nameof(Index));
+        if (User.IsInRole("admin"))
+        {
+            return RedirectToAction(nameof(Index));
+        }
+        return RedirectToAction("MyPets", "Account");
     }
 
     // GET: /Pets/Edit/5
@@ -74,7 +118,11 @@ public class PetsController(IPetService petService) : Controller
         }
 
         TempData["SuccessMessage"] = "Cập nhật thông tin thú cưng thành công!";
-        return RedirectToAction(nameof(Index));
+        if (User.IsInRole("admin"))
+        {
+            return RedirectToAction(nameof(Index));
+        }
+        return RedirectToAction("MyPets", "Account");
     }
 
     // POST: /Pets/Delete/5
@@ -92,6 +140,10 @@ public class PetsController(IPetService petService) : Controller
             TempData["SuccessMessage"] = "Đã xóa thú cưng thành công!";
         }
 
-        return RedirectToAction(nameof(Index));
+        if (User.IsInRole("admin"))
+        {
+            return RedirectToAction(nameof(Index));
+        }
+        return RedirectToAction("MyPets", "Account");
     }
 }

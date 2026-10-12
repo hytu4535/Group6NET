@@ -32,7 +32,10 @@ public class PetHealthRecord
     [Required(ErrorMessage = "Vui lòng chọn ngày khám.")]
     public DateTime VisitDate { get; set; } = DateTime.Today;
 
+    [ForeignKey("PetId")]
     public Pet? Pet { get; set; }
+
+    [ForeignKey("VetId")]
     public Veterinarian? Veterinarian { get; set; }
     public ICollection<MedicalPrescription> MedicalPrescriptions { get; set; } = new List<MedicalPrescription>();
 }

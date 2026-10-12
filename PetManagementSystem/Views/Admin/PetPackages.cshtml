@@ -60,6 +60,9 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="d-flex gap-1 justify-content-end">
+                                        <button type="button" class="btn btn-sm btn-outline-info" title="Xem chi tiết gói" onclick="viewPetPackageDetails(@item.Id)">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
                                         <button class="btn btn-sm btn-outline-primary" title="Sửa" onclick="editPetPackage(@item.Id, @item.PetId, @item.PackageId, '@item.StartDate.ToString("yyyy-MM-dd")', '@item.EndDate.ToString("yyyy-MM-dd")', @item.Status)">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
@@ -259,5 +262,82 @@
                 </text>
             }
         });
+
+        function viewPetPackageDetails(id) {
+            $.get('/Admin/GetPetPackageDetails/' + id, function(res) {
+                if (res.success) {
+                    $('#detailPetName').text(res.petName + ' (' + res.species + ')');
+                    $('#detailOwnerName').text(res.ownerName);
+                    $('#detailPackageName').text(res.packageName);
+                    $('#detailStatus').html(res.status === 'Hoạt động' ? '<span class="badge bg-success">Hoạt động</span>' : '<span class="badge bg-secondary">' + res.status + '</span>');
+                    $('#detailDateRange').text(res.startDate + ' -> ' + res.endDate);
+
+                    var tbody = $('#detailServicesTableBody');
+                    tbody.empty();
+                    if (res.services && res.services.length > 0) {
+                        res.services.forEach(function(s, idx) {
+                            tbody.append(
+                                '<tr>' +
+                                '<td>' + (idx + 1) + '</td>' +
+                                '<td><strong>' + s.name + '</strong></td>' +
+                                '<td>' + s.duration + ' phút</td>' +
+                                '<td class="text-success fw-bold">' + s.price.toLocaleString('vi-VN') + ' đ</td>' +
+                                '</tr>'
+                            );
+                        });
+                    } else {
+                        tbody.append('<tr><td colspan="4" class="text-center text-muted">Không có dịch vụ thành phần nào trong gói này.</td></tr>');
+                    }
+
+                    new bootstrap.Modal('#petPackageDetailModal').show();
+                } else {
+                    alert(res.message || 'Không thể lấy thông tin chi tiết gói.');
+                }
+            });
+        }
     </script>
 }
+
+<!-- Modal Chi tiết Gói Dịch Vụ Thú Cưng -->
+<div class="modal fade" id="petPackageDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold">Chi tiết gói dịch vụ của thú cưng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <p><strong>Thú cưng:</strong> <span id="detailPetName" class="text-primary fw-semibold"></span></p>
+                        <p><strong>Chủ sở hữu:</strong> <span id="detailOwnerName"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Tên gói:</strong> <span id="detailPackageName" class="badge bg-secondary"></span></p>
+                        <p><strong>Trạng thái:</strong> <span id="detailStatus"></span></p>
+                        <p><strong>Thời hạn:</strong> <span id="detailDateRange"></span></p>
+                    </div>
+                </div>
+                <h6 class="fw-bold text-success border-bottom pb-2">Danh sách dịch vụ thành phần trong gói</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Tên dịch vụ</th>
+                                <th>Thời lượng</th>
+                                <th>Giá gốc</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailServicesTableBody">
+                            <tr><td colspan="4" class="text-center text-muted">Đang tải...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>

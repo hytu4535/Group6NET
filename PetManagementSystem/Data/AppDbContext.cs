@@ -26,6 +26,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     // Pets, Feedback, Notification & Chat (Hsang / Bạn)
     public DbSet<Pet> Pets => Set<Pet>();
+    public DbSet<PetImage> PetImages => Set<PetImage>();
     public DbSet<Feedback> Feedbacks => Set<Feedback>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
@@ -297,7 +298,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.VisitDate).HasColumnName("visit_date").HasColumnType("date");
 
             entity.HasOne(e => e.Pet)
-                .WithMany()
+                .WithMany(p => p.PetHealthRecords)
                 .HasForeignKey(e => e.PetId)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -320,7 +321,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.VetId).HasColumnName("vet_id");
 
             entity.HasOne(e => e.Pet)
-                .WithMany()
+                .WithMany(p => p.VaccinationRecords)
                 .HasForeignKey(e => e.PetId)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -590,6 +591,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PetImage>(entity =>
+        {
+            entity.ToTable("pet_images");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PetId).HasColumnName("pet_id");
+            entity.Property(e => e.ImageUrl).HasColumnName("image_url");
+            entity.Property(e => e.IsAvatar).HasColumnName("is_avatar");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+
+            entity.HasOne(e => e.Pet)
+                .WithMany(p => p.PetImages)
+                .HasForeignKey(e => e.PetId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Feedback>(entity =>
