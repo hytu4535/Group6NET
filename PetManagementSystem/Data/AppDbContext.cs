@@ -26,6 +26,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     // Pets, Feedback, Notification & Chat (Hsang / Bạn)
     public DbSet<Pet> Pets => Set<Pet>();
+    public DbSet<PetImage> PetImages => Set<PetImage>();
+    public DbSet<PetRecognitionHistory> PetRecognitionHistories => Set<PetRecognitionHistory>();
     public DbSet<Feedback> Feedbacks => Set<Feedback>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<ChatConversation> ChatConversations => Set<ChatConversation>();
@@ -162,6 +164,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         // Cấu hình mảng Thương mại & Khách hàng
         ConfigureCommerce(modelBuilder);
+
+        // Cấu hình Pẻ & AI Recognition
+        ConfigurePetAndRecognition(modelBuilder);
     }
 
     private static void ConfigureServicesAndAppointments(ModelBuilder modelBuilder)
@@ -650,6 +655,86 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+    private static void ConfigurePetAndRecognition(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<PetImage> (entity =>
+        {
+            entity.ToTable("pet_images");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id");
+
+            entity.Property(e => e.PetId)
+                .HasColumnName("pet_id");
+
+            entity.Property(e => e.ImageUrl)
+                .HasColumnName("image_url")
+                .HasMaxLength(500)
+                .IsRequired();
+
+            entity.Property(e => e.IsAvatar)
+            .HasColumnName("is_avatar");
+
+            entity.Property(e => e.UploadedAt)
+                .HasColumnName("uploaded_at");
+
+            entity.HasOne(e => e.Pet)
+                .WithMany(p => p.PetImages)
+                .HasForeignKey(e => e.PetId)
+                .OnDelete(DeleteBehavior.Cascade);    
+        });
+
+        modelBuilder.Entity<PetRecognitionHistory>(entity =>
+        {
+            entity.ToTable("pet_recognition_history");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("id");
+
+            entity.Property(e => e.StaffId)
+                .HasColumnName("staff_id");
+
+            entity.Property(e => e.ImageUrl)
+                .HasColumnName("image_url")
+                .HasMaxLength(500)
+                .IsRequired();
+
+            entity.Property(e => e.SelectedPetId)
+                .HasColumnName("selected_pet_id");
+
+            entity.Property(e => e.DetectedSpecies)
+                .HasColumnName("detected_species")
+                .HasMaxLength(50);
+
+            entity.Property(e => e.DetectedBreed)
+                .HasColumnName("detected_breed")
+                .HasMaxLength(100);
+
+            entity.Property(e => e.TopSimilarity)
+                .HasColumnName("top_similarity")
+                .HasColumnType("decimal(5,4)");
+
+            entity.Property(e => e.ExecutionTimeMs)
+                .HasColumnName("execution_time_ms");
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnName("created_at");
+
+            entity.HasOne(e => e.Staff)
+                .WithMany()
+                .HasForeignKey(e => e.StaffId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.SelectedPet)
+                .WithMany()
+                .HasForeignKey(e => e.SelectedPetId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

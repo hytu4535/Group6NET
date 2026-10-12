@@ -88,11 +88,12 @@
                             <option value="">-- Chọn thú cưng --</option>
                             @foreach (var p in pets)
                             {
-                                <option value="@p.Id">@p.Name (@p.Species)</option>
+                                <option value="@p.Id" data-owner="@p.User?.FullName" data-phone="@p.User?.PhoneNumber">@p.Name (@p.Species)</option>
                             }
                         </select>
                         <span class="text-danger small" data-valmsg-for="PetId" data-valmsg-replace="true"></span>
                     </div>
+                    <div class="alert alert-light border small py-2 d-none" id="recognitionPetOwner"></div>
                     <div class="row">
                         <div class="col-md-8 mb-3">
                             <label class="form-label">Tên vắc-xin</label>
@@ -147,6 +148,7 @@
             $('#vaccinationRecordId').val(0);
             $('#vaccinationRecordPetId').val('');
             $('#PetId').prop('disabled', false).attr('name', 'PetId');
+            $('#recognitionPetOwner').addClass('d-none').text('');
             $('#AdministeredDate').val(new Date().toISOString().split('T')[0]);
             let nextYear = new Date();
             nextYear.setFullYear(nextYear.getFullYear() + 1);
@@ -158,6 +160,18 @@
         $(document).ready(function() {
             $('#PetId').on('change', function() {
                 $('#vaccinationRecordPetId').val($(this).val());
+                var petId = $(this).val();
+                var selectedPet = $(this).find('option:selected');
+                var ownerName = selectedPet.data('owner');
+                var ownerPhone = selectedPet.data('phone');
+                if (petId && (ownerName || ownerPhone)) {
+                    $('#recognitionPetOwner').removeClass('d-none').text(
+                        'Chủ nuôi: ' + (ownerName || 'Chưa cập nhật') +
+                        (ownerPhone ? ' · ' + ownerPhone : '')
+                    );
+                } else {
+                    $('#recognitionPetOwner').addClass('d-none').text('');
+                }
             });
 
             $(document).on('click', '.btn-edit-vaccine', function() {
@@ -242,6 +256,18 @@
             {
                 <text>
                 new bootstrap.Modal('#@ViewBag.ShowModal').show();
+                </text>
+            }
+            @if (ViewBag.SelectedPetId is int selectedPetId)
+            {
+                <text>
+                resetVaccinationRecordForm();
+                $('#PetId').val('@selectedPetId').trigger('change');
+                $('#vaccinationRecordPetId').val('@selectedPetId');
+                new bootstrap.Modal('#vaccinationRecordModal').show();
+                var currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.delete('petId');
+                window.history.replaceState({}, document.title, currentUrl.pathname + currentUrl.search + currentUrl.hash);
                 </text>
             }
         });

@@ -1,3 +1,15 @@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    var canAccessPetRecognition =
+        User.Identity?.IsAuthenticated == true && !User.IsInRole("member");
+    var isPetRecognitionIndex =
+        string.Equals(currentController, "PetRecognition", StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(currentAction, "Index", StringComparison.OrdinalIgnoreCase);
+    var isPetRecognitionHistory =
+        string.Equals(currentController, "PetRecognition", StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(currentAction, "History", StringComparison.OrdinalIgnoreCase);
+}
 <!DOCTYPE html>
 <html lang="vi">
 
@@ -120,10 +132,25 @@
                                                                                                                                                             </ul>
                                                                                                                                                         </li>
 
-                                                                                                                                                        <li class="nav-section">AI</li>
-                                                                                                                                                        <li>
-                                                                                                                                                            <span class="nav-note"><i class="bi bi-robot"></i><span>Dự đoán giống thú cưng</span></span>
-                                                                                                                                                        </li>
+                                                                                                                                                        @if (canAccessPetRecognition)
+                                                                                                                                                        {
+                                                                                                                                                            <li class="nav-section">AI</li>
+                                                                                                                                                            <li class="@(isPetRecognitionIndex ? "active" : "")">
+                                                                                                                                                                <a asp-controller="PetRecognition" asp-action="Index"
+                                                                                                                                                                   aria-current="@(isPetRecognitionIndex ? "page" : null)">
+                                                                                                                                                                    <i class="bi bi-camera"></i>
+                                                                                                                                                                    <span>Nhận diện thú cưng</span>
+                                                                                                                                                                </a>
+                                                                                                                                                            </li>
+                                                                                                                                                            <li class="@(isPetRecognitionHistory ? "active" : "")">
+                                                                                                                                                                <a asp-controller="PetRecognition" asp-action="History"
+                                                                                                                                                                   aria-current="@(isPetRecognitionHistory ? "page" : null)">
+                                                                                                                                                                    <i class="bi bi-clock-history"></i>
+                                                                                                                                                                    <span>Lịch sử nhận diện thú cưng</span>
+                                                                                                                                                                </a>
+                                                                                                                                                            </li>
+                                                                                                                                                        }
+                                                                                                         
                                                                                                                                                     </ul>
                                                                                                                                                 </nav>
 
@@ -150,7 +177,6 @@
                                                                                                                                                 </nav>
                                                                                                                                                 <div class="admin-content">
                                                                                                                                                     <div class="content-header">
-                                                                                                                                                        <h1>@ViewData["Title"]</h1>
                                                                                                                                                     </div>
                                                                                                                                                     @RenderBody()
                                                                                                                                                 </div>

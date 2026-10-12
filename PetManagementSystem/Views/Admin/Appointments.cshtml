@@ -117,11 +117,12 @@
                             <option value="">-- Chọn thú cưng --</option>
                             @foreach (var p in pets)
                             {
-                                <option value="@p.Id">@p.Name (@p.Species)</option>
+                                <option value="@p.Id" data-owner="@p.User?.FullName" data-phone="@p.User?.PhoneNumber">@p.Name (@p.Species)</option>
                             }
                         </select>
                         <span class="text-danger small" data-valmsg-for="PetId" data-valmsg-replace="true"></span>
                     </div>
+                    <div class="alert alert-light border small py-2 d-none" id="recognitionPetOwner"></div>
                     <div class="mb-3">
                         <label class="form-label">Gói dịch vụ (Tự động chọn và khóa khi chọn thú cưng)</label>
                         <select class="form-select" id="AppointmentPackageId" disabled>
@@ -209,6 +210,7 @@
             $('#appointmentId').val(0);
             $('#appointmentPetId').val('');
             $('#AppointmentPetId').prop('disabled', false);
+            $('#recognitionPetOwner').addClass('d-none').text('');
             $('#ServicePackageId').val('');
             $('#AppointmentDate').val(new Date().toISOString().split('T')[0]);
             $('#AppointmentTime').val('09:00');
@@ -229,6 +231,17 @@
             $('#AppointmentPetId').on('change', function() {
                 var petId = $(this).val();
                 $('#appointmentPetId').val(petId);
+                var selectedPet = $(this).find('option:selected');
+                var ownerName = selectedPet.data('owner');
+                var ownerPhone = selectedPet.data('phone');
+                if (petId && (ownerName || ownerPhone)) {
+                    $('#recognitionPetOwner').removeClass('d-none').text(
+                        'Chủ nuôi: ' + (ownerName || 'Chưa cập nhật') +
+                        (ownerPhone ? ' · ' + ownerPhone : '')
+                    );
+                } else {
+                    $('#recognitionPetOwner').addClass('d-none').text('');
+                }
                 if (petId) {
                     $.get('/Admin/GetActivePetPackage', { petId: petId }, function(res) {
                         if (res.success && res.packageId) {
@@ -336,6 +349,17 @@
             {
                 <text>
                 new bootstrap.Modal('#@ViewBag.ShowModal').show();
+                </text>
+            }
+            @if (ViewBag.SelectedPetId is int selectedPetId)
+            {
+                <text>
+                resetAppointmentForm();
+                $('#AppointmentPetId').val('@selectedPetId').trigger('change');
+                new bootstrap.Modal('#appointmentModal').show();
+                var currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.delete('petId');
+                window.history.replaceState({}, document.title, currentUrl.pathname + currentUrl.search + currentUrl.hash);
                 </text>
             }
         });

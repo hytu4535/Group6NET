@@ -22,12 +22,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IRoleRepository, RoleRepository>();
-builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
-builder.Services.AddScoped<IStaffRepository, StaffRepository>();
-builder.Services.AddScoped<IVeterinarianRepository, VeterinarianRepository>();
-builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 // Repositories
@@ -79,6 +73,24 @@ builder.Services
 
 builder.Services.AddAuthorization();
 builder.Services.AddPermissionPolicies();
+
+builder.Services.AddHttpClient<IPetRecognitionService, PetRecognitionService>(
+    (serviceProvider, client) =>
+    {
+        var configuration = serviceProvider
+            .GetRequiredService<IConfiguration>();
+
+        var baseUrl = configuration["AIService:BaseUrl"];
+
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            throw new InvalidOperationException(
+                "AIService:BaseUrl is not configured.");
+        }
+
+        client.BaseAddress = new Uri(baseUrl);
+        client.Timeout = TimeSpan.FromSeconds(60);
+    });
 
 var app = builder.Build();
 

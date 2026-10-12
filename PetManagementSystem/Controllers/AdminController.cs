@@ -5,6 +5,7 @@ using PetManagementSystem.Data;
 using PetManagementSystem.Models;
 using PetManagementSystem.Repositories;
 using PetManagementSystem.Services;
+using PetManagementSystem.ViewModels;
 
 namespace PetManagementSystem.Controllers
 {
@@ -15,6 +16,9 @@ namespace PetManagementSystem.Controllers
       IFeedbackService feedbackService,
       IUserRepository userRepository) : Controller
     {
+        private const long MaximumAvatarRequestBytes =
+            RecognitionImageFileAttribute.MaximumFileSizeBytes + 64 * 1024;
+
         // Bỏ dòng: private readonly AppDbContext _context = context;
         private readonly IPetService _petService = petService;
         private readonly IFeedbackService _feedbackService = feedbackService;
@@ -43,11 +47,22 @@ namespace PetManagementSystem.Controllers
         // POST: /Admin/CreatePet
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreatePet(Pet pet)
+        [RequestSizeLimit(MaximumAvatarRequestBytes)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaximumAvatarRequestBytes)]
+        public async Task<IActionResult> CreatePet(CreatePetViewModel model)
         {
             if (ModelState.IsValid)
             {
-                var (success, errorMessage) = await _petService.CreatePetAsync(pet);
+                var pet = new Pet
+                {
+                    UserId = model.UserId,
+                    Name = model.Name,
+                    Species = model.Species,
+                    Breed = model.Breed,
+                    Gender = model.Gender,
+                    WeightKg = model.WeightKg
+                };
+                var (success, errorMessage) = await _petService.CreatePetAsync(pet, model.AvatarFile);
                 if (success)
                 {
                     TempData["SuccessMessage"] = "Thêm thú cưng mới thành công!";
@@ -68,15 +83,27 @@ namespace PetManagementSystem.Controllers
         // POST: /Admin/UpdatePet
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequestSizeLimit(MaximumAvatarRequestBytes)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaximumAvatarRequestBytes)]
         public async Task<IActionResult> UpdatePet(
-            Pet pet,
+            EditPetViewModel model,
             string? searchKeyword,
             int page = 1,
             int pageSize = 10)
         {
             if (ModelState.IsValid)
             {
-                var (success, errorMessage) = await _petService.UpdatePetAsync(pet);
+                var pet = new Pet
+                {
+                    Id = model.Id,
+                    UserId = model.UserId,
+                    Name = model.Name,
+                    Species = model.Species,
+                    Breed = model.Breed,
+                    Gender = model.Gender,
+                    WeightKg = model.WeightKg
+                };
+                var (success, errorMessage) = await _petService.UpdatePetAsync(pet, model.AvatarFile);
                 if (success)
                 {
                     TempData["SuccessMessage"] = "Cập nhật thông tin thú cưng thành công!";
@@ -504,9 +531,18 @@ namespace PetManagementSystem.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Appointments()
+        public async Task<IActionResult> Appointments(int? petId)
         {
             SetNav("Quản lý Lịch hẹn", "Appointments", "ServiceMedical");
+            var pets = await context.Pets
+                .Include(p => p.User)
+                .AsNoTracking()
+                .ToListAsync();
+            if (petId is > 0 && pets.All(p => p.Id != petId.Value))
+            {
+                return NotFound();
+            }
+
             var appointments = await context.Appointments
                 .Include(a => a.Pet)
                     .ThenInclude(p => p!.User)
@@ -517,7 +553,8 @@ namespace PetManagementSystem.Controllers
                 .AsNoTracking()
                 .ToListAsync();
 
-            ViewBag.Pets = await context.Pets.AsNoTracking().ToListAsync();
+            ViewBag.Pets = pets;
+            ViewBag.SelectedPetId = petId;
             ViewBag.Veterinarians = await context.Veterinarians.Include(v => v.User).AsNoTracking().ToListAsync();
             ViewBag.ServicePackages = await context.ServicePackages.AsNoTracking().ToListAsync();
             ViewBag.Services = await context.Services.AsNoTracking().ToListAsync();
@@ -708,19 +745,39 @@ namespace PetManagementSystem.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> PetHealthRecords()
+        public async Task<IActionResult> PetHealthRecords(int? petId)
         {
             SetNav("Hồ sơ sức khỏe", "PetHealthRecords", "ServiceMedical");
-            var healthRecords = await context.PetHealthRecords
+            var selectedPet = petId is > 0
+                ? await context.Pets
+                    .Include(p => p.User)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.Id == petId.Value)
+                : null;
+            if (petId is > 0 && selectedPet is null)
+            {
+                return NotFound();
+            }
+
+            IQueryable<PetHealthRecord> healthRecordsQuery = context.PetHealthRecords
                 .Include(h => h.Pet)
                     .ThenInclude(p => p!.User)
                 .Include(h => h.Veterinarian)
                     .ThenInclude(v => v!.User)
+                .AsNoTracking();
+            if (selectedPet is not null)
+            {
+                healthRecordsQuery = healthRecordsQuery.Where(h => h.PetId == selectedPet.Id);
+            }
+
+            var healthRecords = await healthRecordsQuery.ToListAsync();
+            ViewBag.Pets = await context.Pets
+                .Include(p => p.User)
                 .AsNoTracking()
                 .ToListAsync();
-
-            ViewBag.Pets = await context.Pets.AsNoTracking().ToListAsync();
             ViewBag.Veterinarians = await context.Veterinarians.Include(v => v.User).AsNoTracking().ToListAsync();
+            ViewBag.SelectedPet = selectedPet;
+            ViewBag.SelectedPetId = selectedPet?.Id;
             return View(healthRecords);
         }
 
@@ -838,9 +895,18 @@ namespace PetManagementSystem.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> VaccinationRecords()
+        public async Task<IActionResult> VaccinationRecords(int? petId)
         {
             SetNav("Lịch sử tiêm phòng", "VaccinationRecords", "ServiceMedical");
+            var pets = await context.Pets
+                .Include(p => p.User)
+                .AsNoTracking()
+                .ToListAsync();
+            if (petId is > 0 && pets.All(p => p.Id != petId.Value))
+            {
+                return NotFound();
+            }
+
             var vaccinationRecords = await context.VaccinationRecords
                 .Include(v => v.Pet)
                     .ThenInclude(p => p!.User)
@@ -849,8 +915,9 @@ namespace PetManagementSystem.Controllers
                 .AsNoTracking()
                 .ToListAsync();
 
-            ViewBag.Pets = await context.Pets.AsNoTracking().ToListAsync();
+            ViewBag.Pets = pets;
             ViewBag.Veterinarians = await context.Veterinarians.Include(v => v.User).AsNoTracking().ToListAsync();
+            ViewBag.SelectedPetId = petId;
             return View(vaccinationRecords);
         }
 
