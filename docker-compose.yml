@@ -1,0 +1,29 @@
+services:
+  pet-ai-service:
+    build:
+      context: ./AI-Service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      PET_AI_ROOT: /app
+      PET_MODEL_PATH: /app/models/pet-recognition-base.onnx
+      PET_FAISS_INDEX_PATH: /app/vector_store/pets.faiss
+      PET_MAPPING_PATH: /app/vector_store/mapping.json
+      PET_AI_HOST: 0.0.0.0
+      PET_AI_PORT: "8000"
+    volumes:
+      - ./AI-Service/models:/app/models:ro
+      - ./AI-Service/vector_store:/app/vector_store:ro
+      - ./AI-Service/gallery:/app/gallery:ro
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)"
+      interval: 30s
+      timeout: 5s
+      start_period: 120s
+      retries: 5
+    restart: unless-stopped
