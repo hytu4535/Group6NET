@@ -32,6 +32,11 @@ public class NotificationService(
         return notificationRepository.GetUnreadCountAsync(userId);
     }
 
+    public Task<bool> MarkAsReadAsync(int userId, int notificationId)
+    {
+        return notificationRepository.MarkAsReadAsync(userId, notificationId);
+    }
+
     public Task<int> GetCustomerUnreadCountAsync()
     {
         return notificationRepository.GetCustomerUnreadCountAsync();

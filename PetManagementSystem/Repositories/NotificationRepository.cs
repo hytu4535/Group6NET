@@ -41,7 +41,7 @@ public class NotificationRepository(AppDbContext dbContext) : INotificationRepos
             .Take(pageSize)
             .ToListAsync();
 
-        return new PagedResult<Notification>(items, page, pageSize, totalItems);
+        return new PagedResult<Notification>(items, totalItems, page, pageSize);
     }
 
     public async Task<List<Notification>> GetCustomerNotificationsAsync()
@@ -67,7 +67,7 @@ public class NotificationRepository(AppDbContext dbContext) : INotificationRepos
             .Take(pageSize)
             .ToListAsync();
 
-        return new PagedResult<Notification>(items, page, pageSize, totalItems);
+        return new PagedResult<Notification>(items, totalItems, page, pageSize);
     }
 
     public Task<int> GetUnreadCountAsync(int userId)
@@ -101,6 +101,26 @@ public class NotificationRepository(AppDbContext dbContext) : INotificationRepos
 
         notification.IsRead = true;
         await dbContext.SaveChangesAsync();
+    }
+
+    public async Task<bool> MarkAsReadAsync(int userId, int notificationId)
+    {
+        var notification = await dbContext.Notifications.FirstOrDefaultAsync(item =>
+            item.Id == notificationId &&
+            item.UserId == userId &&
+            (item.AppointmentId == null || item.AppointmentId == 0) &&
+            (item.Type == "promotion" || item.Type == "system"));
+        if (notification is null)
+        {
+            return false;
+        }
+
+        if (!notification.IsRead)
+        {
+            notification.IsRead = true;
+            await dbContext.SaveChangesAsync();
+        }
+        return true;
     }
 
     public async Task MarkAllAsReadAsync(int userId)

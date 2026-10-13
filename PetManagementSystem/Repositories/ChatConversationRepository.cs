@@ -80,6 +80,22 @@ public class ChatConversationRepository(AppDbContext dbContext) : IChatConversat
         return new PagedResult<ChatConversation>(items, page, pageSize, totalItems);
     }
 
+    public async Task<PagedResult<ChatConversation>> GetByUserIdPagedAsync(int userId, int page, int pageSize)
+    {
+        var query = dbContext.ChatConversations
+            .AsNoTracking()
+            .Where(conversation => conversation.UserId == userId);
+        var totalItems = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(conversation => conversation.CreatedAt)
+            .ThenByDescending(conversation => conversation.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<ChatConversation>(items, totalItems, page, pageSize);
+    }
+
     public Task<ChatConversation?> GetByIdAsync(int id)
     {
         return dbContext.ChatConversations

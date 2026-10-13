@@ -27,7 +27,7 @@ public class FeedbackRepository(AppDbContext dbContext) : IFeedbackRepository
             .Take(pageSize)
             .ToListAsync();
 
-        return new PagedResult<Feedback>(items, page, pageSize, totalItems);
+        return new PagedResult<Feedback>(items, totalItems, page, pageSize);
     }
 
     public async Task<Feedback?> GetByIdAsync(int id)
@@ -44,6 +44,22 @@ public class FeedbackRepository(AppDbContext dbContext) : IFeedbackRepository
             .Where(x => x.UserId == userId)
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync();
+    }
+
+    public async Task<PagedResult<Feedback>> GetByUserIdPagedAsync(int userId, int page, int pageSize)
+    {
+        var query = dbContext.Feedbacks
+            .AsNoTracking()
+            .Where(feedback => feedback.UserId == userId);
+        var totalItems = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(feedback => feedback.CreatedAt)
+            .ThenByDescending(feedback => feedback.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<Feedback>(items, totalItems, page, pageSize);
     }
 
     public async Task AddAsync(Feedback feedback)

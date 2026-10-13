@@ -298,7 +298,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.VisitDate).HasColumnName("visit_date").HasColumnType("date");
 
             entity.HasOne(e => e.Pet)
-                .WithMany(p => p.PetHealthRecords)
+                .WithMany()
                 .HasForeignKey(e => e.PetId)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -321,7 +321,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.VetId).HasColumnName("vet_id");
 
             entity.HasOne(e => e.Pet)
-                .WithMany(p => p.VaccinationRecords)
+                .WithMany()
                 .HasForeignKey(e => e.PetId)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -600,9 +600,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.PetId).HasColumnName("pet_id");
-            entity.Property(e => e.ImageUrl).HasColumnName("image_url");
+            entity.Property(e => e.ImageUrl).HasColumnName("image_url").HasMaxLength(500);
             entity.Property(e => e.IsAvatar).HasColumnName("is_avatar");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("uploaded_at");
 
             entity.HasOne(e => e.Pet)
                 .WithMany(p => p.PetImages)

@@ -26,9 +26,7 @@ public class VaccinationRecord
     [NotMapped]
     public Veterinarian? Vet { get => Veterinarian; set => Veterinarian = value; }
 
-    [ForeignKey("PetId")]
     public Pet? Pet { get; set; }
 
-    [ForeignKey("VetId")]
     public Veterinarian? Veterinarian { get; set; }
 }
