@@ -1,21 +1,27 @@
 using Microsoft.AspNetCore.Mvc;
-using PetManagementSystem.Models;
+using PetManagementSystem.Services;
+using PetManagementSystem.ViewModels.Shop;
 
-namespace PetManagementSystem.Controllers
+namespace PetManagementSystem.Controllers;
+
+public class ProductController(IStorefrontService storefrontService) : Controller
 {
-    public class ProductController : Controller
+    [HttpGet]
+    public async Task<IActionResult> Index([FromQuery] ProductCatalogQuery query)
     {
-        private readonly PetManagementSystem.Data.AppDbContext _dbContext;
+        return View(await storefrontService.GetProductsAsync(query));
+    }
 
-        public ProductController(PetManagementSystem.Data.AppDbContext dbContext)
+    [HttpGet]
+    public async Task<IActionResult> Details(int id)
+    {
+        var product = await storefrontService.GetProductAsync(id);
+        if (product is null)
         {
-            _dbContext = dbContext;
+            TempData["ErrorMessage"] = "Không tìm thấy sản phẩm hoặc sản phẩm đã ngừng bán.";
+            return RedirectToAction(nameof(Index));
         }
 
-        public IActionResult Index()
-        {
-            var products = _dbContext.Products.Where(p => p.Status == "active").ToList();
-            return View(products);
-        }
+        return View(product);
     }
 }

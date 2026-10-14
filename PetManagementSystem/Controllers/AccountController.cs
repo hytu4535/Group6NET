@@ -530,19 +530,9 @@ namespace PetManagementSystem.Controllers
 
         [Authorize]
         [HttpGet("/Account/MyOrders")]
-        public async Task<IActionResult> MyOrders()
+        public IActionResult MyOrders()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var orders = await _dbContext.Orders
-                .Where(o => o.UserId == userId)
-                .OrderByDescending(o => o.OrderDate)
-                .ToListAsync();
-
-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-            {
-                return JsonResponse(true, "Danh sách đơn hàng lấy thành công.", orders);
-            }
-            return View(orders);
+            return RedirectToAction("Index", "Order");
         }
     }
 }

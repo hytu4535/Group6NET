@@ -39,7 +39,7 @@ public class CartService(ICartRepository cartRepository) : ICartService
 
     public async Task<CartItemListViewModel> GetItemsAsync(int? cartId, string? search, int page)
     {
-        var result = await cartRepository.SearchItemsAsync(cartId, search, page, Paging.DefaultPageSize);
+        var result = await cartRepository.SearchWithItemsAsync(cartId, search, page, Paging.DefaultPageSize);
 
         return new CartItemListViewModel
         {
@@ -48,7 +48,16 @@ public class CartService(ICartRepository cartRepository) : ICartService
             Page = result.Page,
             PageSize = result.PageSize,
             TotalCount = result.TotalCount,
-            Items = result.Items.Select(ToRow).ToList()
+            Items = result.Items.Select(cart => new CartGroupViewModel
+            {
+                CartId = cart.Id,
+                CustomerName = CommerceFormat.DisplayName(cart.User),
+                Username = cart.User?.Username,
+                Status = cart.Status,
+                CreatedAt = cart.CreatedAt,
+                UpdatedAt = cart.UpdatedAt,
+                Items = cart.Items.OrderBy(x => x.Id).Select(x => ToRow(x, cart)).ToList()
+            }).ToList()
         };
     }
 
@@ -70,7 +79,7 @@ public class CartService(ICartRepository cartRepository) : ICartService
             CreatedAt = cart.CreatedAt,
             UpdatedAt = cart.UpdatedAt,
             // Truy vấn có theo dõi thay đổi nên item.Cart / item.Cart.User đã được EF tự gắn.
-            Items = cart.Items.OrderBy(x => x.Id).Select(ToRow).ToList()
+            Items = cart.Items.OrderBy(x => x.Id).Select(x => ToRow(x, cart)).ToList()
         };
     }
 
@@ -86,12 +95,12 @@ public class CartService(ICartRepository cartRepository) : ICartService
         return ServiceResult.Ok();
     }
 
-    private static CartItemRowViewModel ToRow(CartItem item) => new()
+    private static CartItemRowViewModel ToRow(CartItem item, Cart cart) => new()
     {
         Id = item.Id,
         CartId = item.CartId,
-        CustomerName = CommerceFormat.DisplayName(item.Cart?.User),
-        CartStatus = item.Cart?.Status ?? string.Empty,
+        CustomerName = CommerceFormat.DisplayName(cart.User),
+        CartStatus = cart.Status,
         ProductId = item.ProductId,
         ProductName = item.Product?.ProductName ?? $"#{item.ProductId}",
         Unit = item.Product?.Unit,

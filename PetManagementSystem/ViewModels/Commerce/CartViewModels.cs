@@ -45,7 +45,20 @@ public class CartDetailsViewModel
     public decimal TotalAmount => Items.Sum(x => x.Subtotal);
 }
 
-public class CartItemListViewModel : PagedListViewModel<CartItemRowViewModel>
+/// <summary>Một giỏ hàng cùng toàn bộ dòng sản phẩm của nó (đơn vị hiển thị và phân trang của trang Chi tiết giỏ hàng).</summary>
+public class CartGroupViewModel
+{
+    public int CartId { get; set; }
+    public string CustomerName { get; set; } = string.Empty;
+    public string? Username { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public List<CartItemRowViewModel> Items { get; set; } = [];
+    public decimal TotalAmount => Items.Sum(x => x.Subtotal);
+}
+
+public class CartItemListViewModel : PagedListViewModel<CartGroupViewModel>
 {
     public int? CartId { get; set; }
     public string? Search { get; set; }

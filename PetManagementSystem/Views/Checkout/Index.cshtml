@@ -1,0 +1,77 @@
+@using PetManagementSystem.Helpers
+@model PetManagementSystem.ViewModels.Shop.CheckoutViewModel
+@{
+    ViewData["Title"] = "Thanh toán";
+}
+
+<link rel="stylesheet" href="~/css/shop.css" asp-append-version="true" />
+
+<h2 class="mb-4">Thanh toán</h2>
+
+<form id="checkout-form" asp-controller="Checkout" asp-action="Place" method="post">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                <h5 class="fw-bold mb-3">Thông tin giao hàng</h5>
+                <div class="mb-3">
+                    <label asp-for="Input.ShippingAddress" class="form-label">Địa chỉ giao hàng</label>
+                    <input asp-for="Input.ShippingAddress" class="form-control" maxlength="255" required />
+                    <span asp-validation-for="Input.ShippingAddress" class="text-danger small"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Input.Phone" class="form-label">Số điện thoại</label>
+                    <input asp-for="Input.Phone" class="form-control" maxlength="15" inputmode="tel" required />
+                    <span asp-validation-for="Input.Phone" class="text-danger small"></span>
+                </div>
+                <div class="mb-0">
+                    <label asp-for="Input.Note" class="form-label">Ghi chú (không bắt buộc)</label>
+                    <textarea asp-for="Input.Note" class="form-control" rows="2" maxlength="255"></textarea>
+                    <span asp-validation-for="Input.Note" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <h5 class="fw-bold mb-3">Phương thức thanh toán</h5>
+                @foreach (var option in Model.PaymentOptions)
+                {
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="Input.PaymentMethod" id="pm-@option.Value" value="@option.Value"
+                               checked="@(Model.Input.PaymentMethod == option.Value)" />
+                        <label class="form-check-label" for="pm-@option.Value">
+                            <strong>@option.Label</strong>
+                            <span class="d-block small text-muted">@option.Description</span>
+                        </label>
+                    </div>
+                }
+                <span asp-validation-for="Input.PaymentMethod" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <h5 class="fw-bold mb-3">Đơn hàng của bạn</h5>
+                @foreach (var item in Model.Cart.Items)
+                {
+                    <div class="d-flex justify-content-between small mb-2">
+                        <span>@item.ProductName <span class="text-muted">x @item.Quantity</span></span>
+                        <span>@CommerceFormat.Money(item.LineTotal)</span>
+                    </div>
+                }
+                <hr />
+                <div class="d-flex justify-content-between fw-bold fs-5">
+                    <span>Tổng cộng</span>
+                    <span class="shop-price">@CommerceFormat.Money(Model.Cart.TotalAmount)</span>
+                </div>
+                <p class="small text-muted mt-2 mb-3">Giá và tồn kho sẽ được kiểm tra lại khi đặt hàng.</p>
+                <button type="submit" class="btn btn-shop w-100 py-2">Đặt hàng</button>
+                <a asp-controller="Cart" asp-action="Index" class="btn btn-link w-100 mt-1">Quay lại giỏ hàng</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="~/js/shop.js" asp-append-version="true"></script>
+}

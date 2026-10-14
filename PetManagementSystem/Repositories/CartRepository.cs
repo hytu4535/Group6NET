@@ -35,31 +35,32 @@ public class CartRepository(AppDbContext dbContext) : ICartRepository
             .ToPagedResultAsync(page, pageSize);
     }
 
-    public async Task<PetManagementSystem.Models.PagedResult<CartItem>> SearchItemsAsync(int? cartId, string? search, int page, int pageSize)
+    /// <summary>Phân trang theo giỏ hàng (không theo dòng sản phẩm) để mỗi giỏ luôn hiển thị đầy đủ trong một khối.</summary>
+    public async Task<PetManagementSystem.Models.PagedResult<Cart>> SearchWithItemsAsync(int? cartId, string? search, int page, int pageSize)
     {
-        var query = dbContext.CartItems
+        var query = dbContext.Carts
             .AsNoTracking()
-            .Include(x => x.Product)
-            .Include(x => x.Cart)
-                .ThenInclude(c => c!.User)
+            .Include(x => x.User)
+            .Include(x => x.Items)
+                .ThenInclude(i => i.Product)
+            .Where(x => x.Items.Any())
             .AsQueryable();
 
         if (cartId.HasValue)
         {
-            query = query.Where(x => x.CartId == cartId.Value);
+            query = query.Where(x => x.Id == cartId.Value);
         }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             var keyword = search.Trim();
-            query = query.Where(x => x.Product!.ProductName.Contains(keyword)
-                                     || x.Cart!.User!.Username.Contains(keyword)
-                                     || (x.Cart.User.FullName != null && x.Cart.User.FullName.Contains(keyword)));
+            query = query.Where(x => x.User!.Username.Contains(keyword)
+                                     || (x.User.FullName != null && x.User.FullName.Contains(keyword))
+                                     || x.Items.Any(i => i.Product!.ProductName.Contains(keyword)));
         }
 
         return await query
-            .OrderByDescending(x => x.CartId)
-            .ThenBy(x => x.Id)
+            .OrderByDescending(x => x.Id)
             .ToPagedResultAsync(page, pageSize);
     }
 

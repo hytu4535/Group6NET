@@ -11,7 +11,8 @@ using PetManagementSystem.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews()
+builder.Services.AddControllersWithViews(options =>
+        options.ModelBinderProviders.Insert(0, new InvariantDecimalModelBinderProvider()))
     .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -58,6 +59,15 @@ builder.Services.AddScoped<ICartRepository, CartRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+
+// Client/User - Thương mại
+builder.Services.AddScoped<IStorefrontRepository, StorefrontRepository>();
+builder.Services.AddScoped<IClientCartRepository, ClientCartRepository>();
+builder.Services.AddScoped<IClientOrderRepository, ClientOrderRepository>();
+builder.Services.AddScoped<IStorefrontService, StorefrontService>();
+builder.Services.AddScoped<IClientCartService, ClientCartService>();
+builder.Services.AddScoped<ICheckoutService, CheckoutService>();
+builder.Services.AddScoped<IClientOrderService, ClientOrderService>();
 
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();

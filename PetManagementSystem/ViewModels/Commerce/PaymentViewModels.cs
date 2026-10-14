@@ -32,7 +32,7 @@ public class PaymentUpsertViewModel
     [RegularExpression("^(cash|bank_transfer|credit_card|e_wallet)$", ErrorMessage = "Phương thức thanh toán không hợp lệ")]
     public string PaymentMethod { get; set; } = "cash";
 
-    [Range(typeof(decimal), "0.01", "99999999999999", ErrorMessage = "Số tiền phải lớn hơn 0")]
+    [Range(typeof(decimal), "0.01", "99999999999999", ParseLimitsInInvariantCulture = true, ConvertValueInInvariantCulture = true, ErrorMessage = "Số tiền phải lớn hơn 0")]
     public decimal Amount { get; set; }
 
     [Required(ErrorMessage = "Ngày thanh toán là bắt buộc")]
