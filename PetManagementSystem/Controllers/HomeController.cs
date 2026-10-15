@@ -1,24 +1,64 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using PetManagementSystem.Data;
 using PetManagementSystem.Models;
+using PetManagementSystem.ViewModels;
+using System.Security.Claims;
 
 namespace PetManagementSystem.Controllers;
 
 public class HomeController : Controller
 {
+    private readonly AppDbContext _dbContext;
+
+    public HomeController(AppDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
     public IActionResult Index()
     {
         return View();
     }
 
-    public IActionResult Services()
+    public async Task<IActionResult> Services()
     {
-        return View();
+        var services = await _dbContext.Services
+            .Where(s => s.Status == 1)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var packages = await _dbContext.ServicePackages
+            .Where(sp => sp.Status == 1)
+            .Include(sp => sp.ServicePackageServices)
+                .ThenInclude(sps => sps.Service)
+            .AsNoTracking()
+            .ToListAsync();
+
+        List<Pet> userPets = new();
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdStr, out int userId))
+            {
+                userPets = await _dbContext.Pets.Where(p => p.UserId == userId).AsNoTracking().ToListAsync();
+            }
+        }
+        ViewBag.UserPets = userPets;
+
+        var viewModel = new ServiceIndexViewModel
+        {
+            Services = services,
+            Packages = packages
+        };
+
+        return View("~/Views/Service/Index.cshtml", viewModel);
     }
 
-    public IActionResult Booking()
+    public IActionResult Booking(int? serviceId, int? packageId, int? servicePackageId)
     {
-        return View();
+        return RedirectToAction("Book", "Appointment", new { serviceId, packageId, servicePackageId });
     }
 
     public IActionResult Contact()

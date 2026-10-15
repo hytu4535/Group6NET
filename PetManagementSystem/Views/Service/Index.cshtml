@@ -113,7 +113,7 @@
                                             @if (User.Identity?.IsAuthenticated == true)
                                             {
                                                 <button type="button" class="btn btn-primary btn-sm rounded-pill px-3" 
-                                                        onclick="openBuyPackageModal(@pkg.Id, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(pkg.Name))', @pkg.Price)">
+                                                        onclick="openBuyPackageModal(@pkg.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(pkg.Name))', @pkg.Price)">
                                                     Mua gói
                                                 </button>
                                             }

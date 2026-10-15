@@ -678,14 +678,13 @@ namespace PetManagementSystem.Controllers
                 return View("Appointments", appointments);
             }
 
-            var pet = await context.Pets.AsNoTracking().FirstOrDefaultAsync(p => p.Id == model.PetId);
-            if (pet != null)
-            {
-                model.UserId = pet.UserId;
-            }
-
             if (model.Id == 0)
             {
+                var pet = await context.Pets.AsNoTracking().FirstOrDefaultAsync(p => p.Id == model.PetId);
+                if (pet != null)
+                {
+                    model.UserId = pet.UserId;
+                }
                 context.Appointments.Add(model);
                 await context.SaveChangesAsync();
                 TempData["Success"] = "Tạo lịch hẹn thành công!";
@@ -698,8 +697,15 @@ namespace PetManagementSystem.Controllers
 
                 if (existing != null)
                 {
-                    existing.PetId = model.PetId;
-                    existing.UserId = model.UserId;
+                    if (model.PetId > 0)
+                    {
+                        existing.PetId = model.PetId;
+                        var pet = await context.Pets.AsNoTracking().FirstOrDefaultAsync(p => p.Id == model.PetId);
+                        if (pet != null)
+                        {
+                            existing.UserId = pet.UserId;
+                        }
+                    }
                     existing.VetId = model.VetId;
                     existing.AppointmentDate = model.AppointmentDate;
                     existing.AppointmentTime = model.AppointmentTime;
@@ -787,6 +793,16 @@ namespace PetManagementSystem.Controllers
             var appt = await context.Appointments.FindAsync(id);
             if (appt != null)
             {
+                if (appt.Status == 2)
+                {
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = false, message = "Không thể xóa lịch hẹn đã được xác nhận!" });
+                    }
+                    TempData["Error"] = "Không thể xóa lịch hẹn đã được xác nhận!";
+                    return RedirectToAction(nameof(Appointments));
+                }
+
                 context.Appointments.Remove(appt);
                 await context.SaveChangesAsync();
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")

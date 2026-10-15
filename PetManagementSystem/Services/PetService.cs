@@ -82,7 +82,7 @@ public class PetService(
         }
     }
 
-    public async Task<(bool Success, string ErrorMessage)> CreatePetAsync(Pet pet)
+    public async Task<(bool Success, string ErrorMessage)> CreatePetAsync(Pet pet, IFormFile? image = null)
     {
         try
         {
@@ -107,7 +107,32 @@ public class PetService(
                 return (false, "Loài thú cưng không được để trống.");
             }
 
+            if (image is { Length: > 0 })
+            {
+                try
+                {
+                    await ValidateClientPetImageAsync(image);
+                }
+                catch (ArgumentException ex)
+                {
+                    return (false, ex.Message);
+                }
+            }
+
             await petRepository.AddAsync(pet);
+
+            if (image is { Length: > 0 })
+            {
+                try
+                {
+                    await AddClientPetImageAsync(pet.UserId, pet.Id, image, setAsAvatar: true);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Lỗi khi lưu ảnh đại diện thú cưng mới.");
+                }
+            }
+
             return (true, string.Empty);
         }
         catch (Exception ex)

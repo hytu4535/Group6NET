@@ -9,7 +9,7 @@ public interface IPetService
     Task<Pet?> GetPetByIdAsync(int id);
     Task<Pet?> GetPetByTokenAsync(string token);
     Task<List<Pet>> GetPetsByUserIdAsync(int userId);
-    Task<(bool Success, string ErrorMessage)> CreatePetAsync(Pet pet);
+    Task<(bool Success, string ErrorMessage)> CreatePetAsync(Pet pet, IFormFile? image = null);
     Task<(bool Success, string ErrorMessage)> UpdatePetAsync(Pet pet);
     Task<(bool Success, string ErrorMessage)> DeletePetAsync(int id);
     Task<PagedResult<Pet>> GetClientPetsPagedAsync(int userId, int page, int pageSize);

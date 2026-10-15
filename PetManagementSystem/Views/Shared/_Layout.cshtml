@@ -64,7 +64,6 @@
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Contact">Liên hệ</a></li>
                     </ul>
                     <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0">
-                        <a class="btn btn-custom-primary text-decoration-none" asp-controller="Home" asp-action="Booking">Đặt lịch ngay</a>
                         @if (User.Identity?.IsAuthenticated == true && User.IsInRole("member"))
                         {
                             <a class="btn btn-outline-primary rounded-pill text-nowrap"

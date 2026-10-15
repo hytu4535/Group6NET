@@ -55,7 +55,7 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="d-flex gap-1 justify-content-end">
-                                        <button class="btn btn-sm btn-outline-primary" title="Sửa" onclick="editService(@item.Id, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(item.Name))', '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(item.Description ?? ""))', @item.Price, @item.DurationMinutes, @item.Status)">
+                                        <button class="btn btn-sm btn-outline-primary" title="Sửa" onclick="editService(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Name))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Description ?? ""))', @item.Price, @item.DurationMinutes, @item.Status)">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
                                         <form asp-action="DeleteService" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa dịch vụ này?');">

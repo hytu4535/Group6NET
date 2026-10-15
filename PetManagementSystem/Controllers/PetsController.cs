@@ -74,11 +74,11 @@ public class PetsController(IPetService petService, AppDbContext dbContext) : Co
     // POST: /Pets/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(Pet pet)
+    public async Task<IActionResult> Create(Pet pet, IFormFile? Image)
     {
         if (!ModelState.IsValid) return View(pet);
 
-        var (success, errorMessage) = await petService.CreatePetAsync(pet);
+        var (success, errorMessage) = await petService.CreatePetAsync(pet, Image);
         if (!success)
         {
             ModelState.AddModelError(string.Empty, errorMessage);
