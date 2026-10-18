@@ -2,8 +2,6 @@
 /data/
 *.pt
 *.pth
-*.onnx
-*.faiss
 *.index
 
 # Python
