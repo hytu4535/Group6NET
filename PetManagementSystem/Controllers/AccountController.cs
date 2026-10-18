@@ -384,10 +384,34 @@ namespace PetManagementSystem.Controllers
                 return NotFound();
             }
 
-            user.FullName = model.FullName;
-            user.Email = model.Email;
-            user.PhoneNumber = model.PhoneNumber;
-            user.Address = model.Address;
+            var fullName = model.FullName.Trim();
+            var email = model.Email.Trim().ToLowerInvariant();
+            var phoneNumber = model.PhoneNumber?.Trim() ?? string.Empty;
+            var address = model.Address?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(fullName))
+            {
+                ModelState.AddModelError(nameof(model.FullName), "Họ tên không được để trống.");
+            }
+
+            if (await _userRepository.ExistsEmailAsync(email, userId))
+            {
+                ModelState.AddModelError(nameof(model.Email), "Email này đã được sử dụng bởi tài khoản khác.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return JsonResponse(false, "Có lỗi trong dữ liệu nhập.", null, GetModelStateErrors());
+                }
+                return View(model);
+            }
+
+            user.FullName = fullName;
+            user.Email = email;
+            user.PhoneNumber = phoneNumber;
+            user.Address = address;
             user.UpdatedAt = DateTime.UtcNow;
 
             await _userRepository.UpdateAsync(user);

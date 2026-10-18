@@ -11,7 +11,7 @@ namespace PetManagementSystem.ViewModels
         [EmailAddress(ErrorMessage = "Email không hợp lệ")]
         public string Email { get; set; } = string.Empty;
 
-        [Phone(ErrorMessage = "Số điện thoại không hợp lệ")]
+        [RegularExpression(@"^(0|\+84)(3|5|7|8|9)[0-9]{8}$", ErrorMessage = "Số điện thoại phải là số di động Việt Nam hợp lệ (10 số hoặc dạng +84)")]
         public string PhoneNumber { get; set; } = string.Empty;
 
         public string Address { get; set; } = string.Empty;

@@ -1,0 +1,93 @@
+@using PetManagementSystem.Helpers
+@model PetManagementSystem.ViewModels.Shop.ProductDetailViewModel
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<link rel="stylesheet" href="~/css/shop.css" asp-append-version="true" />
+@Html.AntiForgeryToken()
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Sản phẩm</a></li>
+        @if (!string.IsNullOrEmpty(Model.CategoryName))
+        {
+            <li class="breadcrumb-item"><a asp-action="Index" asp-route-categoryId="@Model.CategoryId">@Model.CategoryName</a></li>
+        }
+        <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+    </ol>
+</nav>
+
+<partial name="Shop/_Alerts" />
+
+<div class="card border-0 shadow-sm rounded-4 p-4">
+    <div class="row g-4">
+        <div class="col-md-5">
+            <div class="shop-thumb rounded-4" style="height:340px;">
+                @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                {
+                    <img src="@Model.ImageUrl" alt="@Model.Name" />
+                }
+                else
+                {
+                    <i class="bi bi-box-seam text-muted" style="font-size:5rem;"></i>
+                }
+            </div>
+        </div>
+        <div class="col-md-7">
+            <h2 class="fw-bold">@Model.Name</h2>
+            <div class="mb-2">
+                @if (!string.IsNullOrEmpty(Model.CategoryName))
+                {
+                    <span class="badge text-bg-light border">@Model.CategoryName</span>
+                }
+                @if (Model.InStock)
+                {
+                    <span class="badge text-bg-success">Còn hàng</span>
+                }
+                else
+                {
+                    <span class="badge text-bg-secondary">Hết hàng</span>
+                }
+            </div>
+            <div class="shop-price fs-2 mb-3">@CommerceFormat.Money(Model.Price)@(string.IsNullOrEmpty(Model.Unit) ? "" : " / " + Model.Unit)</div>
+
+            <dl class="row mb-3">
+                <dt class="col-sm-4">Đơn vị tính</dt>
+                <dd class="col-sm-8">@(Model.Unit ?? "-")</dd>
+                <dt class="col-sm-4">Số lượng có thể mua</dt>
+                <dd class="col-sm-8">@Model.StockQuantity</dd>
+            </dl>
+
+            @if (Model.InStock)
+            {
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="d-flex gap-2 align-items-center">
+                        <input id="detail-qty" type="number" class="form-control" style="max-width:110px;" value="1" min="1" max="@Model.StockQuantity" />
+                        <button type="button" class="btn btn-shop px-4" data-add-to-cart="@Model.Id" data-qty-input="#detail-qty">
+                            <i class="bi bi-cart-plus me-1"></i>Thêm vào giỏ
+                        </button>
+                        <a asp-controller="Cart" asp-action="Index" class="btn btn-outline-secondary">Xem giỏ hàng</a>
+                    </div>
+                }
+                else
+                {
+                    <a class="btn btn-shop px-4" href="/User/Login?returnUrl=@Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString)">Đăng nhập để mua hàng</a>
+                }
+            }
+            else
+            {
+                <button type="button" class="btn btn-secondary" disabled>Hết hàng</button>
+            }
+        </div>
+    </div>
+
+    <hr class="my-4" />
+    <h5 class="fw-bold">Mô tả sản phẩm</h5>
+    <p style="white-space:pre-line;">@(string.IsNullOrWhiteSpace(Model.Description) ? "Chưa có mô tả cho sản phẩm này." : Model.Description)</p>
+</div>
+
+@section Scripts {
+    <script src="~/js/shop.js" asp-append-version="true"></script>
+}

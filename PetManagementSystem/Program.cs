@@ -35,6 +35,9 @@ builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IChatConversationRepository, ChatConversationRepository>();
 builder.Services.AddScoped<IClientAiChatService, ClientAiChatService>();
+builder.Services.AddScoped<IClientCartRepository, ClientCartRepository>();
+builder.Services.AddScoped<IClientOrderRepository, ClientOrderRepository>();
+builder.Services.AddScoped<IStorefrontRepository, StorefrontRepository>();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -43,6 +46,10 @@ builder.Services.AddScoped<IAppointmentManagerService, AppointmentManagerService
 builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IChatConversationService, ChatConversationService>();
+builder.Services.AddScoped<IClientCartService, ClientCartService>();
+builder.Services.AddScoped<IClientOrderService, ClientOrderService>();
+builder.Services.AddScoped<IStorefrontService, StorefrontService>();
+builder.Services.AddScoped<ICheckoutService, CheckoutService>();
 
 // Commerce
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();

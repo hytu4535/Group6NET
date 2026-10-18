@@ -1,0 +1,173 @@
+@using PetManagementSystem.Helpers
+@model PetManagementSystem.ViewModels.Shop.MyOrderDetailsViewModel
+@{
+    ViewData["Title"] = $"Đơn hàng #{Model.Id}";
+    var steps = new[] { OrderStatuses.Pending, OrderStatuses.Confirmed, OrderStatuses.Shipping, OrderStatuses.Completed };
+    var currentIndex = Array.IndexOf(steps, Model.Status);
+    var cancelled = Model.Status == OrderStatuses.Cancelled;
+}
+
+<link rel="stylesheet" href="~/css/shop.css" asp-append-version="true" />
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Đơn hàng của tôi</a></li>
+        <li class="breadcrumb-item active" aria-current="page">#@Model.Id</li>
+    </ol>
+</nav>
+
+<partial name="Shop/_Alerts" />
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <h2 class="mb-0">Đơn hàng #@Model.Id <span class="badge fs-6 @OrderStatuses.Badge(Model.Status)">@OrderStatuses.Label(Model.Status)</span></h2>
+    <div class="d-flex gap-2">
+        @if (Model.HasInvoice)
+        {
+            <a asp-action="Invoice" asp-route-id="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-receipt me-1"></i>Xem hóa đơn</a>
+        }
+        @if (Model.CanCancel)
+        {
+            <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Bạn chắc chắn muốn hủy đơn hàng này?');">
+                <button type="submit" class="btn btn-outline-danger">Hủy đơn</button>
+            </form>
+        }
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 p-3 mb-4">
+    <div class="shop-steps">
+        @if (cancelled)
+        {
+            <div class="shop-step cancelled">Đơn hàng đã hủy</div>
+        }
+        else
+        {
+            @for (var i = 0; i < steps.Length; i++)
+            {
+                <div class="shop-step @(i <= currentIndex ? "done" : "")">@OrderStatuses.Label(steps[i])</div>
+            }
+        }
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-header bg-white fw-bold">Sản phẩm</div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th class="text-end">Đơn giá</th>
+                            <th class="text-center">SL</th>
+                            <th class="text-end">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="shop-thumb-sm">
+                                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                            {
+                                                <img src="@item.ImageUrl" alt="@item.ProductName" />
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-box-seam text-muted"></i>
+                                            }
+                                        </div>
+                                        <div>
+                                            <a asp-controller="Product" asp-action="Details" asp-route-id="@item.ProductId" class="fw-semibold text-dark text-decoration-none">@item.ProductName</a>
+                                            @if (!string.IsNullOrEmpty(item.Unit))
+                                            {
+                                                <div class="small text-muted">@item.Unit</div>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-end">@CommerceFormat.Money(item.Price)</td>
+                                <td class="text-center">@item.Quantity</td>
+                                <td class="text-end">@CommerceFormat.Money(item.Subtotal)</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light">
+                            <td colspan="3" class="text-end fw-bold">Tổng cộng</td>
+                            <td class="text-end fw-bold shop-price">@CommerceFormat.Money(Model.TotalAmount)</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white fw-bold">Thanh toán</div>
+            @if (Model.Payments.Count == 0)
+            {
+                <div class="card-body text-muted">Chưa phát sinh giao dịch thanh toán cho đơn hàng này.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Phương thức</th>
+                                <th class="text-end">Số tiền</th>
+                                <th>Ngày</th>
+                                <th>Trạng thái</th>
+                                <th>Mã giao dịch</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var payment in Model.Payments)
+                            {
+                                <tr>
+                                    <td>@PaymentMethods.Label(payment.PaymentMethod)</td>
+                                    <td class="text-end">@CommerceFormat.Money(payment.Amount)</td>
+                                    <td>@CommerceFormat.DateTimeText(payment.PaymentDate)</td>
+                                    <td><span class="badge @PaymentStatuses.Badge(payment.Status)">@PaymentStatuses.Label(payment.Status)</span></td>
+                                    <td class="small">@(payment.TransactionCode ?? "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+            <h5 class="fw-bold mb-3">Thông tin giao hàng</h5>
+            <dl class="mb-0">
+                <dt>Ngày đặt</dt>
+                <dd>@CommerceFormat.DateTimeText(Model.OrderDate)</dd>
+                <dt>Địa chỉ</dt>
+                <dd>@Model.ShippingAddress</dd>
+                <dt>Số điện thoại</dt>
+                <dd>@Model.Phone</dd>
+                <dt>Ghi chú</dt>
+                <dd class="mb-0">@(string.IsNullOrWhiteSpace(Model.Note) ? "-" : Model.Note)</dd>
+            </dl>
+        </div>
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h5 class="fw-bold mb-3">Tóm tắt thanh toán</h5>
+            <div class="d-flex justify-content-between"><span>Giá trị đơn hàng</span><span>@CommerceFormat.Money(Model.TotalAmount)</span></div>
+            <div class="d-flex justify-content-between"><span>Đã thanh toán</span><span>@CommerceFormat.Money(Model.PaidAmount)</span></div>
+            @if (!cancelled)
+            {
+                <div class="d-flex justify-content-between fw-bold"><span>Còn phải thanh toán</span><span>@CommerceFormat.Money(Model.RemainingAmount)</span></div>
+            }
+            @if (!Model.HasInvoice)
+            {
+                <p class="small text-muted mt-3 mb-0">Hóa đơn sẽ do cửa hàng phát hành; bạn sẽ xem được tại đây khi có.</p>
+            }
+        </div>
+    </div>
+</div>
