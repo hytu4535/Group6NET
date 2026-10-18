@@ -3,6 +3,19 @@
     Layout = "_AdminLayout";
     var pets = ViewBag.Pets as List<PetManagementSystem.Models.Pet> ?? new();
     var veterinarians = ViewBag.Veterinarians as List<PetManagementSystem.Models.Veterinarian> ?? new();
+    var selectedPet = ViewBag.SelectedPet as PetManagementSystem.Models.Pet;
+}
+
+@if (selectedPet is not null)
+{
+    <div class="alert alert-info d-flex justify-content-between align-items-center gap-3">
+        <div>
+            <i class="bi bi-fingerprint me-1"></i>
+            Đang tra cứu sức khỏe của <strong>@selectedPet.Name</strong>
+            <span class="text-muted">· Chủ nuôi: @(selectedPet.User?.FullName ?? "Không xác định")</span>
+        </div>
+        <a asp-action="PetHealthRecords" class="btn btn-sm btn-outline-primary text-nowrap">Xem tất cả</a>
+    </div>
 }
 
 <div class="d-flex justify-content-end mb-3">
@@ -60,7 +73,9 @@
                     else
                     {
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">Chưa có hồ sơ sức khỏe nào trong hệ thống.</td>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                @(selectedPet is null ? "Chưa có hồ sơ sức khỏe nào trong hệ thống." : $"Chưa có hồ sơ sức khỏe cho {selectedPet.Name}.")
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -87,11 +102,12 @@
                             <option value="">-- Chọn thú cưng --</option>
                             @foreach (var p in pets)
                             {
-                                <option value="@p.Id">@p.Name (@p.Species)</option>
+                                <option value="@p.Id" data-owner="@p.User?.FullName" data-phone="@p.User?.PhoneNumber">@p.Name (@p.Species)</option>
                             }
                         </select>
                         <span class="text-danger small" data-valmsg-for="PetId" data-valmsg-replace="true"></span>
                     </div>
+                    <div class="alert alert-light border small py-2 d-none" id="recognitionPetOwner"></div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Cân nặng (kg)</label>
@@ -149,14 +165,16 @@
             $('#healthRecordForm').attr('action', '/Admin/CreatePetHealthRecord');
             $('#healthRecordForm')[0].reset();
             $('#healthRecordId').val(0);
-            $('#PetId').val('');
+            $('#PetId').val('@Convert.ToString(ViewBag.SelectedPetId)');
             $('#VisitDate').val(new Date().toISOString().split('T')[0]);
             $('#healthRecordModalTitle').text('Tạo hồ sơ sức khỏe');
             $('#btnSubmitHealth').prop('disabled', false);
             $('.text-danger').text('');
+            updateRecognitionPetOwner();
         }
 
         $(document).ready(function() {
+            $('#PetId').on('change', updateRecognitionPetOwner);
             $(document).on('click', '.btn-edit-health', function() {
                 var id = $(this).data('id');
                 $.get('/Admin/EditPetHealthRecord/' + id, function(res) {
@@ -232,5 +250,19 @@
                 </text>
             }
         });
+
+        function updateRecognitionPetOwner() {
+            var selectedPet = $('#PetId').find('option:selected');
+            var ownerName = selectedPet.data('owner');
+            var ownerPhone = selectedPet.data('phone');
+            if ($('#PetId').val() && (ownerName || ownerPhone)) {
+                $('#recognitionPetOwner').removeClass('d-none').text(
+                    'Chủ nuôi: ' + (ownerName || 'Chưa cập nhật') +
+                    (ownerPhone ? ' · ' + ownerPhone : '')
+                );
+            } else {
+                $('#recognitionPetOwner').addClass('d-none').text('');
+            }
+        }
     </script>
 }

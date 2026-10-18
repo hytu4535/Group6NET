@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using PetManagementSystem.ViewModels;
 using PetManagementSystem.Models;
 using PetManagementSystem.Repositories;
 using Microsoft.AspNetCore.Hosting;
@@ -82,18 +83,28 @@ public class PetService(
         }
     }
 
-    public async Task<(bool Success, string ErrorMessage)> CreatePetAsync(Pet pet)
+    public async Task<(bool Success, string ErrorMessage)> CreatePetAsync(
+        Pet pet,
+        IFormFile? avatarFile = null)
     {
+        string? savedAvatarPath = null;
         try
         {
-            // Tự động gán UserId từ Session/Cookie của người dùng đang đăng nhập nếu chưa truyền
-            if (pet.UserId <= 0)
+            if (IsUserAdmin())
+            {
+                if (pet.UserId <= 0)
+                {
+                    return (false, "Vui lòng chọn chủ nuôi cho thú cưng.");
+                }
+            }
+            else
             {
                 var currentUserId = GetCurrentUserId();
                 if (!currentUserId.HasValue)
                 {
                     return (false, "Người dùng chưa đăng nhập hoặc không xác định được danh tính.");
                 }
+
                 pet.UserId = currentUserId.Value;
             }
 
@@ -107,18 +118,29 @@ public class PetService(
                 return (false, "Loài thú cưng không được để trống.");
             }
 
-            await petRepository.AddAsync(pet);
+            (string Url, string FilePath)? avatar = avatarFile is null
+                ? null
+                : await SaveAvatarAsync(avatarFile);
+            savedAvatarPath = avatar?.FilePath;
+
+            await petRepository.AddAsync(pet, avatar?.Url);
             return (true, string.Empty);
         }
         catch (Exception ex)
         {
+            DeleteFileIfExists(savedAvatarPath);
             logger.LogError(ex, "Lỗi hệ thống khi thêm thú cưng mới.");
-            return (false, "Không thể thêm thú cưng do lỗi hệ thống.");
+            return (false, ex is InvalidDataException
+                ? ex.Message
+                : "Không thể thêm thú cưng do lỗi hệ thống.");
         }
     }
 
-    public async Task<(bool Success, string ErrorMessage)> UpdatePetAsync(Pet pet)
+    public async Task<(bool Success, string ErrorMessage)> UpdatePetAsync(
+        Pet pet,
+        IFormFile? avatarFile = null)
     {
+        string? savedAvatarPath = null;
         try
         {
             var existingPet = await petRepository.GetByIdAsync(pet.Id);
@@ -151,13 +173,50 @@ public class PetService(
             existingPet.Gender = pet.Gender;
             existingPet.WeightKg = pet.WeightKg;
 
-            await petRepository.UpdateAsync(existingPet);
+            (string Url, string FilePath)? avatar = avatarFile is null
+                ? null
+                : await SaveAvatarAsync(avatarFile);
+            savedAvatarPath = avatar?.FilePath;
+
+            await petRepository.UpdateAsync(existingPet, avatar?.Url);
+
             return (true, string.Empty);
         }
         catch (Exception ex)
         {
+            DeleteFileIfExists(savedAvatarPath);
             logger.LogError(ex, "Lỗi hệ thống khi cập nhật thú cưng ID: {PetId}", pet.Id);
-            return (false, "Không thể cập nhật thú cưng do lỗi hệ thống.");
+            return (false, ex is InvalidDataException
+                ? ex.Message
+                : "Không thể cập nhật thú cưng do lỗi hệ thống.");
+        }
+    }
+
+    public async Task<(bool Success, string ErrorMessage)> SetPetAvatarAsync(int petId, int imageId)
+    {
+        try
+        {
+            var pet = await petRepository.GetByIdAsync(petId);
+            if (pet is null)
+            {
+                return (false, "Không tìm thấy thú cưng.");
+            }
+
+            var currentUserId = GetCurrentUserId();
+            if (!IsUserAdmin() && pet.UserId != currentUserId)
+            {
+                return (false, "Bạn không có quyền thay đổi ảnh đại diện của thú cưng này.");
+            }
+
+            var updated = await petRepository.SetAvatarAsync(petId, imageId);
+            return updated
+                ? (true, string.Empty)
+                : (false, "Ảnh được chọn không thuộc thư viện của thú cưng này.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Lỗi khi đặt ảnh {ImageId} làm ảnh đại diện cho thú cưng {PetId}.", imageId, petId);
+            return (false, "Không thể cập nhật ảnh đại diện do lỗi hệ thống.");
         }
     }
 
@@ -288,7 +347,7 @@ public class PetService(
         {
             PetId = petId,
             ImageUrl = $"/uploads/pets/{userId}/{petId}/{fileName}",
-            CreatedAt = DateTime.UtcNow
+            UploadedAt = DateTime.UtcNow
         };
 
         await using (var stream = new FileStream(physicalPath, FileMode.CreateNew, FileAccess.Write))
@@ -345,7 +404,7 @@ public class PetService(
     public async Task<List<PetImage>?> GetClientPetImagesAsync(int userId, int petId)
     {
         var pet = await petRepository.GetByIdAndUserIdAsync(petId, userId);
-        return pet?.PetImages.OrderByDescending(image => image.CreatedAt).ToList();
+        return pet?.PetImages.OrderByDescending(image => image.UploadedAt).ToList();
     }
 
     public async Task<bool> DeleteClientPetImageAsync(int userId, int petId, int imageId)
@@ -376,6 +435,30 @@ public class PetService(
     private string GetPetImageDirectory(int userId, int petId)
     {
         return Path.Combine(webHostEnvironment.WebRootPath, "uploads", "pets", userId.ToString(), petId.ToString());
+    }
+
+    private async Task<(string Url, string FilePath)> SaveAvatarAsync(IFormFile file)
+    {
+        await ValidateClientPetImageAsync(file);
+
+        var directory = Path.Combine(webHostEnvironment.WebRootPath, "uploads", "pets", "admin");
+        Directory.CreateDirectory(directory);
+
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        var fileName = $"{Guid.NewGuid():N}{extension}";
+        var filePath = Path.Combine(directory, fileName);
+        await using var stream = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write);
+        await file.CopyToAsync(stream);
+
+        return ($"/uploads/pets/admin/{fileName}", filePath);
+    }
+
+    private static void DeleteFileIfExists(string? filePath)
+    {
+        if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
+        {
+            File.Delete(filePath);
+        }
     }
 
     private void DeletePetImageFile(string imageUrl)

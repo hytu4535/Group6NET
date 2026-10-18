@@ -4,6 +4,14 @@
 }
 
 <div class="container py-4">
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <div class="alert alert-success" role="status">@successMessage</div>
+    }
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <div class="alert alert-danger" role="alert">@errorMessage</div>
+    }
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
             <div class="card border-0 shadow-sm rounded-4">
@@ -11,17 +19,42 @@
                     <div class="text-center mb-4">
                         <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3 text-primary" style="width: 70px; height: 70px;">
                             <i class="bi bi-pencil-square fs-2"></i>
-                        </div>
+                </div>
                         <h3 class="fw-bold text-dark">Cập nhật thú cưng</h3>
                         <p class="text-muted small">Chỉnh sửa thông tin cho @Model.Name</p>
-                    </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Species" class="form-label">Loài</label>
+                                <input asp-for="Species" class="form-control" />
+                                <span asp-validation-for="Species" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Breed" class="form-label">Giống</label>
+                                <input asp-for="Breed" class="form-control" />
+                                <span asp-validation-for="Breed" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Gender" class="form-label">Giới tính</label>
+                                <select asp-for="Gender" class="form-select">
+                                    <option value="">-- Chọn giới tính --</option>
+                                    <option value="Male">Đực</option>
+                                    <option value="Female">Cái</option>
+                                </select>
+                                <span asp-validation-for="Gender" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="WeightKg" class="form-label">Cân nặng (kg)</label>
+                                <input asp-for="WeightKg" type="number" step="0.1" class="form-control" />
+                                <span asp-validation-for="WeightKg" class="text-danger"></span>
+                            </div>
 
                     @if (!ViewData.ModelState.IsValid)
-                    {
+                                    {
                         <div class="alert alert-danger">
                             <div asp-validation-summary="All" class="mb-0"></div>
-                        </div>
-                    }
+                                                </div>
+                                            }
 
                     <form asp-action="Edit" method="post">
                         <input type="hidden" asp-for="Id" />
@@ -31,13 +64,13 @@
                             <label asp-for="Name" class="form-label fw-semibold">Tên thú cưng <span class="text-danger">*</span></label>
                             <input asp-for="Name" class="form-control rounded-pill px-3 py-2" required />
                             <span asp-validation-for="Name" class="text-danger small"></span>
-                        </div>
+                                        </div>
 
                         <div class="mb-3">
                             <label asp-for="Species" class="form-label fw-semibold">Loài <span class="text-danger">*</span></label>
                             <input asp-for="Species" class="form-control rounded-pill px-3 py-2" required />
                             <span asp-validation-for="Species" class="text-danger small"></span>
-                        </div>
+                                </div>
 
                         <div class="mb-3">
                             <label asp-for="Breed" class="form-label fw-semibold">Giống (Breed)</label>
@@ -52,7 +85,7 @@
                                 <option value="Female">Cái (Female)</option>
                             </select>
                             <span asp-validation-for="Gender" class="text-danger small"></span>
-                        </div>
+                            </div>
 
                         <div class="mb-4">
                             <label asp-for="WeightKg" class="form-label fw-semibold">Cân nặng (kg)</label>
@@ -74,6 +107,26 @@
         </div>
     </div>
 </div>
+
+<script>
+    const avatarInput = document.getElementById("AvatarFile");
+    const avatarPreview = document.getElementById("avatarPreview");
+    let avatarPreviewUrl;
+
+    avatarInput.addEventListener("change", () => {
+        const file = avatarInput.files?.[0];
+        if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+        if (!file) {
+            avatarPreview.src = avatarPreview.dataset.originalSrc;
+            avatarPreview.style.display = avatarPreview.dataset.originalSrc ? "inline-block" : "none";
+            return;
+        }
+
+        avatarPreviewUrl = URL.createObjectURL(file);
+        avatarPreview.src = avatarPreviewUrl;
+        avatarPreview.style.display = "inline-block";
+    });
+</script>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

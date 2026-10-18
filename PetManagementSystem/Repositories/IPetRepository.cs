@@ -9,8 +9,9 @@ public interface IPetRepository
     Task<Pet?> GetByIdAsync(int id);
     Task<Pet?> GetByTokenAsync(string token);
     Task<List<Pet>> GetByUserIdAsync(int userId);
-    Task AddAsync(Pet pet);
-    Task UpdateAsync(Pet pet);
+    Task AddAsync(Pet pet, string? avatarUrl = null);
+    Task UpdateAsync(Pet pet, string? avatarUrl = null);
+    Task<bool> SetAvatarAsync(int petId, int imageId);
     Task DeleteAsync(int id);
     Task<PagedResult<Pet>> GetPagedByUserIdAsync(int userId, int page, int pageSize);
     Task<Pet?> GetByIdAndUserIdAsync(int petId, int userId);

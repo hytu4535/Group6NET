@@ -283,7 +283,7 @@ public class ClientPetsApiController(IPetService petService) : ControllerBase
             Gender = pet.Gender,
             WeightKg = pet.WeightKg,
             AvatarUrl = pet.PetImages.FirstOrDefault(image => image.IsAvatar)?.ImageUrl
-                ?? pet.PetImages.OrderByDescending(image => image.CreatedAt).FirstOrDefault()?.ImageUrl
+                ?? pet.PetImages.OrderByDescending(image => image.UploadedAt).FirstOrDefault()?.ImageUrl
         };
     }
 
@@ -300,7 +300,7 @@ public class ClientPetsApiController(IPetService petService) : ControllerBase
             CreatedAt = pet.CreatedAt,
             UpdatedAt = pet.UpdatedAt,
             Images = pet.PetImages
-                .OrderByDescending(image => image.CreatedAt)
+                .OrderByDescending(image => image.UploadedAt)
                 .Select(ToImage)
                 .ToList()
         };
@@ -313,7 +313,7 @@ public class ClientPetsApiController(IPetService petService) : ControllerBase
             Id = image.Id,
             ImageUrl = image.ImageUrl,
             IsAvatar = image.IsAvatar,
-            CreatedAt = image.CreatedAt
+            CreatedAt = image.UploadedAt
         };
     }
 }

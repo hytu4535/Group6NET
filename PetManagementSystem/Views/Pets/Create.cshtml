@@ -11,7 +11,7 @@
                     <div class="text-center mb-4">
                         <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3 text-danger" style="width: 70px; height: 70px;">
                             <i class="bi bi-paw fs-2"></i>
-                        </div>
+                </div>
                         <h3 class="fw-bold text-dark">Thêm thú cưng mới</h3>
                         <p class="text-muted small">Điền thông tin chi tiết về thú cưng của bạn</p>
                     </div>
@@ -34,23 +34,23 @@
                             <label asp-for="Species" class="form-label fw-semibold">Loài <span class="text-danger">*</span></label>
                             <input asp-for="Species" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: Chó, Mèo, Chim..." required />
                             <span asp-validation-for="Species" class="text-danger small"></span>
-                        </div>
+                            </div>
 
                         <div class="mb-3">
                             <label asp-for="Breed" class="form-label fw-semibold">Giống (Breed)</label>
                             <input asp-for="Breed" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: Poodle, Golden, Mèo Anh..." />
                             <span asp-validation-for="Breed" class="text-danger small"></span>
-                        </div>
+                            </div>
 
                         <div class="mb-3">
                             <label asp-for="Gender" class="form-label fw-semibold">Giới tính <span class="text-danger">*</span></label>
                             <select asp-for="Gender" class="form-select rounded-pill px-3 py-2" required>
-                                <option value="">-- Chọn giới tính --</option>
+                                    <option value="">-- Chọn giới tính --</option>
                                 <option value="Male">Đực (Male)</option>
                                 <option value="Female">Cái (Female)</option>
-                            </select>
+                                </select>
                             <span asp-validation-for="Gender" class="text-danger small"></span>
-                        </div>
+                            </div>
 
                         <div class="mb-4">
                             <label asp-for="WeightKg" class="form-label fw-semibold">Cân nặng (kg)</label>
@@ -72,6 +72,26 @@
         </div>
     </div>
 </div>
+
+<script>
+    const avatarInput = document.getElementById("AvatarFile");
+    const avatarPreview = document.getElementById("avatarPreview");
+    let avatarPreviewUrl;
+
+    avatarInput.addEventListener("change", () => {
+        const file = avatarInput.files?.[0];
+        if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+        if (!file) {
+            avatarPreview.removeAttribute("src");
+            avatarPreview.style.display = "none";
+            return;
+        }
+
+        avatarPreviewUrl = URL.createObjectURL(file);
+        avatarPreview.src = avatarPreviewUrl;
+        avatarPreview.style.display = "inline-block";
+    });
+</script>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
