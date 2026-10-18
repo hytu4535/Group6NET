@@ -8,11 +8,20 @@
 
 ## Yêu cầu
 
+- Git & **Git LFS** (để tải file model ONNX và FAISS index dung lượng lớn).
 - Docker Desktop — chỉ dùng để chạy AI-Service.
-- .NET 10 SDK, hoặc Visual Studio có workload ASP.NET Core.
+- .NET SDK 10 (hoặc Visual Studio có workload ASP.NET Core).
 - SQL Server/LocalDB theo cấu hình của nhóm.
 
+---
+
 ## 1. Khởi động AI-Service bằng Docker
+
+### Bước 1: Tải model và dữ liệu vector (Bắt buộc khi mới clone/pull code)
+Mở terminal tại thư mục gốc `Group6NET` và kéo các file nhị phân lớn từ Git LFS về máy thật:
+
+```powershell
+git lfs pull
 
 Mở Docker Desktop, sau đó mở terminal tại thư mục gốc `Group6NET` và chạy:
 
