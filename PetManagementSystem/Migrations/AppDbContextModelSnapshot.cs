@@ -819,11 +819,12 @@ namespace PetManagementSystem.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
+                        .HasColumnName("uploaded_at");
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
                         .HasColumnName("image_url");
 
                     b.Property<bool>("IsAvatar")

@@ -32,13 +32,13 @@ public class PetsController(IPetService petService, AppDbContext dbContext) : Co
         private const long MaximumAvatarRequestBytes =
             RecognitionImageFileAttribute.MaximumFileSizeBytes + 64 * 1024;
 
-        // GET: /Pets
-        public async Task<IActionResult> Index(string? searchKeyword)
-        {
-            var pets = await petService.GetAllPetsAsync(searchKeyword);
-            ViewData["SearchKeyword"] = searchKeyword;
-            return View(pets);
-        }
+    // GET: /Pets
+    public async Task<IActionResult> Index(string? searchKeyword)
+    {
+        var pets = await petService.GetAllPetsAsync(searchKeyword);
+        ViewData["SearchKeyword"] = searchKeyword;
+        return View(pets);
+    }
 
         // GET: /Pets/Details/5
         public async Task<IActionResult> Details(int id)

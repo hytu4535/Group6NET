@@ -302,7 +302,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.VisitDate).HasColumnName("visit_date").HasColumnType("date");
 
             entity.HasOne(e => e.Pet)
-                .WithMany()
+                .WithMany(p => p.PetHealthRecords)
                 .HasForeignKey(e => e.PetId)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -325,7 +325,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.VetId).HasColumnName("vet_id");
 
             entity.HasOne(e => e.Pet)
-                .WithMany()
+                .WithMany(p => p.VaccinationRecords)
                 .HasForeignKey(e => e.PetId)
                 .OnDelete(DeleteBehavior.Restrict);
 

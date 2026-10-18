@@ -84,7 +84,7 @@ else
                                 {
                                     <div class="d-flex align-items-center gap-2">
                                         <i class="bi bi-person-badge text-muted"></i>
-                                        <span>@appt.Veterinarian.User?.FullName ?? "Bác sĩ"</span>
+                                        <span>@(appt.Veterinarian?.User?.FullName ?? "Bác sĩ")</span>
                                     </div>
                                 }
                                 else

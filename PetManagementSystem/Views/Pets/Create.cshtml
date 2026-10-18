@@ -23,7 +23,7 @@
                         </div>
                     }
 
-                    <form asp-action="Create" method="post">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data">
                         <div class="mb-3">
                             <label asp-for="Name" class="form-label fw-semibold">Tên thú cưng <span class="text-danger">*</span></label>
                             <input asp-for="Name" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: Miu Miu, Rex..." required />
@@ -52,10 +52,16 @@
                             <span asp-validation-for="Gender" class="text-danger small"></span>
                             </div>
 
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label asp-for="WeightKg" class="form-label fw-semibold">Cân nặng (kg)</label>
                             <input asp-for="WeightKg" type="number" step="0.1" class="form-control rounded-pill px-3 py-2" placeholder="Ví dụ: 4.5" />
                             <span asp-validation-for="WeightKg" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="Image" class="form-label fw-semibold">Ảnh đại diện thú cưng (tùy chọn)</label>
+                            <input type="file" name="Image" id="Image" class="form-control rounded-pill px-3 py-2" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                            <div class="form-text">JPG, PNG hoặc WEBP; tối đa 5 MB.</div>
                         </div>
 
                         <div class="d-flex justify-content-between align-items-center">

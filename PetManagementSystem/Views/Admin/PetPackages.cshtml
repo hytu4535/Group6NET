@@ -281,7 +281,7 @@
                                 '<td>' + (idx + 1) + '</td>' +
                                 '<td><strong>' + s.name + '</strong></td>' +
                                 '<td>' + s.duration + ' phút</td>' +
-                                '<td class="text-success fw-bold">' + s.price.toLocaleString('vi-VN') + ' đ</td>' +
+                                '<td class="text-success fw-bold">' + Number(s.price || 0).toLocaleString('vi-VN') + ' đ</td>' +
                                 '</tr>'
                             );
                         });
@@ -289,10 +289,12 @@
                         tbody.append('<tr><td colspan="4" class="text-center text-muted">Không có dịch vụ thành phần nào trong gói này.</td></tr>');
                     }
 
-                    new bootstrap.Modal('#petPackageDetailModal').show();
+                    bootstrap.Modal.getOrCreateInstance('#petPackageDetailModal').show();
                 } else {
                     alert(res.message || 'Không thể lấy thông tin chi tiết gói.');
                 }
+            }).fail(function(xhr) {
+                alert('Không thể tải chi tiết gói dịch vụ. Lỗi: ' + (xhr.statusText || 'Unknown'));
             });
         }
     </script>

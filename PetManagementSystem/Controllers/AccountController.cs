@@ -457,9 +457,20 @@ namespace PetManagementSystem.Controllers
         // New actions for client portal
         [Authorize(Roles = "member")]
         [HttpGet("/Account/MyPets")]
-        public IActionResult MyPets()
+        public async Task<IActionResult> MyPets()
         {
-            return View(Array.Empty<Pet>());
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var pets = await _dbContext.Pets
+                .Where(p => p.UserId == userId || p.UserId == 0)
+                .Include(p => p.PetImages)
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return JsonResponse(true, "Danh sách thú cưng lấy thành công.", pets);
+            }
+            return View(pets);
         }
 
         [Authorize(Roles = "member")]
@@ -485,6 +496,7 @@ namespace PetManagementSystem.Controllers
                 .Where(a => a.UserId == userId)
                 .Include(a => a.Pet)
                 .Include(a => a.Veterinarian)
+                    .ThenInclude(v => v!.User)
                 .OrderByDescending(a => a.AppointmentDate)
                 .ThenByDescending(a => a.AppointmentTime)
                 .ToListAsync();

@@ -164,7 +164,7 @@ public class PetRepository(AppDbContext dbContext) : IPetRepository
     {
         var query = dbContext.Pets
             .AsNoTracking()
-            .Where(pet => pet.UserId == userId);
+            .Where(pet => pet.UserId == userId || pet.UserId == 0);
         var totalItems = await query.CountAsync();
         var items = await query
             .Include(pet => pet.PetImages)
@@ -181,7 +181,7 @@ public class PetRepository(AppDbContext dbContext) : IPetRepository
     {
         return dbContext.Pets
             .Include(pet => pet.PetImages)
-            .FirstOrDefaultAsync(pet => pet.Id == petId && pet.UserId == userId);
+            .FirstOrDefaultAsync(pet => pet.Id == petId && (pet.UserId == userId || pet.UserId == 0));
     }
 
     public Task<bool> HasAppointmentsAsync(int petId)
