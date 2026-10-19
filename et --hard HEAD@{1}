@@ -1,0 +1,11 @@
+[33m82a5ae4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: reset: moving to HEAD
+[33m82a5ae4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{1}: reset: moving to HEAD
+[33m82a5ae4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{2}: merge hsang_user: updating HEAD
+[33m82a5ae4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{3}: merge hsang_user: updating HEAD
+[33m82a5ae4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{4}: pull origin main: Fast-forward
+[33m6aaf184[m HEAD@{5}: reset: moving to HEAD
+[33m6aaf184[m HEAD@{6}: checkout: moving from hsang_user to main
+[33m27b3699[m[33m ([m[1;31morigin/hsang_user[m[33m, [m[1;32mhsang_user[m[33m)[m HEAD@{7}: commit: update code user my_pets/notification/feedback/chat_ai
+[33m6aaf184[m HEAD@{8}: checkout: moving from main to hsang_user
+[33m6aaf184[m HEAD@{9}: checkout: moving from main to main
+[33m6aaf184[m HEAD@{10}: clone: from https://github.com/hytu4535/Group6NET.git

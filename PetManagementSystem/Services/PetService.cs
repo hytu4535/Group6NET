@@ -61,7 +61,81 @@ public class PetService(
         }
     }
 
+<<<<<<< Updated upstream
     public async Task<(bool Success, string ErrorMessage)> CreatePetAsync(Pet pet)
+=======
+    public Task<List<Pet>> GetAdminPetImagePetsAsync()
+    {
+        return petRepository.GetAdminPetImagePetsAsync();
+    }
+
+    public Task<PagedResult<PetImage>> GetAdminPetImagesPagedAsync(
+        int? petId,
+        string? searchKeyword,
+        bool? isAvatar,
+        int page,
+        int pageSize)
+    {
+        return petRepository.GetAdminPetImagesPagedAsync(petId, searchKeyword, isAvatar, page, pageSize);
+    }
+
+    public async Task<PetImage?> AddAdminPetImageAsync(int petId, IFormFile file, bool setAsAvatar)
+    {
+        await ValidateClientPetImageAsync(file);
+        var pet = await petRepository.GetByIdAsync(petId);
+        if (pet is null)
+        {
+            return null;
+        }
+
+        var (imageUrl, filePath) = await SaveAvatarAsync(file);
+        var image = new PetImage
+        {
+            PetId = petId,
+            ImageUrl = imageUrl,
+            UploadedAt = DateTime.UtcNow,
+            Pet = pet
+        };
+
+        try
+        {
+            await petRepository.AddPetImageAsync(image, setAsAvatar);
+            return image;
+        }
+        catch
+        {
+            DeleteFileIfExists(filePath);
+            throw;
+        }
+    }
+
+    public async Task<(bool Success, string ErrorMessage)> SetAdminPetImageAsAvatarAsync(
+        int petId,
+        int imageId)
+    {
+        var updated = await petRepository.SetAvatarAsync(petId, imageId);
+        return updated
+            ? (true, string.Empty)
+            : (false, "Không tìm thấy ảnh thuộc thú cưng đã chọn.");
+    }
+
+    public async Task<(bool Success, string ErrorMessage)> DeleteAdminPetImageAsync(int petId, int imageId)
+    {
+        var image = await petRepository.GetAdminPetImageAsync(petId, imageId);
+        if (image is null)
+        {
+            return (false, "Không tìm thấy ảnh thú cưng.");
+        }
+
+        await petRepository.DeletePetImageAsync(image);
+        DeletePetImageFile(image.ImageUrl);
+        return (true, string.Empty);
+    }
+
+    public async Task<(bool Success, string ErrorMessage)> CreatePetAsync(
+        Pet pet,
+        IFormFile? avatarFile = null)
+>>>>>>> Stashed changes
     {
         try
         {

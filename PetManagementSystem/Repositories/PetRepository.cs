@@ -92,4 +92,179 @@ public class PetRepository(AppDbContext dbContext) : IPetRepository
             await dbContext.SaveChangesAsync();
         }
     }
+<<<<<<< Updated upstream
+=======
+
+    public async Task<PagedResult<Pet>> GetPagedByUserIdAsync(int userId, int page, int pageSize)
+    {
+        var query = dbContext.Pets
+            .AsNoTracking()
+            .Where(pet => pet.UserId == userId || pet.UserId == 0);
+        var totalItems = await query.CountAsync();
+        var items = await query
+            .Include(pet => pet.PetImages)
+            .OrderByDescending(pet => pet.CreatedAt)
+            .ThenByDescending(pet => pet.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<Pet>(items, totalItems, page, pageSize);
+    }
+
+    public Task<Pet?> GetByIdAndUserIdAsync(int petId, int userId)
+    {
+        return dbContext.Pets
+            .Include(pet => pet.PetImages)
+            .FirstOrDefaultAsync(pet => pet.Id == petId && (pet.UserId == userId || pet.UserId == 0));
+    }
+
+    public Task<List<Pet>> GetAdminPetImagePetsAsync()
+    {
+        return dbContext.Pets
+            .AsNoTracking()
+            .Include(pet => pet.User)
+            .OrderBy(pet => pet.Name)
+            .ThenBy(pet => pet.Id)
+            .ToListAsync();
+    }
+
+    public async Task<PagedResult<PetImage>> GetAdminPetImagesPagedAsync(
+        int? petId,
+        string? searchKeyword,
+        bool? isAvatar,
+        int page,
+        int pageSize)
+    {
+        var query = dbContext.PetImages
+            .AsNoTracking()
+            .Include(image => image.Pet)
+                .ThenInclude(pet => pet!.User)
+            .AsQueryable();
+
+        if (petId.HasValue)
+        {
+            query = query.Where(image => image.PetId == petId.Value);
+        }
+
+        if (isAvatar.HasValue)
+        {
+            query = query.Where(image => image.IsAvatar == isAvatar.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchKeyword))
+        {
+            var keyword = searchKeyword.Trim();
+            query = query.Where(image =>
+                image.Pet != null &&
+                (image.Pet.Name.Contains(keyword) ||
+                 image.Pet.Species.Contains(keyword) ||
+                 (image.Pet.Breed != null && image.Pet.Breed.Contains(keyword)) ||
+                 (image.Pet.User != null &&
+                  ((image.Pet.User.FullName != null && image.Pet.User.FullName.Contains(keyword)) ||
+                   (image.Pet.User.Username != null && image.Pet.User.Username.Contains(keyword))))));
+        }
+
+        var totalItems = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(image => image.UploadedAt)
+            .ThenByDescending(image => image.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<PetImage>(items, totalItems, page, pageSize);
+    }
+
+    public Task<PetImage?> GetAdminPetImageAsync(int petId, int imageId)
+    {
+        return dbContext.PetImages
+            .Include(image => image.Pet)
+                .ThenInclude(pet => pet!.User)
+            .FirstOrDefaultAsync(image => image.PetId == petId && image.Id == imageId);
+    }
+
+    public Task<bool> HasAppointmentsAsync(int petId)
+    {
+        return dbContext.Appointments.AnyAsync(appointment => appointment.PetId == petId);
+    }
+
+    public async Task AddClientPetAsync(Pet pet)
+    {
+        pet.CreatedAt = DateTime.UtcNow;
+        pet.QrToken = Guid.NewGuid().ToString("N");
+        await dbContext.Pets.AddAsync(pet);
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task UpdateClientPetAsync(Pet pet)
+    {
+        pet.UpdatedAt = DateTime.UtcNow;
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task DeleteClientPetAsync(Pet pet)
+    {
+        dbContext.Pets.Remove(pet);
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task AddPetImageAsync(PetImage image, bool setAsAvatar)
+    {
+        var petImages = await dbContext.PetImages
+            .Where(existing => existing.PetId == image.PetId)
+            .ToListAsync();
+        if (setAsAvatar || petImages.All(existing => !existing.IsAvatar))
+        {
+            foreach (var existing in petImages)
+            {
+                existing.IsAvatar = false;
+            }
+            image.IsAvatar = true;
+        }
+
+        await dbContext.PetImages.AddAsync(image);
+        await dbContext.SaveChangesAsync();
+    }
+
+    public Task<PetImage?> GetPetImageAsync(int imageId, int petId, int userId)
+    {
+        return dbContext.PetImages
+            .Include(image => image.Pet)
+            .FirstOrDefaultAsync(image =>
+                image.Id == imageId &&
+                image.PetId == petId &&
+                image.Pet != null &&
+                image.Pet.UserId == userId);
+    }
+
+    public async Task DeletePetImageAsync(PetImage image)
+    {
+        dbContext.PetImages.Remove(image);
+        if (image.IsAvatar)
+        {
+            var nextAvatar = await dbContext.PetImages
+                .Where(existing => existing.PetId == image.PetId && existing.Id != image.Id)
+                .OrderBy(existing => existing.UploadedAt)
+                .FirstOrDefaultAsync();
+            if (nextAvatar is not null)
+            {
+                nextAvatar.IsAvatar = true;
+            }
+        }
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task SetPetImageAsAvatarAsync(PetImage image)
+    {
+        var petImages = await dbContext.PetImages
+            .Where(existing => existing.PetId == image.PetId)
+            .ToListAsync();
+        foreach (var existing in petImages)
+        {
+            existing.IsAvatar = existing.Id == image.Id;
+        }
+        await dbContext.SaveChangesAsync();
+    }
+>>>>>>> Stashed changes
 }

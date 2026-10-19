@@ -201,7 +201,16 @@ namespace PetManagementSystem.Controllers
         public IActionResult Veterinarians() { SetNav("Veterinarians", "Veterinarians", "Identity"); return View(); }
 
         // PetCare
+<<<<<<< Updated upstream
         public IActionResult PetImages() { SetNav("Pet Images", "PetImages", "PetCare"); return View(); }
+=======
+        [Authorize(Policy = "pet_images.view")]
+        public IActionResult PetImages()
+        {
+            SetNav("Hình ảnh thú cưng", "PetImages", "PetCare");
+            return View();
+        }
+>>>>>>> Stashed changes
 
         // Service & Medical
         public IActionResult ServicePackages() { SetNav("Service Packages", "ServicePackages", "ServiceMedical"); return View(); }
