@@ -215,7 +215,12 @@ namespace PetManagementSystem.Controllers
         public IActionResult Veterinarians() { SetNav("Veterinarians", "Veterinarians", "Identity"); return View(); }
 
         // PetCare
-        public IActionResult PetImages() { SetNav("Pet Images", "PetImages", "PetCare"); return View(); }
+        [Authorize(Policy = "pet_images.view")]
+        public IActionResult PetImages()
+        {
+            SetNav("Hình ảnh thú cưng", "PetImages", "PetCare");
+            return View();
+        }
 
         // Service & Medical - 3 Trang yêu cầu chính
         public async Task<IActionResult> Services()

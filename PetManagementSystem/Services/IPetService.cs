@@ -10,6 +10,11 @@ public interface IPetService
     Task<Pet?> GetPetByIdAsync(int id);
     Task<Pet?> GetPetByTokenAsync(string token);
     Task<List<Pet>> GetPetsByUserIdAsync(int userId);
+    Task<List<Pet>> GetAdminPetImagePetsAsync();
+    Task<PagedResult<PetImage>> GetAdminPetImagesPagedAsync(int? petId, string? searchKeyword, bool? isAvatar, int page, int pageSize);
+    Task<PetImage?> AddAdminPetImageAsync(int petId, IFormFile file, bool setAsAvatar);
+    Task<(bool Success, string ErrorMessage)> SetAdminPetImageAsAvatarAsync(int petId, int imageId);
+    Task<(bool Success, string ErrorMessage)> DeleteAdminPetImageAsync(int petId, int imageId);
     Task<(bool Success, string ErrorMessage)> CreatePetAsync(Pet pet, IFormFile? avatarFile = null);
     Task<(bool Success, string ErrorMessage)> UpdatePetAsync(Pet pet, IFormFile? avatarFile = null);
     Task<(bool Success, string ErrorMessage)> SetPetAvatarAsync(int petId, int imageId);

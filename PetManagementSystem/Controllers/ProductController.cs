@@ -1,21 +1,32 @@
 using Microsoft.AspNetCore.Mvc;
-using PetManagementSystem.Models;
+using PetManagementSystem.Services;
+using PetManagementSystem.ViewModels.Shop;
 
 namespace PetManagementSystem.Controllers
 {
-    public class ProductController : Controller
+    public class ProductController(IStorefrontService storefrontService) : Controller
     {
-        private readonly PetManagementSystem.Data.AppDbContext _dbContext;
-
-        public ProductController(PetManagementSystem.Data.AppDbContext dbContext)
+        public async Task<IActionResult> Index([FromQuery] ProductCatalogQuery query)
         {
-            _dbContext = dbContext;
+            ViewData["Title"] = "Sản phẩm thú cưng";
+            var model = await storefrontService.GetProductsAsync(query);
+            return View(model);
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Details(int id)
         {
-            var products = _dbContext.Products.Where(p => p.Status == "active").ToList();
-            return View(products);
+            if (id <= 0)
+            {
+                return NotFound();
+            }
+
+            var product = await storefrontService.GetProductAsync(id);
+            if (product is null)
+            {
+                return NotFound();
+            }
+
+            return View(product);
         }
     }
 }

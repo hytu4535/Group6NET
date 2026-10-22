@@ -1,8 +1,99 @@
+@using PetManagementSystem.Helpers
 @{
     Layout = "_AdminLayout";
+    ViewData["Title"] = "Hình ảnh thú cưng";
 }
 
-<div class="card-panel">
-    <h5>Pet Images</h5>
-    <p class="text-muted mb-0">Trang placeholder UI cho bảng <strong>pet_images</strong>.</p>
-</div>
+<main id="petImageGallery"
+      data-images-url="@Url.Content("~/api/admin/pet-images")"
+      data-pets-url="@Url.Content("~/api/admin/pet-images/pets")"
+      data-can-upload="@(User.HasPermission("pet_images.create") ? "true" : "false")"
+      data-can-set-avatar="@(User.HasPermission("pet_images.update") ? "true" : "false")"
+      data-can-delete="@(User.HasPermission("pet_images.delete") ? "true" : "false")">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white">
+            <h1 class="h5 mb-1">Thư viện ảnh thú cưng</h1>
+            <p class="text-muted small mb-0">Tìm kiếm, tải ảnh và quản lý ảnh đại diện.</p>
+        </div>
+        <div class="card-body">
+            <div id="galleryAlert" class="alert d-none" role="alert" aria-live="polite"></div>
+
+            <form id="petImageFilters" class="row g-3 align-items-end mb-4">
+                <div class="col-12 col-md-5">
+                    <label for="imageSearch" class="form-label">Tìm kiếm</label>
+                    <input id="imageSearch" name="searchKeyword" type="search" maxlength="100"
+                           class="form-control" placeholder="Tên thú cưng, giống hoặc chủ nuôi" />
+                </div>
+                <div class="col-12 col-md-3">
+                    <label for="petFilter" class="form-label">Thú cưng</label>
+                    <select id="petFilter" name="petId" class="form-select">
+                        <option value="">Tất cả thú cưng</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-2">
+                    <label for="avatarFilter" class="form-label">Loại ảnh</label>
+                    <select id="avatarFilter" name="isAvatar" class="form-select">
+                        <option value="">Tất cả ảnh</option>
+                        <option value="true">Ảnh đại diện</option>
+                        <option value="false">Ảnh thư viện</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-2 d-grid">
+                    <button class="btn btn-outline-primary" type="submit">
+                        <i class="bi bi-search me-1"></i>Lọc ảnh
+                    </button>
+                </div>
+            </form>
+
+            <section id="petImageUploadSection" class="border rounded p-3 mb-4">
+                <h2 class="h6 mb-3">Tải ảnh thú cưng</h2>
+                <form id="petImageUploadForm" class="row g-3 align-items-end" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div class="col-12 col-lg-3">
+                        <label for="uploadPetId" class="form-label">Thú cưng</label>
+                        <select id="uploadPetId" name="PetId" class="form-select" required>
+                            <option value="">Chọn thú cưng</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <label for="uploadImage" class="form-label">Tệp ảnh</label>
+                        <input id="uploadImage" name="Image" type="file"
+                               accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                               class="form-control" required />
+                        <div class="form-text">JPG, PNG hoặc WEBP; tối đa 5 MB.</div>
+                    </div>
+                    <div class="col-12 col-lg-3">
+                        <div class="form-check mb-2">
+                            <input id="setAsAvatar" name="SetAsAvatar" type="checkbox" value="true"
+                                   class="form-check-input" />
+                            <label for="setAsAvatar" class="form-check-label">Đặt làm ảnh đại diện</label>
+                        </div>
+                        <img id="uploadPreview" src="/images/pet-avatar-default.jpeg"
+                             alt="Xem trước ảnh tải lên" class="rounded border object-fit-cover"
+                             width="88" height="72" />
+                    </div>
+                    <div class="col-12 col-lg-2 d-grid">
+                        <button id="uploadButton" class="btn btn-primary" type="submit">
+                            <i class="bi bi-cloud-arrow-up me-1"></i>Tải ảnh lên
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                <p id="gallerySummary" class="text-muted small mb-0" aria-live="polite"></p>
+                <div id="galleryLoading" class="spinner-border spinner-border-sm text-primary d-none"
+                     role="status" aria-label="Đang tải"></div>
+            </div>
+            <div id="petImageItems" class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3"></div>
+            <p id="galleryEmpty" class="text-center text-muted py-4 d-none">Không tìm thấy ảnh phù hợp.</p>
+            <nav class="mt-4" aria-label="Phân trang ảnh thú cưng">
+                <ul id="galleryPagination" class="pagination justify-content-center mb-0"></ul>
+            </nav>
+        </div>
+    </div>
+</main>
+
+@section Scripts {
+    <script src="~/js/pet-image-gallery.js" asp-append-version="true"></script>
+}

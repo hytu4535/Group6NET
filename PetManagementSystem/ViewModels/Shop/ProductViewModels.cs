@@ -13,6 +13,7 @@ public class ProductCatalogQuery
     public bool InStock { get; set; }
     public string? Sort { get; set; }
     public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 12;
 }
 
 public class CategoryFilterViewModel
@@ -43,9 +44,11 @@ public class ProductListViewModel : PagedListViewModel<ProductCardViewModel>
     public bool InStock { get; set; }
     public string Sort { get; set; } = ProductSorts.Newest;
     public List<CategoryFilterViewModel> Categories { get; set; } = [];
+    public int TotalItems => TotalCount;
 
     public bool HasFilter =>
-        !string.IsNullOrWhiteSpace(Search) || CategoryId.HasValue || MinPrice.HasValue || MaxPrice.HasValue || InStock;
+        !string.IsNullOrWhiteSpace(Search) || CategoryId.HasValue ||
+        MinPrice.HasValue || MaxPrice.HasValue || InStock || Sort != ProductSorts.Newest;
 
     /// <summary>Giá trị route dùng để giữ nguyên bộ lọc khi phân trang.</summary>
     public Dictionary<string, string?> RouteValues => new()
@@ -55,7 +58,8 @@ public class ProductListViewModel : PagedListViewModel<ProductCardViewModel>
         ["minPrice"] = MinPrice?.ToString(System.Globalization.CultureInfo.InvariantCulture),
         ["maxPrice"] = MaxPrice?.ToString(System.Globalization.CultureInfo.InvariantCulture),
         ["inStock"] = InStock ? "true" : null,
-        ["sort"] = Sort == ProductSorts.Newest ? null : Sort
+        ["sort"] = Sort == ProductSorts.Newest ? null : Sort,
+        ["pageSize"] = PageSize.ToString(System.Globalization.CultureInfo.InvariantCulture)
     };
 }
 

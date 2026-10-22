@@ -7,10 +7,14 @@ namespace PetManagementSystem.Services;
 
 public class StorefrontService(IStorefrontRepository storefrontRepository) : IStorefrontService
 {
-    private const int ProductPageSize = 12;
+    private const int DefaultProductPageSize = 12;
 
     public async Task<ProductListViewModel> GetProductsAsync(ProductCatalogQuery query)
     {
+        query.Page = Math.Clamp(query.Page, 1, 1_000_000);
+        query.PageSize = query.PageSize <= 0
+            ? DefaultProductPageSize
+            : Math.Clamp(query.PageSize, 1, 100);
         var sort = CommerceMapping.NormalizeOption(query.Sort, ProductSorts.All);
         if (sort.Length == 0)
         {
@@ -32,7 +36,7 @@ public class StorefrontService(IStorefrontRepository storefrontRepository) : ISt
             query.InStock,
             sort);
 
-        var result = await storefrontRepository.SearchAsync(filter, query.Page, ProductPageSize);
+        var result = await storefrontRepository.SearchAsync(filter, query.Page, query.PageSize);
         var categories = await storefrontRepository.GetCategoriesWithSellableProductsAsync();
 
         return new ProductListViewModel
@@ -59,6 +63,18 @@ public class StorefrontService(IStorefrontRepository storefrontRepository) : ISt
                 StockQuantity = p.StockQuantity
             }).ToList()
         };
+    }
+
+    public async Task<IReadOnlyList<CategoryFilterViewModel>> GetProductCategoriesAsync()
+    {
+        var categories = await storefrontRepository.GetCategoriesWithSellableProductsAsync();
+        return categories
+            .Select(category => new CategoryFilterViewModel
+            {
+                Id = category.Id,
+                Name = category.CategoryName
+            })
+            .ToList();
     }
 
     public async Task<ProductDetailViewModel?> GetProductAsync(int id)

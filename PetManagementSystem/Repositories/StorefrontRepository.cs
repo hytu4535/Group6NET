@@ -17,7 +17,10 @@ public class StorefrontRepository(AppDbContext dbContext) : IStorefrontRepositor
         if (!string.IsNullOrWhiteSpace(filter.Search))
         {
             var keyword = filter.Search.Trim();
-            query = query.Where(x => x.ProductName.Contains(keyword));
+            query = query.Where(x =>
+                x.ProductName.Contains(keyword) ||
+                (x.Description != null && x.Description.Contains(keyword)) ||
+                (x.Category != null && x.Category.CategoryName.Contains(keyword)));
         }
 
         if (filter.CategoryId.HasValue)

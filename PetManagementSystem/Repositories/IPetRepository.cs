@@ -15,6 +15,14 @@ public interface IPetRepository
     Task DeleteAsync(int id);
     Task<PagedResult<Pet>> GetPagedByUserIdAsync(int userId, int page, int pageSize);
     Task<Pet?> GetByIdAndUserIdAsync(int petId, int userId);
+    Task<List<Pet>> GetAdminPetImagePetsAsync();
+    Task<PagedResult<PetImage>> GetAdminPetImagesPagedAsync(
+        int? petId,
+        string? searchKeyword,
+        bool? isAvatar,
+        int page,
+        int pageSize);
+    Task<PetImage?> GetAdminPetImageAsync(int petId, int imageId);
     Task<bool> HasAppointmentsAsync(int petId);
     Task AddClientPetAsync(Pet pet);
     Task UpdateClientPetAsync(Pet pet);

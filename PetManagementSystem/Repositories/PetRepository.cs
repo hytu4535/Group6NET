@@ -184,6 +184,70 @@ public class PetRepository(AppDbContext dbContext) : IPetRepository
             .FirstOrDefaultAsync(pet => pet.Id == petId && (pet.UserId == userId || pet.UserId == 0));
     }
 
+    public Task<List<Pet>> GetAdminPetImagePetsAsync()
+    {
+        return dbContext.Pets
+            .AsNoTracking()
+            .Include(pet => pet.User)
+            .OrderBy(pet => pet.Name)
+            .ThenBy(pet => pet.Id)
+            .ToListAsync();
+    }
+
+    public async Task<PagedResult<PetImage>> GetAdminPetImagesPagedAsync(
+        int? petId,
+        string? searchKeyword,
+        bool? isAvatar,
+        int page,
+        int pageSize)
+    {
+        var query = dbContext.PetImages
+            .AsNoTracking()
+            .Include(image => image.Pet)
+                .ThenInclude(pet => pet!.User)
+            .AsQueryable();
+
+        if (petId.HasValue)
+        {
+            query = query.Where(image => image.PetId == petId.Value);
+        }
+
+        if (isAvatar.HasValue)
+        {
+            query = query.Where(image => image.IsAvatar == isAvatar.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchKeyword))
+        {
+            var keyword = searchKeyword.Trim();
+            query = query.Where(image => image.Pet != null &&
+                (image.Pet.Name.Contains(keyword) ||
+                 image.Pet.Species.Contains(keyword) ||
+                 (image.Pet.Breed != null && image.Pet.Breed.Contains(keyword)) ||
+                 (image.Pet.User != null &&
+                  ((image.Pet.User.FullName != null && image.Pet.User.FullName.Contains(keyword)) ||
+                   (image.Pet.User.Username != null && image.Pet.User.Username.Contains(keyword))))));
+        }
+
+        var totalItems = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(image => image.UploadedAt)
+            .ThenByDescending(image => image.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<PetImage>(items, totalItems, page, pageSize);
+    }
+
+    public Task<PetImage?> GetAdminPetImageAsync(int petId, int imageId)
+    {
+        return dbContext.PetImages
+            .Include(image => image.Pet)
+                .ThenInclude(pet => pet!.User)
+            .FirstOrDefaultAsync(image => image.PetId == petId && image.Id == imageId);
+    }
+
     public Task<bool> HasAppointmentsAsync(int petId)
     {
         return dbContext.Appointments.AnyAsync(appointment => appointment.PetId == petId);
