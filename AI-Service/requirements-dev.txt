@@ -1,0 +1,4 @@
+-r requirements.txt
+
+# Development tooling for the ONNX + FAISS FastAPI service.
+ruff>=0.5

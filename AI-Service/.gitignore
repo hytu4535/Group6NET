@@ -1,0 +1,45 @@
+# Data & models (large; see docs/DATA.md for sources)
+/data/
+*.pt
+*.pth
+*.index
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Experiment outputs
+/runs/
+/outputs/
+/wandb/
+mlruns/
+
+# Obsidian working state (keep notes, ignore workspace)
+vault/.obsidian/workspace*.json
+vault/.obsidian/cache
+
+# Secrets / local config — NEVER commit
+.env
+*.key
+.mcp.local.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Private — NOT for the public repo (local-only working material)
+/vault/
+.obsidian/
+/docs/business/
+/.claude/
+/.mcp.json
+/CLAUDE.md
+/START_HERE.md

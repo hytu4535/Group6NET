@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Net.Http;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -95,24 +94,6 @@ public class PetRecognitionController(
         {
             ModelState.AddModelError(nameof(request.File), exception.Message);
             return ValidationProblem(ModelState);
-        }
-        catch (HttpRequestException)
-        {
-            return StatusCode(
-                StatusCodes.Status503ServiceUnavailable,
-                new
-                {
-                    message = "Dịch vụ nhận diện AI hiện không khả dụng. Vui lòng khởi động AI Service rồi thử lại."
-                });
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            return StatusCode(
-                StatusCodes.Status503ServiceUnavailable,
-                new
-                {
-                    message = "Dịch vụ nhận diện AI phản hồi quá lâu. Vui lòng thử lại sau."
-                });
         }
 
         var mappedCandidates = new List<(PetRecognitionCandidate Candidate, int DatabasePetId)>();

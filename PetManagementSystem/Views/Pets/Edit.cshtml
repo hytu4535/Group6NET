@@ -1,6 +1,7 @@
 @model PetManagementSystem.ViewModels.EditPetViewModel
+
 @{
-    ViewData["Title"] = $"Cập nhật thú cưng - {Model.Name}";
+    ViewData["Title"] = "Chỉnh sửa thú cưng";
 }
 
 <div class="container py-4">
@@ -13,102 +14,117 @@
         <div class="alert alert-danger" role="alert">@errorMessage</div>
     }
     <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body p-4 p-md-5">
-                    <div class="text-center mb-4">
-                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3 text-primary" style="width: 70px; height: 70px;">
-                            <i class="bi bi-pencil-square fs-2"></i>
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h1 class="h4 mb-0">Chỉnh sửa thú cưng</h1>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
+                        <input asp-for="Id" type="hidden" />
+                        <input asp-for="UserId" type="hidden" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label">Tên thú cưng</label>
+                            <input asp-for="Name" class="form-control" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
                         </div>
-                        <h3 class="fw-bold text-dark">Cập nhật thú cưng</h3>
-                        <p class="text-muted small">Chỉnh sửa thông tin cho @Model.Name</p>
-                    </div>
-
-                    <form asp-action="Edit" method="post" enctype="multipart/form-data">
-                        <input type="hidden" asp-for="Id" />
-                        <input type="hidden" asp-for="UserId" />
-                        <input type="hidden" name="petId" value="@Model.Id" />
-
-                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
-
-                        <div class="mb-3">
-                            <label asp-for="Name" class="form-label fw-semibold">Tên thú cưng <span class="text-danger">*</span></label>
-                            <input asp-for="Name" class="form-control rounded-pill px-3 py-2" required />
-                            <span asp-validation-for="Name" class="text-danger small"></span>
-                                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Species" class="form-label fw-semibold">Loài <span class="text-danger">*</span></label>
-                            <input asp-for="Species" class="form-control rounded-pill px-3 py-2" required />
-                            <span asp-validation-for="Species" class="text-danger small"></span>
-                                </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Breed" class="form-label fw-semibold">Giống (Breed)</label>
-                            <input asp-for="Breed" class="form-control rounded-pill px-3 py-2" />
-                            <span asp-validation-for="Breed" class="text-danger small"></span>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Gender" class="form-label fw-semibold">Giới tính <span class="text-danger">*</span></label>
-                            <select asp-for="Gender" class="form-select rounded-pill px-3 py-2" required>
-                                <option value="Male">Đực (Male)</option>
-                                <option value="Female">Cái (Female)</option>
-                            </select>
-                            <span asp-validation-for="Gender" class="text-danger small"></span>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Species" class="form-label">Loài</label>
+                                <input asp-for="Species" class="form-control" />
+                                <span asp-validation-for="Species" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Breed" class="form-label">Giống</label>
+                                <input asp-for="Breed" class="form-control" />
+                                <span asp-validation-for="Breed" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Gender" class="form-label">Giới tính</label>
+                                <select asp-for="Gender" class="form-select">
+                                    <option value="">-- Chọn giới tính --</option>
+                                    <option value="Male">Đực</option>
+                                    <option value="Female">Cái</option>
+                                </select>
+                                <span asp-validation-for="Gender" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="WeightKg" class="form-label">Cân nặng (kg)</label>
+                                <input asp-for="WeightKg" type="number" step="0.1" class="form-control" />
+                                <span asp-validation-for="WeightKg" class="text-danger"></span>
                             </div>
 
-                        <div class="mb-4">
-                            <label asp-for="WeightKg" class="form-label fw-semibold">Cân nặng (kg)</label>
-                            <input asp-for="WeightKg" type="number" step="0.1" class="form-control rounded-pill px-3 py-2" />
-                            <span asp-validation-for="WeightKg" class="text-danger small"></span>
-                        </div>
-
-                        <div class="mb-4">
-                            <label asp-for="AvatarFile" class="form-label fw-semibold">Ảnh đại diện mới</label>
-                            <input asp-for="AvatarFile" id="AvatarFile" class="form-control rounded-pill px-3 py-2" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
-                            <span asp-validation-for="AvatarFile" class="text-danger small"></span>
-                            <div class="form-text">JPG, PNG hoặc WEBP; tối đa 5 MB.</div>
-                            @if (!string.IsNullOrWhiteSpace(Model.CurrentAvatarUrl))
-                            {
-                                <img id="avatarPreview" src="@Model.CurrentAvatarUrl" alt="Ảnh đại diện hiện tại" class="img-thumbnail mt-2" style="max-width: 120px; max-height: 120px; object-fit: cover;" />
-                            }
-                            else
-                            {
-                                <img id="avatarPreview" alt="Ảnh đại diện xem trước" class="img-thumbnail mt-2" style="display: none; max-width: 120px; max-height: 120px; object-fit: cover;" />
-                            }
-                        </div>
-
-                        @if (Model.GalleryImages.Count > 0)
-                        {
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold">Thư viện ảnh</label>
-                                <div class="d-flex flex-wrap gap-2">
-                                    @foreach (var image in Model.GalleryImages)
+                            <section class="card shadow-sm mt-4">
+                                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                    <h2 class="h5 mb-0">Thư viện ảnh của thú cưng</h2>
+                                    <span class="badge text-bg-secondary">@Model.GalleryImages.Count ảnh</span>
+                                </div>
+                                <div class="card-body">
+                                    @if (Model.GalleryImages.Count == 0)
                                     {
-                                        <div class="text-center">
-                                            <img src="@image.ImageUrl" alt="Ảnh thú cưng" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;" />
-                                            @if (!image.IsAvatar)
+                                        <p class="text-muted mb-0">Thú cưng chưa có ảnh trong thư viện. Tải ảnh lên ở phần chỉnh sửa để thêm ảnh đầu tiên.</p>
+                                    }
+                                    else
+                                    {
+                                        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+                                            @foreach (var image in Model.GalleryImages)
                                             {
-                                                <button type="submit" formaction="@Url.Action("SetAvatar", "Pets")" formmethod="post" name="imageId" value="@image.Id" class="btn btn-link btn-sm d-block mx-auto p-0">Đặt làm avatar</button>
-                                            }
-                                            else
-                                            {
-                                                <small class="text-success d-block">Avatar</small>
+                                                <div class="col">
+                                                    <article class="card h-100 @(image.IsAvatar ? "border-success border-2" : "")">
+                                                        <img src="@image.ImageUrl" alt="Ảnh thú cưng #@image.Id"
+                                                             class="card-img-top object-fit-cover" style="height:190px"
+                                                             loading="lazy"
+                                                             onerror="this.onerror=null;this.src='@Url.Content("~/images/pet-avatar-default.jpeg")';" />
+                                                        <div class="card-body d-flex flex-column gap-2">
+                                                            @if (image.IsAvatar)
+                                                            {
+                                                                <span class="badge text-bg-success align-self-start">✓ Ảnh đại diện chính</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <form asp-controller="Pets" asp-action="SetAvatar" method="post" class="mt-auto">
+                                                                    <input type="hidden" name="petId" value="@Model.Id" />
+                                                                    <input type="hidden" name="imageId" value="@image.Id" />
+                                                                    <button type="submit" class="btn btn-outline-success btn-sm w-100">
+                                                                        <i class="bi bi-person-bounding-box me-1"></i>Đặt làm ảnh đại diện
+                                                                    </button>
+                                                                </form>
+                                                            }
+                                                        </div>
+                                                    </article>
+                                                </div>
                                             }
                                         </div>
                                     }
                                 </div>
+                            </section>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="AvatarFile" class="form-label">Ảnh đại diện</label>
+                            <div class="mb-2">
+                                @if (!string.IsNullOrWhiteSpace(Model.CurrentAvatarUrl))
+                                {
+                                    <img id="avatarPreview" src="@Model.CurrentAvatarUrl" alt="Ảnh đại diện hiện tại"
+                                         data-original-src="@Model.CurrentAvatarUrl"
+                                         class="rounded object-fit-cover border" width="140" height="140" />
+                                }
+                                else
+                                {
+                                    <img id="avatarPreview" alt="Xem trước ảnh đại diện"
+                                         data-original-src=""
+                                         class="rounded object-fit-cover border" width="140" height="140" style="display:none" />
+                                }
                             </div>
-                        }
-
-                        <div class="d-flex justify-content-between align-items-center">
-                            <a asp-controller="Account" asp-action="MyPets" class="btn btn-outline-secondary rounded-pill px-4">
-                                <i class="bi bi-arrow-left me-1"></i>Quay lại
-                            </a>
-                            <button type="submit" class="btn btn-primary rounded-pill px-5 shadow-sm">
-                                <i class="bi bi-check-lg me-1"></i>Lưu thay đổi
-                            </button>
+                            <input asp-for="AvatarFile" type="file"
+                                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                   class="form-control" />
+                            <span asp-validation-for="AvatarFile" class="text-danger"></span>
+                            <div class="form-text">JPG, JPEG, PNG hoặc WEBP, tối đa 5 MB. Để trống để giữ ảnh hiện tại.</div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">Quay lại</a>
                         </div>
                     </form>
                 </div>
@@ -122,22 +138,18 @@
     const avatarPreview = document.getElementById("avatarPreview");
     let avatarPreviewUrl;
 
-    avatarInput?.addEventListener("change", () => {
+    avatarInput.addEventListener("change", () => {
         const file = avatarInput.files?.[0];
         if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
         if (!file) {
-            if (avatarPreview) {
-                avatarPreview.src = avatarPreview.dataset.originalSrc ?? "";
-                avatarPreview.style.display = avatarPreview.dataset.originalSrc ? "inline-block" : "none";
-            }
+            avatarPreview.src = avatarPreview.dataset.originalSrc;
+            avatarPreview.style.display = avatarPreview.dataset.originalSrc ? "inline-block" : "none";
             return;
         }
 
         avatarPreviewUrl = URL.createObjectURL(file);
-        if (avatarPreview) {
-            avatarPreview.src = avatarPreviewUrl;
-            avatarPreview.style.display = "inline-block";
-        }
+        avatarPreview.src = avatarPreviewUrl;
+        avatarPreview.style.display = "inline-block";
     });
 </script>
 
