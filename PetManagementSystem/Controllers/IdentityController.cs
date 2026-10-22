@@ -19,7 +19,7 @@ public class IdentityController(
     IPasswordHasher<User> passwordHasher) : Controller
 {
     [Authorize(Policy = "users.view")]
-    public async Task<IActionResult> Users(string? search, int? roleId, string? status = "active", int page = 1, int pageSize = 10)
+    public async Task<IActionResult> Users(string? search, int? roleId, string? status = "all", int page = 1, int pageSize = 10)
     {
         SetNav("Quản lý người dùng", "Users", "Identity");
         var users = await userRepository.GetAllWithRoleAsync(includeInactive: true);
@@ -33,7 +33,14 @@ public class IdentityController(
                 (u.PhoneNumber?.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
         }
         if (roleId.HasValue) users = users.Where(u => u.RoleId == roleId.Value).ToList();
-        if (!string.IsNullOrWhiteSpace(status) && !status.Equals("all", StringComparison.OrdinalIgnoreCase)) users = users.Where(u => u.Status == status).ToList();
+        if (string.IsNullOrWhiteSpace(status) || status.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            users = users.Where(u => !string.Equals(u.Status, "deleted", StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+        else
+        {
+            users = users.Where(u => u.Status == status).ToList();
+        }
         ViewData["Search"] = search;
         ViewData["RoleId"] = roleId;
         ViewData["Status"] = status;
@@ -200,17 +207,32 @@ public class IdentityController(
             return NotFound();
         }
 
-        if (string.Equals(user.Status, "inactive", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(user.Status, "deleted", StringComparison.OrdinalIgnoreCase))
         {
-            TempData["Info"] = "Người dùng đã đang trong trạng thái khóa";
+            TempData["Info"] = "Không thể mở khóa tài khoản đã xóa mềm.";
             return RedirectToAction(nameof(Users));
         }
 
-        user.Status = "inactive";
+        var isActive = string.Equals(user.Status, "active", StringComparison.OrdinalIgnoreCase);
+        user.Status = isActive ? "inactive" : "active";
         user.UpdatedAt = DateTime.UtcNow;
 
+        if (user.Staff is not null)
+        {
+            user.Staff.Status = user.Status;
+            user.Staff.UpdatedAt = DateTime.UtcNow;
+        }
+
+        if (user.Veterinarian is not null)
+        {
+            user.Veterinarian.Status = user.Status;
+            user.Veterinarian.UpdatedAt = DateTime.UtcNow;
+        }
+
         await userRepository.UpdateAsync(user);
-        TempData["Success"] = "Đã khóa người dùng";
+        TempData["Success"] = isActive
+            ? "Đã khóa người dùng. Tài khoản không thể đăng nhập."
+            : "Đã mở khóa người dùng. Tài khoản có thể đăng nhập lại.";
         return RedirectToAction(nameof(Users));
     }
 
@@ -591,7 +613,7 @@ public class IdentityController(
     }
 
     [Authorize(Policy = "staff.view")]
-    public async Task<IActionResult> Staff(string? search, string? position, DateTime? hireDateFrom, DateTime? hireDateTo, string? status = "active", int page = 1, int pageSize = 10)
+    public async Task<IActionResult> Staff(string? search, string? position, DateTime? hireDateFrom, DateTime? hireDateTo, string? status = "all", int page = 1, int pageSize = 10)
     {
         SetNav("Quản lý nhân viên", "Staff", "Identity");
         var staffList = await staffRepository.GetAllWithUserAsync(includeInactive: true);
@@ -603,7 +625,14 @@ public class IdentityController(
         if (!string.IsNullOrWhiteSpace(position)) staffList = staffList.Where(s => s.Position?.Contains(position.Trim(), StringComparison.OrdinalIgnoreCase) == true).ToList();
         if (hireDateFrom.HasValue) staffList = staffList.Where(s => s.HireDate >= hireDateFrom).ToList();
         if (hireDateTo.HasValue) staffList = staffList.Where(s => s.HireDate <= hireDateTo.Value.Date.AddDays(1).AddTicks(-1)).ToList();
-        if (!string.IsNullOrWhiteSpace(status) && !status.Equals("all", StringComparison.OrdinalIgnoreCase)) staffList = staffList.Where(s => s.Status == status).ToList();
+        if (string.IsNullOrWhiteSpace(status) || status.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            staffList = staffList.Where(s => !string.Equals(s.Status, "deleted", StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+        else
+        {
+            staffList = staffList.Where(s => s.Status == status).ToList();
+        }
         ViewData["Search"] = search;
         ViewData["Position"] = position;
         ViewData["HireDateFrom"] = hireDateFrom?.ToString("yyyy-MM-dd");
@@ -784,7 +813,7 @@ public class IdentityController(
     }
 
 [Authorize(Policy = "veterinarians.view")]
-    public async Task<IActionResult> Veterinarians(string? search, string? specialty, string? licenseNo, int? minExperience, int? maxExperience, string? status = "active", int page = 1, int pageSize = 10)
+    public async Task<IActionResult> Veterinarians(string? search, string? specialty, string? licenseNo, int? minExperience, int? maxExperience, string? status = "all", int page = 1, int pageSize = 10)
     {
         SetNav("Quản lý bác sĩ thú y", "Veterinarians", "Identity");
         var vets = await veterinarianRepository.GetAllWithUserAsync(includeInactive: true);
@@ -797,7 +826,14 @@ public class IdentityController(
         if (!string.IsNullOrWhiteSpace(licenseNo)) vets = vets.Where(v => v.LicenseNo?.Contains(licenseNo.Trim(), StringComparison.OrdinalIgnoreCase) == true).ToList();
         if (minExperience.HasValue) vets = vets.Where(v => v.YearsOfExperience >= minExperience).ToList();
         if (maxExperience.HasValue) vets = vets.Where(v => v.YearsOfExperience <= maxExperience).ToList();
-        if (!string.IsNullOrWhiteSpace(status) && !status.Equals("all", StringComparison.OrdinalIgnoreCase)) vets = vets.Where(v => v.Status == status).ToList();
+        if (string.IsNullOrWhiteSpace(status) || status.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            vets = vets.Where(v => !string.Equals(v.Status, "deleted", StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+        else
+        {
+            vets = vets.Where(v => v.Status == status).ToList();
+        }
         ViewData["Search"] = search;
         ViewData["Specialty"] = specialty;
         ViewData["LicenseNo"] = licenseNo;

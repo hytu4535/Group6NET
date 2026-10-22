@@ -9,7 +9,7 @@
     var licenseNo = ViewData["LicenseNo"] as string;
     var minExperience = ViewData["MinExperience"] as int?;
     var maxExperience = ViewData["MaxExperience"] as int?;
-    var status = ViewData["Status"] as string ?? "active";
+    var status = ViewData["Status"] as string ?? "all";
 }
 
 <div class="card shadow-sm border-0">
@@ -18,7 +18,7 @@
         <a class="btn btn-primary" asp-action="CreateVeterinarian"><i class="bi bi-plus-circle me-1"></i>Tạo bác sĩ</a>
     </div>
     <div class="card-body">
-        <form method="get" class="row g-2 mb-3"><div class="col-md-3"><input name="search" value="@search" class="form-control" placeholder="Username hoặc họ tên..." /></div><div class="col-md-2"><input name="specialty" value="@specialty" class="form-control" placeholder="Chuyên môn..." /></div><div class="col-md-2"><input name="licenseNo" value="@licenseNo" class="form-control" placeholder="Số chứng chỉ..." /></div><div class="col-md-1"><input type="number" name="minExperience" value="@minExperience" class="form-control" min="0" placeholder="KN từ" /></div><div class="col-md-1"><input type="number" name="maxExperience" value="@maxExperience" class="form-control" min="0" placeholder="KN đến" /></div><div class="col-md-2"><select name="status" class="form-select"><option value="all" selected="@(status == "all")">Tất cả trạng thái</option><option value="active" selected="@(status == "active")">Hoạt động</option><option value="inactive" selected="@(status == "inactive")">Khóa</option><option value="deleted" selected="@(status == "deleted")">Đã xóa</option></select></div><div class="col-md-1"><button class="btn btn-outline-secondary w-100" type="submit">Lọc</button></div><div class="col-12"><a asp-action="Veterinarians" class="btn btn-sm btn-outline-secondary">Xóa lọc</a></div></form>
+            <div class="col-md-2"><select name="status" class="form-select"><option value="all" selected="@(status == "all")">Hoạt động / Khóa</option><option value="active" selected="@(status == "active")">Hoạt động</option><option value="inactive" selected="@(status == "inactive")">Khóa / Ngưng hoạt động</option><option value="deleted" selected="@(status == "deleted")">Không hoạt động</option></select></div>
         @if (TempData["Success"] is string success)
         {
             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -59,8 +59,8 @@
                         var statusText = item.Status switch
                         {
                             "active" => "Hoạt động",
-                            "inactive" => "Khóa",
-                            "deleted" => "Đã xóa",
+                            "inactive" => "Khóa / Ngưng hoạt động",
+                            "deleted" => "Không hoạt động",
                             _ => item.Status
                         };
                         <tr>
@@ -84,10 +84,6 @@
                                         <div class="w-100"></div>
                                         <form asp-action="SoftDeleteVeterinarian" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bác sĩ thú y này khỏi danh sách?');">
                                             <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa mềm"><i class="bi bi-trash"></i></button>
-                                            @Html.AntiForgeryToken()
-                                        </form>
-                                        <form asp-action="LockVeterinarian" asp-route-id="@item.Id" method="post">
-                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="@(item.Status == "active" ? "Khóa" : "Mở khóa")"><i class="bi bi-lock"></i></button>
                                             @Html.AntiForgeryToken()
                                         </form>
                                     </div>

@@ -6,7 +6,7 @@
     var totalPages = (int?)ViewData["TotalPages"] ?? 1;
     var search = ViewData["Search"] as string;
     var selectedRoleId = ViewData["RoleId"] as int?;
-    var status = ViewData["Status"] as string ?? "active";
+    var status = ViewData["Status"] as string ?? "all";
     var roleOptions = ViewData["RoleOptions"] as List<PetManagementSystem.Models.Role> ?? [];
 }
 
@@ -19,7 +19,7 @@
         <form method="get" class="row g-2 mb-3">
             <div class="col-md-4"><input name="search" value="@search" class="form-control" placeholder="Tìm tên đăng nhập, họ tên, email, điện thoại..." /></div>
             <div class="col-md-2"><select name="roleId" class="form-select"><option value="">Tất cả vai trò</option>@foreach (var role in roleOptions) { <option value="@role.Id" selected="@(selectedRoleId == role.Id)">@role.Name</option> }</select></div>
-            <div class="col-md-2"><select name="status" class="form-select"><option value="all" selected="@(status == "all")">Tất cả trạng thái</option><option value="active" selected="@(status == "active")">Hoạt động</option><option value="inactive" selected="@(status == "inactive")">Khóa</option><option value="deleted" selected="@(status == "deleted")">Đã xóa</option></select></div>
+            <div class="col-md-2"><select name="status" class="form-select"><option value="all" selected="@(status == "all")">Đang hoạt động / bị khóa</option><option value="active" selected="@(status == "active")">Hoạt động</option><option value="inactive" selected="@(status == "inactive")">Khóa</option><option value="deleted" selected="@(status == "deleted")">Không hoạt động</option></select></div>
             <div class="col-md-2"><button class="btn btn-outline-secondary w-100" type="submit"><i class="bi bi-search"></i> Lọc</button></div>
             <div class="col-md-2"><a asp-action="Users" class="btn btn-outline-secondary w-100">Xóa lọc</a></div>
         </form>
@@ -64,7 +64,7 @@
                         {
                             "active" => "Hoạt động",
                             "inactive" => "Khóa",
-                            "deleted" => "Đã xóa",
+                            "deleted" => "Không hoạt động",
                             _ => item.Status
                         };
                         <tr>
@@ -90,10 +90,15 @@
                                             <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa mềm"><i class="bi bi-trash"></i></button>
                                             @Html.AntiForgeryToken()
                                         </form>
-                                        <form asp-action="LockUser" asp-route-id="@item.Id" method="post">
-                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="@(item.Status == "active" ? "Khóa" : "Mở khóa")"><i class="bi bi-lock"></i></button>
-                                            @Html.AntiForgeryToken()
-                                        </form>
+                                        @if (item.Status != "deleted")
+                                        {
+                                            <form asp-action="LockUser" asp-route-id="@item.Id" method="post">
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="@(item.Status == "active" ? "Khóa tài khoản" : "Mở khóa tài khoản")">
+                                                    <i class="bi @(item.Status == "active" ? "bi-lock" : "bi-unlock")"></i>
+                                                </button>
+                                                @Html.AntiForgeryToken()
+                                            </form>
+                                        }
                                     </div>
                                 </td>
                         </tr>
