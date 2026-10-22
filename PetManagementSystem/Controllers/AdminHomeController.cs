@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PetManagementSystem.Filters;
 
 namespace PetManagementSystem.Controllers;
 
 [Authorize]
+[ServiceFilter(typeof(AdminAccessFilter))]
 public class AdminHomeController : Controller
 {
     public IActionResult Index()

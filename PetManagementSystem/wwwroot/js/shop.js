@@ -35,7 +35,7 @@
 
         var contentType = response.headers.get('content-type') || '';
         if (response.redirected || response.status === 401 || contentType.indexOf('json') === -1) {
-            window.location.href = '/User/Login?returnUrl=' + encodeURIComponent(location.pathname + location.search);
+            window.location.href = '/Account/Login?returnUrl=' + encodeURIComponent(location.pathname + location.search);
             return null;
         }
 

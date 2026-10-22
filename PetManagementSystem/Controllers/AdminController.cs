@@ -6,10 +6,12 @@ using PetManagementSystem.Models;
 using PetManagementSystem.Repositories;
 using PetManagementSystem.Services;
 using PetManagementSystem.ViewModels;
+using PetManagementSystem.Filters;
 
 namespace PetManagementSystem.Controllers
 {
     [Authorize]
+    [ServiceFilter(typeof(AdminAccessFilter))]
     public class AdminController(
       AppDbContext context,
       IPetService petService,

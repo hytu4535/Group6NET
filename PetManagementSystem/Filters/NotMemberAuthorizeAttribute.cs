@@ -18,7 +18,7 @@ namespace PetManagementSystem.Filters
             var roleClaim = user.FindFirst(ClaimTypes.Role) ?? user.FindFirst("role");
             if (roleClaim?.Value == "member")
             {
-                context.Result = new RedirectToActionResult("AccessDenied", "Account", new { area = "" });
+                context.Result = new RedirectToActionResult("AccessDenied", "Auth", new { area = "" });
                 return;
             }
             // Otherwise, authorize successfully

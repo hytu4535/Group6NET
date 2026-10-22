@@ -3094,7 +3094,7 @@ index 0000000..c03e5a6
 +                }
 +                else
 +                {
-+                    <a class="btn btn-shop px-4" href="/User/Login?returnUrl=@Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString)">Đăng nhập để mua hàng</a>
++                    <a class="btn btn-shop px-4" href="/Account/Login?returnUrl=@Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString)">Đăng nhập để mua hàng</a>
 +                }
 +            }
 +            else
@@ -3273,7 +3273,7 @@ index df024da..5374040 100644
 +                                    }
 +                                    else
 +                                    {
-+                                        <a class="btn btn-sm btn-shop w-100 mt-2" href="/User/Login?returnUrl=@Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString)">
++                                        <a class="btn btn-sm btn-shop w-100 mt-2" href="/Account/Login?returnUrl=@Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString)">
 +                                            <i class="bi bi-cart-plus me-1"></i>Đăng nhập để mua
 +                                        </a>
 +                                    }
@@ -3408,7 +3408,7 @@ index 0000000..d9febda
 +
 +        var contentType = response.headers.get('content-type') || '';
 +        if (response.redirected || response.status === 401 || contentType.indexOf('json') === -1) {
-+            window.location.href = '/User/Login?returnUrl=' + encodeURIComponent(location.pathname + location.search);
++            window.location.href = '/Account/Login?returnUrl=' + encodeURIComponent(location.pathname + location.search);
 +            return null;
 +        }
 +

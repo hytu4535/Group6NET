@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PetManagementSystem.Data;
+using PetManagementSystem.Filters;
 using PetManagementSystem.Helpers;
 using PetManagementSystem.Middleware;
 using PetManagementSystem.Models;
@@ -74,7 +75,7 @@ builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/User/Login";
+        options.LoginPath = "/Account/Login";
         options.AccessDeniedPath = "/Auth/AccessDenied";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
@@ -102,6 +103,7 @@ builder.Services
 
 builder.Services.AddAuthorization();
 builder.Services.AddPermissionPolicies();
+builder.Services.AddScoped<AdminAccessFilter>();
 
 builder.Services.AddHttpClient<IPetRecognitionService, PetRecognitionService>(
     (serviceProvider, client) =>
