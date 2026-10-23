@@ -1,0 +1,46 @@
+@model PetManagementSystem.ViewModels.Commerce.OrderEditViewModel
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white"><h5 class="mb-0">Cập nhật đơn hàng #@Model.Id</h5></div>
+    <div class="card-body">
+        <form asp-action="EditOrder" method="post" novalidate>
+            @Html.AntiForgeryToken()
+            <input asp-for="Id" type="hidden" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Khách hàng</label>
+                    <input class="form-control" value="@Model.CustomerName" disabled />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Phone" class="form-label">Số điện thoại nhận hàng</label>
+                    <input asp-for="Phone" class="form-control" />
+                    <span asp-validation-for="Phone" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="ShippingAddress" class="form-label">Địa chỉ giao hàng</label>
+                    <input asp-for="ShippingAddress" class="form-control" />
+                    <span asp-validation-for="ShippingAddress" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Note" class="form-label">Ghi chú</label>
+                    <input asp-for="Note" class="form-control" />
+                    <span asp-validation-for="Note" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                <a class="btn btn-outline-secondary" asp-action="OrderDetails" asp-route-id="@Model.Id">Quay lại</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,118 @@
+@model List<PetManagementSystem.Models.Role>
+@{
+    Layout = "_AdminLayout";
+    var items = ViewData["PageItems"] as List<PetManagementSystem.Models.Role> ?? Model;
+    var page = (int?)ViewData["Page"] ?? 1;
+    var totalPages = (int?)ViewData["TotalPages"] ?? 1;
+    var search = ViewData["Search"] as string;
+    var status = ViewData["Status"] as string ?? "active";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">Quản lý vai trò</h5>
+            <small class="text-muted">Danh sách vai trò và phân quyền</small>
+        </div>
+        <a class="btn btn-primary" asp-action="CreateRole"><i class="bi bi-plus-circle me-1"></i>Thêm vai trò</a>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-2 mb-3"><div class="col-md-5"><input name="search" value="@search" class="form-control" placeholder="Tìm tên vai trò hoặc mô tả..." /></div><div class="col-md-3"><select name="status" class="form-select"><option value="all" selected="@(status == "all")">Tất cả trạng thái</option><option value="active" selected="@(status == "active")">Hoạt động</option><option value="inactive" selected="@(status == "inactive")">Khóa</option><option value="deleted" selected="@(status == "deleted")">Đã xóa</option></select></div><div class="col-md-2"><button class="btn btn-outline-secondary w-100" type="submit">Lọc</button></div><div class="col-md-2"><a asp-action="Roles" class="btn btn-outline-secondary w-100">Xóa lọc</a></div></form>
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @success
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["Error"] is string error)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @error
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["Info"] is string info)
+        {
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                @info
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped align-middle data-table">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 90px;">ID</th>
+                        <th>Tên Role</th>
+                        <th>Mô tả</th>
+                        <th>Trạng thái</th>
+                        <th>Số quyền</th>
+                        <th class="text-end" style="width: 220px;">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Chưa có role nào</td>
+                        </tr>
+                    }
+                    else
+                    {
+                         foreach (var item in items)
+                        {
+                            var statusText = item.Status switch
+                            {
+                                "active" => "Hoạt động",
+                                "inactive" => "Khóa",
+                                "deleted" => "Đã xóa",
+                                _ => item.Status
+                            };
+                            <tr>
+                                <td>@item.Id</td>
+                                <td>@item.Name</td>
+                                <td>@(item.Description ?? "-")</td>
+                                <td>
+                                    <span class="badge @(item.Status == "active" ? "text-bg-success" :
+                                              item.Status == "inactive" ? "text-bg-warning" :
+                                              item.Status == "deleted" ? "text-bg-danger" :
+                                              "text-bg-secondary")">
+                                        @statusText
+                                    </span>
+                                </td>
+                                <td>@item.RolePermissions.Count</td>
+                                <td class="text-end">
+                                    <div class="d-flex gap-1 flex-wrap w-100 justify-content-end">
+                                        <a class="btn btn-sm btn-outline-info" asp-action="DetailsRole" asp-route-id="@item.Id" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
+                                        <a class="btn btn-sm btn-outline-success" asp-action="RolePermissions" asp-route-id="@item.Id" title="Sửa quyền"><i class="bi bi-key"></i></a>
+                                        <form asp-action="LockRole" asp-route-id="@item.Id" method="post">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="@(item.Status == "active" ? "Khóa" : "Mở khóa")"><i class="bi bi-lock"></i></button>
+                                            @Html.AntiForgeryToken()
+                                        </form>
+                                        <div class="w-100"></div>
+                                        <a class="btn btn-sm btn-outline-primary" asp-action="EditRole" asp-route-id="@item.Id" title="Chỉnh sửa"><i class="bi bi-pencil-square"></i></a>
+                                        <form asp-action="SoftDeleteRole" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vai trò này khỏi danh sách?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa mềm"><i class="bi bi-trash"></i></button>
+                                            @Html.AntiForgeryToken()
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (totalPages > 1)
+        {
+            <nav class="mt-3"><ul class="pagination justify-content-center">
+                @for (var i = 1; i <= totalPages; i++)
+                {
+                    <li class="page-item @(i == page ? "active" : "")"><a class="page-link" asp-action="Roles" asp-route-page="@i" asp-route-search="@search" asp-route-status="@status">@i</a></li>
+                }
+            </ul></nav>
+        }
+    </div>
+</div>

@@ -1,0 +1,176 @@
+@model PetManagementSystem.Models.Appointment
+@{
+    ViewData["Title"] = $"Chi tiết lịch hẹn #{Model.Id}";
+    var healthRecord = ViewBag.HealthRecord as PetManagementSystem.Models.PetHealthRecord;
+    var vaccinationRecords = ViewBag.VaccinationRecords as IEnumerable<PetManagementSystem.Models.VaccinationRecord> ?? Enumerable.Empty<PetManagementSystem.Models.VaccinationRecord>();
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary">Chi tiết lịch hẹn #@Model.Id</h2>
+        <a asp-action="MyAppointments" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Quay lại danh sách</a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="row g-4">
+        <!-- Thông tin lịch hẹn -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-primary text-white fw-bold">Thông tin lịch hẹn</div>
+                <div class="card-body">
+                    <p><strong>Thú cưng:</strong> @(Model.Pet?.Name ?? "N/A") (@(Model.Pet?.Species ?? ""))</p>
+                    <p><strong>Ngày hẹn:</strong> @Model.AppointmentDate.ToString("dd/MM/yyyy")</p>
+                    <p><strong>Giờ hẹn:</strong> @Model.AppointmentTime.ToString(@"hh\:mm")</p>
+                    <p>
+                        <strong>Trạng thái:</strong>
+                        @switch (Model.Status)
+                        {
+                            case 1:
+                                <span class="badge bg-warning text-dark">Chờ xác nhận</span>
+                                break;
+                            case 2:
+                                <span class="badge bg-success">Đã xác nhận</span>
+                                break;
+                            case 3:
+                                <span class="badge bg-info">Đang khám</span>
+                                break;
+                            case 4:
+                                <span class="badge bg-primary">Hoàn thành</span>
+                                break;
+                            case 5:
+                                <span class="badge bg-danger">Đã hủy (@Model.CancelledBy - @Model.CancelReason)</span>
+                                break;
+                            default:
+                                <span class="badge bg-secondary">Khác</span>
+                                break;
+                        }
+                    </p>
+                    <p><strong>Bác sĩ phụ trách:</strong> @(Model.Veterinarian?.User?.FullName ?? "Chưa chỉ định")</p>
+                    <p><strong>Lý do khám:</strong> @(Model.Reason ?? "Không có")</p>
+
+                    <h6 class="fw-bold mt-3">Dịch vụ đăng ký:</h6>
+                    @if (Model.AppointmentServices != null && Model.AppointmentServices.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var asv in Model.AppointmentServices)
+                            {
+                                <li class="list-group-item d-flex justify-content-between px-0">
+                                    <span>@asv.Service?.Name</span>
+                                    <span class="text-success fw-bold">@asv.PriceAtBooking.ToString("N0") VNĐ</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Không có dịch vụ đi kèm.</p>
+                    }
+
+                    <!-- Nút hủy lịch hẹn nếu trạng thái là Pending (1) hoặc Confirmed (2) -->
+                    @if (Model.Status == 1 || Model.Status == 2)
+                    {
+                        <div class="mt-4 pt-3 border-top">
+                            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                                Hủy lịch hẹn này
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Hồ sơ sức khỏe & Tiêm phòng (Read-Only) -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-success text-white fw-bold">Hồ sơ khám bệnh & Tiêm phòng (Read-Only)</div>
+                <div class="card-body">
+                    <h6 class="fw-bold text-success border-bottom pb-2">Hồ sơ sức khỏe ca khám</h6>
+                    @if (healthRecord != null)
+                    {
+                        <p><strong>Ngày khám:</strong> @healthRecord.VisitDate.ToString("dd/MM/yyyy")</p>
+                        <p><strong>Cân nặng:</strong> @(healthRecord.WeightKg.HasValue ? $"{healthRecord.WeightKg} kg" : "N/A")</p>
+                        <p><strong>Nhiệt độ:</strong> @(healthRecord.Temperature.HasValue ? $"{healthRecord.Temperature} °C" : "N/A")</p>
+                        <p><strong>Chẩn đoán:</strong> @healthRecord.Diagnosis</p>
+                        <p><strong>Điều trị:</strong> @healthRecord.Treatment</p>
+                        <p><strong>Bác sĩ khám:</strong> @(healthRecord.Veterinarian?.User?.FullName ?? "N/A")</p>
+
+                        @if (healthRecord.MedicalPrescriptions != null && healthRecord.MedicalPrescriptions.Any())
+                        {
+                            <span class="fw-bold small text-muted">Đơn thuốc:</span>
+                            <ul class="small mb-0">
+                                @foreach (var pres in healthRecord.MedicalPrescriptions)
+                                {
+                                    <li>@pres.MedicationName - Liều dùng: @pres.Dosage, Tần suất: @pres.Frequency (@pres.DurationDays ngày)</li>
+                                }
+                            </ul>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted fst-italic">Chưa có hồ sơ sức khỏe cho ca khám này (Hồ sơ sẽ được bác sĩ cập nhật khi hoàn thành).</p>
+                    }
+
+                    <h6 class="fw-bold text-success border-bottom pb-2 mt-4">Lịch sử tiêm phòng của thú cưng</h6>
+                    @if (vaccinationRecords.Any())
+                    {
+                        <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                            <table class="table table-sm align-middle small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Vắc-xin</th>
+                                        <th>Ngày tiêm</th>
+                                        <th>Mũi tiếp theo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var vr in vaccinationRecords)
+                                    {
+                                        <tr>
+                                            <td><strong>@vr.VaccineName</strong></td>
+                                            <td>@vr.AdministeredDate.ToString("dd/MM/yyyy")</td>
+                                            <td class="text-danger fw-bold">@vr.NextDueDate.ToString("dd/MM/yyyy")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted fst-italic">Chưa có lịch sử tiêm phòng nào được ghi nhận.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Hủy lịch hẹn -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">Xác nhận hủy lịch hẹn</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Lý do hủy lịch hẹn <span class="text-danger">*</span></label>
+                    <textarea name="cancelReason" class="form-control" rows="3" required placeholder="Nhập lý do bạn muốn hủy lịch..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="submit" class="btn btn-danger">Xác nhận hủy</button>
+            </div>
+        </form>
+    </div>
+</div>

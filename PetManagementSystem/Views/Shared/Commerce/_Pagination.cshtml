@@ -1,0 +1,44 @@
+@using System.Collections.Generic
+@{
+    var page = (int)(ViewData["Page"] ?? 1);
+    var totalPages = (int)(ViewData["TotalPages"] ?? 1);
+    var action = ViewData["Action"] as string ?? string.Empty;
+    var routeValues = ViewData["RouteValues"] as IDictionary<string, string?> ?? new Dictionary<string, string?>();
+}
+
+@if (totalPages > 1)
+{
+    <nav aria-label="Phân trang" class="mt-3">
+        <ul class="pagination pagination-sm justify-content-end mb-0">
+            <li class="page-item @(page <= 1 ? "disabled" : "")">
+                <a class="page-link" asp-action="@action" asp-all-route-data="@Merge(routeValues, page - 1)">Trước</a>
+            </li>
+            @for (var p = 1; p <= totalPages; p++)
+            {
+                <li class="page-item @(p == page ? "active" : "")">
+                    <a class="page-link" asp-action="@action" asp-all-route-data="@Merge(routeValues, p)">@p</a>
+                </li>
+            }
+            <li class="page-item @(page >= totalPages ? "disabled" : "")">
+                <a class="page-link" asp-action="@action" asp-all-route-data="@Merge(routeValues, page + 1)">Sau</a>
+            </li>
+        </ul>
+    </nav>
+}
+
+@functions {
+    private static Dictionary<string, string> Merge(IDictionary<string, string?> baseValues, int page)
+    {
+        var result = new Dictionary<string, string>();
+        foreach (var kv in baseValues)
+        {
+            if (!string.IsNullOrEmpty(kv.Value))
+            {
+                result[kv.Key] = kv.Value!;
+            }
+        }
+
+        result["page"] = page.ToString();
+        return result;
+    }
+}

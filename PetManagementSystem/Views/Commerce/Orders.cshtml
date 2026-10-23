@@ -1,0 +1,108 @@
+@using PetManagementSystem.Helpers
+@model PetManagementSystem.ViewModels.Commerce.OrderListViewModel
+@{
+    Layout = "_AdminLayout";
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h5 class="mb-0">Đơn hàng</h5>
+            <small class="text-muted">@Model.TotalCount đơn hàng</small>
+        </div>
+        @if (User.HasPermission("orders.create"))
+        {
+            <a class="btn btn-primary" asp-action="CreateOrder"><i class="bi bi-plus-circle me-1"></i>Tạo đơn hàng</a>
+        }
+    </div>
+    <div class="card-body">
+        @if (TempData["Success"] is string success)
+        {
+            <div class="alert alert-success">@success</div>
+        }
+        @if (TempData["Error"] is string error)
+        {
+            <div class="alert alert-danger">@error</div>
+        }
+
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-3">
+                <input type="text" name="search" value="@Model.Search" class="form-control" placeholder="Tìm theo #, khách hàng, SĐT..." />
+            </div>
+            <div class="col-md-2">
+                <select name="status" class="form-select">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    @foreach (var s in OrderStatuses.All)
+                    {
+                        <option value="@s" selected="@(Model.Status == s)">@OrderStatuses.Label(s)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="date" name="from" value="@Model.From?.ToString("yyyy-MM-dd")" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <input type="date" name="to" value="@Model.To?.ToString("yyyy-MM-dd")" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-search"></i> Lọc</button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Khách hàng</th>
+                        <th>SĐT</th>
+                        <th>Ngày đặt</th>
+                        <th>Số dòng</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Items.Any())
+                    {
+                        <tr><td colspan="8" class="text-center text-muted py-4">Chưa có đơn hàng nào</td></tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>#@item.Id</td>
+                                <td>@item.CustomerName</td>
+                                <td>@item.Phone</td>
+                                <td>@CommerceFormat.DateTimeText(item.OrderDate)</td>
+                                <td>@item.ItemCount</td>
+                                <td>@CommerceFormat.Money(item.TotalAmount)</td>
+                                <td><span class="badge @OrderStatuses.Badge(item.Status)">@OrderStatuses.Label(item.Status)</span></td>
+                                <td class="text-end">
+                                    <a class="btn btn-sm btn-outline-secondary" asp-action="OrderDetails" asp-route-id="@item.Id">Chi tiết</a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <partial name="~/Views/Shared/Commerce/_Pagination.cshtml"
+                 view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+                 {
+                     ["Page"] = Model.Page,
+                     ["TotalPages"] = Model.TotalPages,
+                     ["Action"] = "Orders",
+                     ["RouteValues"] = new Dictionary<string, string?>
+                     {
+                         ["search"] = Model.Search,
+                         ["status"] = Model.Status,
+                         ["from"] = Model.From?.ToString("yyyy-MM-dd"),
+                         ["to"] = Model.To?.ToString("yyyy-MM-dd")
+                     }
+                 }' />
+    </div>
+</div>

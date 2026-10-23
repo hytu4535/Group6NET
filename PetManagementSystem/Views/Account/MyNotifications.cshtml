@@ -1,0 +1,130 @@
+@{
+    ViewData["Title"] = "Thông báo của tôi";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <h2 class="mb-1">Thông báo của tôi</h2>
+        <p class="text-muted mb-0">Cập nhật mới nhất từ PetCare.</p>
+    </div>
+    <button type="button" id="markAllReadButton" class="btn btn-outline-primary">
+        <i class="bi bi-check2-all me-1"></i>Đánh dấu tất cả đã đọc
+    </button>
+</div>
+
+<div id="notificationPageAlert" class="alert d-none" role="alert"></div>
+<div id="notificationPageList" class="list-group shadow-sm rounded-4 overflow-hidden"></div>
+<div id="notificationPageEmpty" class="alert alert-info d-none">Bạn chưa có thông báo nào.</div>
+<nav class="mt-4" aria-label="Phân trang thông báo">
+    <ul id="notificationPagePagination" class="pagination justify-content-center"></ul>
+</nav>
+
+@section Scripts {
+    <script>
+        (() => {
+            const apiUrl = '/api/client/notifications';
+            const pageSize = 10;
+            const list = document.getElementById('notificationPageList');
+            const empty = document.getElementById('notificationPageEmpty');
+            const alertBox = document.getElementById('notificationPageAlert');
+            const pagination = document.getElementById('notificationPagePagination');
+            let currentPage = 1;
+
+            async function request(url, options = {}) {
+                const headers = new Headers(options.headers || {});
+                if (options.method) {
+                    headers.set('RequestVerificationToken',
+                        document.querySelector('input[name="__RequestVerificationToken"]').value);
+                }
+                const response = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.errors?.join(' ') || result.message || 'Đã xảy ra lỗi.');
+                }
+                return result;
+            }
+
+            function showAlert(message, isError = false) {
+                alertBox.textContent = message;
+                alertBox.className = `alert ${isError ? 'alert-danger' : 'alert-success'}`;
+            }
+
+            async function load(page = currentPage) {
+                try {
+                    const result = await request(`${apiUrl}?page=${page}&pageSize=${pageSize}`);
+                    currentPage = result.page;
+                    render(result.data || []);
+                    renderPages(result.page, result.pageSize, result.totalItems);
+                } catch (error) {
+                    showAlert(error.message, true);
+                }
+            }
+
+            function render(notifications) {
+                list.replaceChildren();
+                empty.classList.toggle('d-none', notifications.length !== 0);
+                for (const notification of notifications) {
+                    const row = document.createElement('div');
+                    row.className = `list-group-item p-3 ${notification.isRead ? '' : 'list-group-item-light'}`;
+                    const content = document.createElement('div');
+                    content.className = 'd-flex justify-content-between align-items-start gap-3';
+                    const text = document.createElement('div');
+                    const message = document.createElement('div');
+                    message.className = notification.isRead ? '' : 'fw-semibold';
+                    message.textContent = notification.message;
+                    const time = document.createElement('small');
+                    time.className = 'text-muted';
+                    time.textContent = new Date(notification.createdAt).toLocaleString('vi-VN');
+                    text.append(message, time);
+                    content.append(text);
+                    if (!notification.isRead) {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'btn btn-sm btn-outline-primary text-nowrap';
+                        button.textContent = 'Đánh dấu đã đọc';
+                        button.addEventListener('click', async () => {
+                            try {
+                                await request(`${apiUrl}/${notification.id}/read`, { method: 'PUT' });
+                                await load();
+                                showAlert('Đã cập nhật trạng thái thông báo.');
+                            } catch (error) {
+                                showAlert(error.message, true);
+                            }
+                        });
+                        content.append(button);
+                    }
+                    row.append(content);
+                    list.append(row);
+                }
+            }
+
+            function renderPages(page, size, total) {
+                pagination.replaceChildren();
+                if (size < 1 || total < 1) return;
+                for (let index = 1; index <= Math.ceil(total / size); index++) {
+                    const item = document.createElement('li');
+                    item.className = `page-item ${index === page ? 'active' : ''}`;
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'page-link';
+                    button.textContent = index;
+                    button.addEventListener('click', () => load(index));
+                    item.append(button);
+                    pagination.append(item);
+                }
+            }
+
+            document.getElementById('markAllReadButton').addEventListener('click', async () => {
+                try {
+                    const result = await request(`${apiUrl}/read-all`, { method: 'PUT' });
+                    await load();
+                    showAlert(result.message);
+                } catch (error) {
+                    showAlert(error.message, true);
+                }
+            });
+
+            load();
+        })();
+    </script>
+}
