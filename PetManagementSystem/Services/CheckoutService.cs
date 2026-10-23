@@ -24,7 +24,6 @@ public class CheckoutService(
         // Lần đầu vào trang: tự điền sẵn họ tên, email, số điện thoại, địa chỉ từ hồ sơ cá nhân để khách không phải gõ lại.
         if (input is null)
         {
-            var user = await userRepository.GetByIdAsync(userId);
             input = new CheckoutInputModel
             {
                 FullName = user?.FullName?.Trim() ?? string.Empty,
