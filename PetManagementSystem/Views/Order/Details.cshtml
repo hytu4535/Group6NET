@@ -151,7 +151,7 @@
                         @if (!string.IsNullOrWhiteSpace(info))
                         {
                             <div>Thông tin nhận tiền: <strong>@info</strong></div>
-                        }
+            }
                         else
                         {
                             <div>Cửa hàng sẽ liên hệ để hướng dẫn thanh toán.</div>
@@ -159,10 +159,10 @@
                         <div>Số tiền: <strong>@CommerceFormat.Money(pending.Amount)</strong></div>
                         <div>Nội dung chuyển khoản: <strong>@pending.TransactionCode</strong></div>
                         <div class="small text-muted mt-1">Đơn hàng sẽ được xử lý sau khi cửa hàng xác nhận đã nhận tiền.</div>
-                    </div>
+        </div>
                 }
             }
-        </div>
+    </div>
     </div>
 
     <div class="col-lg-4">
@@ -179,6 +179,8 @@
                 <dd>@(string.IsNullOrWhiteSpace(Model.ReceiverEmail) ? "-" : Model.ReceiverEmail)</dd>
                 <dt>Địa chỉ</dt>
                 <dd>@Model.ShippingAddress</dd>
+                <dt>Số điện thoại</dt>
+                <dd>@Model.Phone</dd>
                 <dt>Ghi chú</dt>
                 <dd class="mb-0">@(string.IsNullOrWhiteSpace(Model.Note) ? "-" : Model.Note)</dd>
             </dl>

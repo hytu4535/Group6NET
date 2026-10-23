@@ -27,13 +27,13 @@
                         <label asp-for="Input.FullName" class="form-label">Họ và tên người nhận <span class="text-danger">*</span></label>
                         <input asp-for="Input.FullName" class="form-control" maxlength="150" autocomplete="name" required />
                         <span asp-validation-for="Input.FullName" class="text-danger small"></span>
-                    </div>
+                </div>
                     <div class="col-md-6">
                         <label asp-for="Input.Phone" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
                         <input asp-for="Input.Phone" class="form-control" type="tel" inputmode="tel" maxlength="15" autocomplete="tel"
                                placeholder="0912345678" required />
-                        <span asp-validation-for="Input.Phone" class="text-danger small"></span>
-                    </div>
+                    <span asp-validation-for="Input.Phone" class="text-danger small"></span>
+                </div>
                     <div class="col-12">
                         <label asp-for="Input.Email" class="form-label">Email <span class="text-danger">*</span></label>
                         <input asp-for="Input.Email" class="form-control" type="email" maxlength="150" autocomplete="email" required />
@@ -66,12 +66,12 @@
                         <span asp-validation-for="Input.ShippingAddress" class="text-danger small"></span>
                     </div>
                     <div class="col-12">
-                        <label asp-for="Input.Note" class="form-label">Ghi chú (không bắt buộc)</label>
+                    <label asp-for="Input.Note" class="form-label">Ghi chú (không bắt buộc)</label>
                         <textarea asp-for="Input.Note" class="form-control" rows="2" maxlength="255"
                                   placeholder="Ví dụ: giao giờ hành chính, gọi trước khi giao..."></textarea>
-                        <span asp-validation-for="Input.Note" class="text-danger small"></span>
-                    </div>
+                    <span asp-validation-for="Input.Note" class="text-danger small"></span>
                 </div>
+            </div>
             </div>
 
             <div class="card border-0 shadow-sm rounded-4 p-4">

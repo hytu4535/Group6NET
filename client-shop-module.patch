@@ -1,0 +1,3524 @@
+diff --git a/PetManagementSystem/Controllers/AccountController.cs b/PetManagementSystem/Controllers/AccountController.cs
+index ce9e1cd..822433f 100644
+--- a/PetManagementSystem/Controllers/AccountController.cs
++++ b/PetManagementSystem/Controllers/AccountController.cs
+@@ -530,19 +530,9 @@ namespace PetManagementSystem.Controllers
+ 
+         [Authorize]
+         [HttpGet("/Account/MyOrders")]
+-        public async Task<IActionResult> MyOrders()
++        public IActionResult MyOrders()
+         {
+-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+-            var orders = await _dbContext.Orders
+-                .Where(o => o.UserId == userId)
+-                .OrderByDescending(o => o.OrderDate)
+-                .ToListAsync();
+-
+-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+-            {
+-                return JsonResponse(true, "Danh sách đơn hàng lấy thành công.", orders);
+-            }
+-            return View(orders);
++            return RedirectToAction("Index", "Order");
+         }
+     }
+ }
+\ No newline at end of file
+diff --git a/PetManagementSystem/Controllers/Api/ClientCartApiController.cs b/PetManagementSystem/Controllers/Api/ClientCartApiController.cs
+new file mode 100644
+index 0000000..064461d
+--- /dev/null
++++ b/PetManagementSystem/Controllers/Api/ClientCartApiController.cs
+@@ -0,0 +1,84 @@
++using Microsoft.AspNetCore.Authorization;
++using Microsoft.AspNetCore.Mvc;
++using PetManagementSystem.Helpers;
++using PetManagementSystem.Models;
++using PetManagementSystem.Services;
++using PetManagementSystem.ViewModels.Shop;
++
++namespace PetManagementSystem.Controllers.Api;
++
++/// <summary>
++/// API giỏ hàng cho giao diện Client. Không dùng [ApiController] để mọi lỗi validate đều trả về
++/// đúng cấu trúc ApiResponse { success, message, data, errors }.
++/// </summary>
++[Authorize]
++[AutoValidateAntiforgeryToken]
++[Route("api/client/cart")]
++public class ClientCartApiController(IClientCartService cartService) : ControllerBase
++{
++    [HttpPost("items")]
++    public async Task<ActionResult<ApiResponse<CartChangeResult>>> Add([FromBody] AddToCartRequest? request)
++    {
++        if (request is null || !ModelState.IsValid)
++        {
++            return InvalidRequest();
++        }
++
++        if (User.GetUserId() is not int userId)
++        {
++            return Unauthorized();
++        }
++
++        var result = await cartService.AddItemAsync(userId, request.ProductId, request.Quantity);
++        return ToResponse(result, "Đã thêm sản phẩm vào giỏ hàng.");
++    }
++
++    [HttpPut("items/{itemId:int}")]
++    public async Task<ActionResult<ApiResponse<CartChangeResult>>> UpdateQuantity(int itemId, [FromBody] UpdateCartItemRequest? request)
++    {
++        if (request is null || !ModelState.IsValid)
++        {
++            return InvalidRequest();
++        }
++
++        if (User.GetUserId() is not int userId)
++        {
++            return Unauthorized();
++        }
++
++        var result = await cartService.UpdateQuantityAsync(userId, itemId, request.Quantity);
++        return ToResponse(result, "Đã cập nhật số lượng.");
++    }
++
++    [HttpDelete("items/{itemId:int}")]
++    public async Task<ActionResult<ApiResponse<CartChangeResult>>> Remove(int itemId)
++    {
++        if (User.GetUserId() is not int userId)
++        {
++            return Unauthorized();
++        }
++
++        var result = await cartService.RemoveItemAsync(userId, itemId);
++        return ToResponse(result, "Đã xóa sản phẩm khỏi giỏ hàng.");
++    }
++
++    private ActionResult<ApiResponse<CartChangeResult>> ToResponse(ServiceResult<CartChangeResult> result, string successMessage)
++    {
++        if (!result.Success)
++        {
++            return BadRequest(ApiResponse<CartChangeResult>.Fail(result.Error ?? "Thao tác không thành công."));
++        }
++
++        return Ok(ApiResponse<CartChangeResult>.Ok(result.Data!, successMessage));
++    }
++
++    private ActionResult<ApiResponse<CartChangeResult>> InvalidRequest()
++    {
++        var errors = ModelState.Values
++            .SelectMany(v => v.Errors)
++            .Select(e => string.IsNullOrWhiteSpace(e.ErrorMessage) ? "Dữ liệu không hợp lệ." : e.ErrorMessage)
++            .ToArray();
++
++        return BadRequest(ApiResponse<CartChangeResult>.Fail("Dữ liệu không hợp lệ.", errors));
++    }
++}
+diff --git a/PetManagementSystem/Controllers/CartController.cs b/PetManagementSystem/Controllers/CartController.cs
+index 95f2554..1569c0c 100644
+--- a/PetManagementSystem/Controllers/CartController.cs
++++ b/PetManagementSystem/Controllers/CartController.cs
+@@ -1,185 +1,23 @@
++using Microsoft.AspNetCore.Authorization;
+ using Microsoft.AspNetCore.Mvc;
+-using PetManagementSystem.Models;
+-using System.Linq;
+-using System.Security.Claims;
+-using Microsoft.EntityFrameworkCore;
++using PetManagementSystem.Helpers;
++using PetManagementSystem.Services;
+ 
+-namespace PetManagementSystem.Controllers
++namespace PetManagementSystem.Controllers;
++
++/// <summary>Trang giỏ hàng. Thêm/sửa/xóa dòng giỏ hàng đi qua API /api/client/cart.</summary>
++[Authorize]
++public class CartController(IClientCartService cartService) : Controller
+ {
+-    public class CartController : Controller
++    [HttpGet]
++    public async Task<IActionResult> Index()
+     {
+-        private readonly PetManagementSystem.Data.AppDbContext _dbContext;
+-
+-        public CartController(PetManagementSystem.Data.AppDbContext dbContext)
+-        {
+-            _dbContext = dbContext;
+-        }
+-
+-        public IActionResult Index()
+-        {
+-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+-            if (userIdClaim == null)
+-            {
+-                return RedirectToAction("Login", "Account");
+-            }
+-
+-            int userId = int.Parse(userIdClaim.Value);
+-
+-            // Get active cart for the user
+-            var cart = _dbContext.Carts
+-                .Where(c => c.UserId == userId && c.Status == "active")
+-                .FirstOrDefault();
+-
+-            if (cart == null)
+-            {
+-                // Create a new cart if none exists
+-                cart = new Cart { UserId = userId, Status = "active", CreatedAt = DateTime.UtcNow };
+-                _dbContext.Carts.Add(cart);
+-                _dbContext.SaveChanges();
+-            }
+-
+-            var cartItems = _dbContext.CartItems
+-                .Where(ci => ci.CartId == cart.Id)
+-                .Include(ci => ci.Product)
+-                .ToList();
+-
+-            return View(cartItems);
+-        }
+-
+-        [HttpPost]
+-        public IActionResult UpdateQuantity(int id, int quantity)
+-        {
+-            if (quantity < 1) quantity = 1;
+-
+-            var cartItem = _dbContext.CartItems.Find(id);
+-            if (cartItem == null)
+-            {
+-                return NotFound();
+-            }
+-
+-            // Verify that the cart item belongs to the current user's cart
+-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+-            if (userIdClaim == null)
+-            {
+-                return Unauthorized();
+-            }
+-
+-            int userId = int.Parse(userIdClaim.Value);
+-            var cart = _dbContext.Carts
+-                .FirstOrDefault(c => c.UserId == userId && c.Status == "active");
+-
+-            if (cart == null || cartItem.CartId != cart.Id)
+-            {
+-                return Forbid();
+-            }
+-
+-            cartItem.Quantity = quantity;
+-            _dbContext.SaveChanges();
+-
+-            return Ok(new { success = true });
+-        }
+-
+-        [HttpPost]
+-        public IActionResult Remove(int id)
++        var userId = User.GetUserId();
++        if (userId is null)
+         {
+-            var cartItem = _dbContext.CartItems.Find(id);
+-            if (cartItem == null)
+-            {
+-                return NotFound();
+-            }
+-
+-            // Verify ownership
+-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+-            if (userIdClaim == null)
+-            {
+-                return Unauthorized();
+-            }
+-
+-            int userId = int.Parse(userIdClaim.Value);
+-            var cart = _dbContext.Carts
+-                .FirstOrDefault(c => c.UserId == userId && c.Status == "active");
+-
+-            if (cart == null || cartItem.CartId != cart.Id)
+-            {
+-                return Forbid();
+-            }
+-
+-            _dbContext.CartItems.Remove(cartItem);
+-            _dbContext.SaveChanges();
+-
+-            return Ok(new { success = true });
++            return Challenge();
+         }
+ 
+-        public IActionResult Checkout()
+-        {
+-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+-            if (userIdClaim == null)
+-            {
+-                return RedirectToAction("Login", "Account");
+-            }
+-
+-            int userId = int.Parse(userIdClaim.Value);
+-
+-            // Get active cart for the user
+-            var cart = _dbContext.Carts
+-                .Where(c => c.UserId == userId && c.Status == "active")
+-                .FirstOrDefault();
+-
+-            if (cart == null)
+-            {
+-                return RedirectToAction("Index");
+-            }
+-
+-            var cartItems = _dbContext.CartItems
+-                .Where(ci => ci.CartId == cart.Id)
+-                .Include(ci => ci.Product)
+-                .ToList();
+-
+-            if (!cartItems.Any())
+-            {
+-                TempData["ErrorMessage"] = "Giỏ hàng của bạn trống.";
+-                return RedirectToAction("Index");
+-            }
+-
+-            // Create order
+-            var order = new Order
+-            {
+-                UserId = userId,
+-                OrderDate = DateTime.UtcNow,
+-                ShippingAddress = "Chưa cung cấp", // In real app, collect from user
+-                Phone = "Chưa cung cấp",
+-                TotalAmount = 0,
+-                Status = "pending",
+-                Note = "Đơn hàng từ giỏ hàng"
+-            };
+-
+-            _dbContext.Orders.Add(order);
+-            _dbContext.SaveChanges();
+-
+-            // Add order items
+-            decimal total = 0;
+-            foreach (var item in cartItems)
+-            {
+-                var orderItem = new OrderItem
+-                {
+-                    OrderId = order.Id,
+-                    ProductId = item.ProductId,
+-                    Quantity = item.Quantity,
+-                    Price = item.Product?.SellPrice ?? 0
+-                };
+-                _dbContext.OrderItems.Add(orderItem);
+-                total += (item.Product?.SellPrice ?? 0) * item.Quantity;
+-            }
+-
+-            order.TotalAmount = total;
+-            _dbContext.SaveChanges();
+-
+-            // Clear cart
+-            _dbContext.CartItems.RemoveRange(cartItems);
+-            _dbContext.SaveChanges();
+-
+-            TempData["SuccessMessage"] = "Đặt hàng thành công! Đơn hàng của bạn đang được xử lý.";
+-            return RedirectToAction("MyOrders", "Account");
+-        }
++        return View(await cartService.GetCartAsync(userId.Value));
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/PetManagementSystem/Controllers/CheckoutController.cs b/PetManagementSystem/Controllers/CheckoutController.cs
+new file mode 100644
+index 0000000..18ed8c4
+--- /dev/null
++++ b/PetManagementSystem/Controllers/CheckoutController.cs
+@@ -0,0 +1,70 @@
++using Microsoft.AspNetCore.Authorization;
++using Microsoft.AspNetCore.Mvc;
++using PetManagementSystem.Helpers;
++using PetManagementSystem.Services;
++using PetManagementSystem.ViewModels.Shop;
++
++namespace PetManagementSystem.Controllers;
++
++[Authorize]
++public class CheckoutController(ICheckoutService checkoutService) : Controller
++{
++    [HttpGet]
++    public async Task<IActionResult> Index()
++    {
++        var userId = User.GetUserId();
++        if (userId is null)
++        {
++            return Challenge();
++        }
++
++        var model = await checkoutService.BuildAsync(userId.Value);
++        if (model.Cart.Items.Count == 0)
++        {
++            TempData["ErrorMessage"] = "Giỏ hàng của bạn đang trống.";
++            return RedirectToAction("Index", "Cart");
++        }
++
++        if (model.Cart.HasIssues)
++        {
++            TempData["ErrorMessage"] = "Một số sản phẩm trong giỏ không còn đủ điều kiện đặt hàng. Vui lòng kiểm tra lại giỏ hàng.";
++            return RedirectToAction("Index", "Cart");
++        }
++
++        return View(model);
++    }
++
++    [HttpPost]
++    [ValidateAntiForgeryToken]
++    public async Task<IActionResult> Place([Bind(Prefix = "Input")] CheckoutInputModel input)
++    {
++        var userId = User.GetUserId();
++        if (userId is null)
++        {
++            return Challenge();
++        }
++
++        if (!ModelState.IsValid)
++        {
++            return View("Index", await checkoutService.BuildAsync(userId.Value, input));
++        }
++
++        var result = await checkoutService.PlaceOrderAsync(userId.Value, input);
++        if (result.Success)
++        {
++            TempData["SuccessMessage"] = $"Đặt hàng thành công! Mã đơn hàng của bạn là #{result.Data}.";
++            return RedirectToAction("Details", "Order", new { id = result.Data });
++        }
++
++        var model = await checkoutService.BuildAsync(userId.Value, input);
++        if (model.Cart.Items.Count == 0)
++        {
++            TempData["ErrorMessage"] = result.Error;
++            return RedirectToAction("Index", "Cart");
++        }
++
++        var key = string.IsNullOrEmpty(result.Field) ? string.Empty : $"Input.{result.Field}";
++        ModelState.AddModelError(key, result.Error ?? "Không thể đặt hàng.");
++        return View("Index", model);
++    }
++}
+diff --git a/PetManagementSystem/Controllers/OrderController.cs b/PetManagementSystem/Controllers/OrderController.cs
+new file mode 100644
+index 0000000..b992832
+--- /dev/null
++++ b/PetManagementSystem/Controllers/OrderController.cs
+@@ -0,0 +1,86 @@
++using Microsoft.AspNetCore.Authorization;
++using Microsoft.AspNetCore.Mvc;
++using PetManagementSystem.Helpers;
++using PetManagementSystem.Services;
++using PetManagementSystem.ViewModels.Shop;
++
++namespace PetManagementSystem.Controllers;
++
++/// <summary>Lịch sử đơn hàng, theo dõi trạng thái, thanh toán và hóa đơn của khách hàng.</summary>
++[Authorize]
++public class OrderController(IClientOrderService orderService) : Controller
++{
++    [HttpGet]
++    public async Task<IActionResult> Index([FromQuery] MyOrdersQuery query)
++    {
++        var userId = User.GetUserId();
++        if (userId is null)
++        {
++            return Challenge();
++        }
++
++        return View(await orderService.GetOrdersAsync(userId.Value, query));
++    }
++
++    [HttpGet]
++    public async Task<IActionResult> Details(int id)
++    {
++        var userId = User.GetUserId();
++        if (userId is null)
++        {
++            return Challenge();
++        }
++
++        var order = await orderService.GetOrderAsync(userId.Value, id);
++        if (order is null)
++        {
++            TempData["ErrorMessage"] = "Không tìm thấy đơn hàng.";
++            return RedirectToAction(nameof(Index));
++        }
++
++        return View(order);
++    }
++
++    [HttpPost]
++    [ValidateAntiForgeryToken]
++    public async Task<IActionResult> Cancel(int id)
++    {
++        var userId = User.GetUserId();
++        if (userId is null)
++        {
++            return Challenge();
++        }
++
++        var result = await orderService.CancelAsync(userId.Value, id);
++        if (result.Success)
++        {
++            TempData["SuccessMessage"] = $"Đã hủy đơn hàng #{id}.";
++        }
++        else
++        {
++            TempData["ErrorMessage"] = result.Error;
++        }
++
++        return RedirectToAction(nameof(Details), new { id });
++    }
++
++    /// <summary>Hóa đơn của một đơn hàng (id là mã đơn hàng).</summary>
++    [HttpGet]
++    public async Task<IActionResult> Invoice(int id)
++    {
++        var userId = User.GetUserId();
++        if (userId is null)
++        {
++            return Challenge();
++        }
++
++        var invoice = await orderService.GetInvoiceAsync(userId.Value, id);
++        if (invoice is null)
++        {
++            TempData["ErrorMessage"] = "Đơn hàng này chưa có hóa đơn. Hóa đơn do cửa hàng phát hành.";
++            return RedirectToAction(nameof(Details), new { id });
++        }
++
++        return View(invoice);
++    }
++}
+diff --git a/PetManagementSystem/Controllers/ProductController.cs b/PetManagementSystem/Controllers/ProductController.cs
+index f286abb..1006598 100644
+--- a/PetManagementSystem/Controllers/ProductController.cs
++++ b/PetManagementSystem/Controllers/ProductController.cs
+@@ -1,21 +1,27 @@
+ using Microsoft.AspNetCore.Mvc;
+-using PetManagementSystem.Models;
++using PetManagementSystem.Services;
++using PetManagementSystem.ViewModels.Shop;
+ 
+-namespace PetManagementSystem.Controllers
++namespace PetManagementSystem.Controllers;
++
++public class ProductController(IStorefrontService storefrontService) : Controller
+ {
+-    public class ProductController : Controller
++    [HttpGet]
++    public async Task<IActionResult> Index([FromQuery] ProductCatalogQuery query)
+     {
+-        private readonly PetManagementSystem.Data.AppDbContext _dbContext;
++        return View(await storefrontService.GetProductsAsync(query));
++    }
+ 
+-        public ProductController(PetManagementSystem.Data.AppDbContext dbContext)
++    [HttpGet]
++    public async Task<IActionResult> Details(int id)
++    {
++        var product = await storefrontService.GetProductAsync(id);
++        if (product is null)
+         {
+-            _dbContext = dbContext;
++            TempData["ErrorMessage"] = "Không tìm thấy sản phẩm hoặc sản phẩm đã ngừng bán.";
++            return RedirectToAction(nameof(Index));
+         }
+ 
+-        public IActionResult Index()
+-        {
+-            var products = _dbContext.Products.Where(p => p.Status == "active").ToList();
+-            return View(products);
+-        }
++        return View(product);
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/PetManagementSystem/Helpers/InvariantDecimalModelBinder.cs b/PetManagementSystem/Helpers/InvariantDecimalModelBinder.cs
+new file mode 100644
+index 0000000..fbeab38
+--- /dev/null
++++ b/PetManagementSystem/Helpers/InvariantDecimalModelBinder.cs
+@@ -0,0 +1,71 @@
++using System.Globalization;
++using System.Text.RegularExpressions;
++using Microsoft.AspNetCore.Mvc.ModelBinding;
++using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
++
++namespace PetManagementSystem.Helpers;
++
++/// <summary>
++/// Đọc số thập phân dạng "300000.00" (định dạng của &lt;input type="number"&gt;) theo InvariantCulture.
++/// Nếu không dùng, máy có ngôn ngữ vi-VN sẽ hiểu dấu chấm là dấu phân cách hàng nghìn và đọc 300000.00 thành 30.000.000.
++/// </summary>
++public class InvariantDecimalModelBinderProvider : IModelBinderProvider
++{
++    public IModelBinder? GetBinder(ModelBinderProviderContext context)
++    {
++        var type = context.Metadata.ModelType;
++        return type == typeof(decimal) || type == typeof(decimal?)
++            ? new InvariantDecimalModelBinder(type)
++            : null;
++    }
++}
++
++public partial class InvariantDecimalModelBinder(Type modelType) : IModelBinder
++{
++    [GeneratedRegex(@"^[+-]?\d+(\.\d+)?$")]
++    private static partial Regex PlainDecimal();
++
++    public Task BindModelAsync(ModelBindingContext bindingContext)
++    {
++        var valueResult = bindingContext.ValueProvider.GetValue(bindingContext.ModelName);
++        if (valueResult == ValueProviderResult.None)
++        {
++            return Task.CompletedTask;
++        }
++
++        bindingContext.ModelState.SetModelValue(bindingContext.ModelName, valueResult);
++        var metadata = bindingContext.ModelMetadata;
++        var raw = valueResult.FirstValue?.Trim();
++
++        if (string.IsNullOrEmpty(raw))
++        {
++            if (Nullable.GetUnderlyingType(modelType) is not null)
++            {
++                bindingContext.Result = ModelBindingResult.Success(null);
++            }
++            else
++            {
++                bindingContext.ModelState.TryAddModelError(
++                    bindingContext.ModelName,
++                    metadata.ModelBindingMessageProvider.ValueMustNotBeNullAccessor(metadata.GetDisplayName()));
++            }
++
++            return Task.CompletedTask;
++        }
++
++        // Chuỗi thuần "123" hoặc "123.45" luôn là định dạng invariant; các dạng khác (vd "1.500.000,5") đọc theo ngôn ngữ hiện tại.
++        var culture = PlainDecimal().IsMatch(raw) ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
++        if (decimal.TryParse(raw, NumberStyles.Number, culture, out var value))
++        {
++            bindingContext.Result = ModelBindingResult.Success(value);
++        }
++        else
++        {
++            bindingContext.ModelState.TryAddModelError(
++                bindingContext.ModelName,
++                metadata.ModelBindingMessageProvider.AttemptedValueIsInvalidAccessor(raw, metadata.GetDisplayName()));
++        }
++
++        return Task.CompletedTask;
++    }
++}
+diff --git a/PetManagementSystem/Helpers/ShopConstants.cs b/PetManagementSystem/Helpers/ShopConstants.cs
+new file mode 100644
+index 0000000..e2b0e19
+--- /dev/null
++++ b/PetManagementSystem/Helpers/ShopConstants.cs
+@@ -0,0 +1,32 @@
++namespace PetManagementSystem.Helpers;
++
++public static class ProductSorts
++{
++    public const string Newest = "newest";
++    public const string PriceAsc = "price_asc";
++    public const string PriceDesc = "price_desc";
++    public const string Name = "name";
++
++    public static readonly string[] All = [Newest, PriceAsc, PriceDesc, Name];
++
++    public static string Label(string? sort) => sort switch
++    {
++        PriceAsc => "Giá tăng dần",
++        PriceDesc => "Giá giảm dần",
++        Name => "Tên A-Z",
++        _ => "Mới nhất"
++    };
++}
++
++/// <summary>Các phương thức thanh toán khách hàng thực sự dùng được khi đặt hàng.</summary>
++public static class ClientPaymentMethods
++{
++    // Hệ thống chưa tích hợp cổng thanh toán trực tuyến nên chỉ hỗ trợ thanh toán khi nhận hàng.
++    public static readonly string[] Supported = [PaymentMethods.Cash];
++
++    public static string Description(string method) => method switch
++    {
++        PaymentMethods.Cash => "Thanh toán bằng tiền mặt khi nhận hàng (COD).",
++        _ => string.Empty
++    };
++}
+diff --git a/PetManagementSystem/Program.cs b/PetManagementSystem/Program.cs
+index b34a40b..1c6391a 100644
+--- a/PetManagementSystem/Program.cs
++++ b/PetManagementSystem/Program.cs
+@@ -11,7 +11,8 @@ using PetManagementSystem.Services;
+ 
+ var builder = WebApplication.CreateBuilder(args);
+ 
+-builder.Services.AddControllersWithViews()
++builder.Services.AddControllersWithViews(options =>
++        options.ModelBinderProviders.Insert(0, new InvariantDecimalModelBinderProvider()))
+     .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+ 
+ var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+@@ -59,6 +60,15 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+ builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+ 
++// Client/User - Thương mại
++builder.Services.AddScoped<IStorefrontRepository, StorefrontRepository>();
++builder.Services.AddScoped<IClientCartRepository, ClientCartRepository>();
++builder.Services.AddScoped<IClientOrderRepository, ClientOrderRepository>();
++builder.Services.AddScoped<IStorefrontService, StorefrontService>();
++builder.Services.AddScoped<IClientCartService, ClientCartService>();
++builder.Services.AddScoped<ICheckoutService, CheckoutService>();
++builder.Services.AddScoped<IClientOrderService, ClientOrderService>();
++
+ builder.Services.AddScoped<ICategoryService, CategoryService>();
+ builder.Services.AddScoped<ISupplierService, SupplierService>();
+ builder.Services.AddScoped<IProductService, ProductService>();
+diff --git a/PetManagementSystem/Repositories/CartRepository.cs b/PetManagementSystem/Repositories/CartRepository.cs
+index b8a5c92..1436b69 100644
+--- a/PetManagementSystem/Repositories/CartRepository.cs
++++ b/PetManagementSystem/Repositories/CartRepository.cs
+@@ -35,31 +35,32 @@ public class CartRepository(AppDbContext dbContext) : ICartRepository
+             .ToPagedResultAsync(page, pageSize);
+     }
+ 
+-    public async Task<PetManagementSystem.Models.PagedResult<CartItem>> SearchItemsAsync(int? cartId, string? search, int page, int pageSize)
++    /// <summary>Phân trang theo giỏ hàng (không theo dòng sản phẩm) để mỗi giỏ luôn hiển thị đầy đủ trong một khối.</summary>
++    public async Task<PetManagementSystem.Models.PagedResult<Cart>> SearchWithItemsAsync(int? cartId, string? search, int page, int pageSize)
+     {
+-        var query = dbContext.CartItems
++        var query = dbContext.Carts
+             .AsNoTracking()
+-            .Include(x => x.Product)
+-            .Include(x => x.Cart)
+-                .ThenInclude(c => c!.User)
++            .Include(x => x.User)
++            .Include(x => x.Items)
++                .ThenInclude(i => i.Product)
++            .Where(x => x.Items.Any())
+             .AsQueryable();
+ 
+         if (cartId.HasValue)
+         {
+-            query = query.Where(x => x.CartId == cartId.Value);
++            query = query.Where(x => x.Id == cartId.Value);
+         }
+ 
+         if (!string.IsNullOrWhiteSpace(search))
+         {
+             var keyword = search.Trim();
+-            query = query.Where(x => x.Product!.ProductName.Contains(keyword)
+-                                     || x.Cart!.User!.Username.Contains(keyword)
+-                                     || (x.Cart.User.FullName != null && x.Cart.User.FullName.Contains(keyword)));
++            query = query.Where(x => x.User!.Username.Contains(keyword)
++                                     || (x.User.FullName != null && x.User.FullName.Contains(keyword))
++                                     || x.Items.Any(i => i.Product!.ProductName.Contains(keyword)));
+         }
+ 
+         return await query
+-            .OrderByDescending(x => x.CartId)
+-            .ThenBy(x => x.Id)
++            .OrderByDescending(x => x.Id)
+             .ToPagedResultAsync(page, pageSize);
+     }
+ 
+diff --git a/PetManagementSystem/Repositories/ClientCartRepository.cs b/PetManagementSystem/Repositories/ClientCartRepository.cs
+new file mode 100644
+index 0000000..553e014
+--- /dev/null
++++ b/PetManagementSystem/Repositories/ClientCartRepository.cs
+@@ -0,0 +1,81 @@
++using Microsoft.EntityFrameworkCore;
++using PetManagementSystem.Data;
++using PetManagementSystem.Helpers;
++using PetManagementSystem.Models;
++
++namespace PetManagementSystem.Repositories;
++
++public class ClientCartRepository(AppDbContext dbContext) : IClientCartRepository
++{
++    public async Task<Cart?> GetActiveCartAsync(int userId, bool includeItems)
++    {
++        IQueryable<Cart> query = dbContext.Carts;
++        if (includeItems)
++        {
++            query = query.Include(c => c.Items).ThenInclude(i => i.Product);
++        }
++
++        return await query
++            .Where(c => c.UserId == userId && c.Status == CartStatuses.Active)
++            .OrderBy(c => c.Id)
++            .FirstOrDefaultAsync();
++    }
++
++    public async Task<Cart> CreateActiveCartAsync(int userId)
++    {
++        var cart = new Cart
++        {
++            UserId = userId,
++            Status = CartStatuses.Active,
++            CreatedAt = DateTime.Now
++        };
++
++        await dbContext.Carts.AddAsync(cart);
++        await dbContext.SaveChangesAsync();
++        return cart;
++    }
++
++    public async Task<CartItem?> GetActiveItemAsync(int userId, int itemId)
++    {
++        return await dbContext.CartItems
++            .Include(i => i.Cart)
++            .Include(i => i.Product)
++            .FirstOrDefaultAsync(i => i.Id == itemId
++                                      && i.Cart!.UserId == userId
++                                      && i.Cart.Status == CartStatuses.Active);
++    }
++
++    public async Task<Product?> GetProductAsync(int productId)
++    {
++        return await dbContext.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == productId);
++    }
++
++    public void AddItem(CartItem item) => dbContext.CartItems.Add(item);
++
++    public void RemoveItem(CartItem item) => dbContext.CartItems.Remove(item);
++
++    public async Task<bool> TrySaveAsync()
++    {
++        try
++        {
++            await dbContext.SaveChangesAsync();
++            return true;
++        }
++        catch (DbUpdateException)
++        {
++            return false;
++        }
++    }
++
++    public async Task<bool> TryMarkCheckedOutAsync(int cartId, int userId)
++    {
++        var now = DateTime.Now;
++        var affected = await dbContext.Carts
++            .Where(c => c.Id == cartId && c.UserId == userId && c.Status == CartStatuses.Active)
++            .ExecuteUpdateAsync(s => s
++                .SetProperty(c => c.Status, CartStatuses.CheckedOut)
++                .SetProperty(c => c.UpdatedAt, (DateTime?)now));
++
++        return affected == 1;
++    }
++}
+diff --git a/PetManagementSystem/Repositories/ClientOrderRepository.cs b/PetManagementSystem/Repositories/ClientOrderRepository.cs
+new file mode 100644
+index 0000000..9f90389
+--- /dev/null
++++ b/PetManagementSystem/Repositories/ClientOrderRepository.cs
+@@ -0,0 +1,133 @@
++using Microsoft.EntityFrameworkCore;
++using Microsoft.EntityFrameworkCore.Storage;
++using PetManagementSystem.Data;
++using PetManagementSystem.Helpers;
++using PetManagementSystem.Models;
++
++namespace PetManagementSystem.Repositories;
++
++public class ClientOrderRepository(AppDbContext dbContext) : IClientOrderRepository
++{
++    private sealed class EfTransaction(IDbContextTransaction inner) : IRepositoryTransaction
++    {
++        public Task CommitAsync() => inner.CommitAsync();
++        public ValueTask DisposeAsync() => inner.DisposeAsync();
++    }
++
++    public async Task<IRepositoryTransaction> BeginTransactionAsync()
++    {
++        return new EfTransaction(await dbContext.Database.BeginTransactionAsync());
++    }
++
++    public async Task<bool> TryReserveStockAsync(int productId, int quantity)
++    {
++        var now = DateTime.Now;
++        var affected = await dbContext.Products
++            .Where(p => p.Id == productId
++                        && p.Status == ProductStatuses.Active
++                        && p.StockQuantity >= quantity)
++            .ExecuteUpdateAsync(s => s
++                .SetProperty(p => p.StockQuantity, p => p.StockQuantity - quantity)
++                .SetProperty(p => p.UpdatedAt, (DateTime?)now));
++
++        return affected == 1;
++    }
++
++    public async Task ReleaseStockAsync(int productId, int quantity)
++    {
++        var now = DateTime.Now;
++        await dbContext.Products
++            .Where(p => p.Id == productId)
++            .ExecuteUpdateAsync(s => s
++                .SetProperty(p => p.StockQuantity, p => p.StockQuantity + quantity)
++                .SetProperty(p => p.UpdatedAt, (DateTime?)now));
++    }
++
++    public async Task AddOrderAsync(Order order)
++    {
++        await dbContext.Orders.AddAsync(order);
++        await dbContext.SaveChangesAsync();
++    }
++
++    public async Task AddPaymentAsync(Payment payment)
++    {
++        await dbContext.Payments.AddAsync(payment);
++        await dbContext.SaveChangesAsync();
++    }
++
++    public async Task<PagedResult<Order>> SearchOwnedAsync(int userId, string? status, DateTime? from, DateTime? to, int page, int pageSize)
++    {
++        var query = dbContext.Orders
++            .AsNoTracking()
++            .Include(x => x.Items)
++            .Include(x => x.Payments)
++            .Where(x => x.UserId == userId);
++
++        if (!string.IsNullOrWhiteSpace(status))
++        {
++            query = query.Where(x => x.Status == status);
++        }
++
++        if (from.HasValue)
++        {
++            var start = from.Value.Date;
++            query = query.Where(x => x.OrderDate >= start);
++        }
++
++        if (to.HasValue)
++        {
++            var endExclusive = to.Value.Date.AddDays(1);
++            query = query.Where(x => x.OrderDate < endExclusive);
++        }
++
++        return await query
++            .OrderByDescending(x => x.OrderDate)
++            .ThenByDescending(x => x.Id)
++            .ToPagedResultAsync(page, pageSize);
++    }
++
++    public async Task<Order?> GetOwnedDetailsAsync(int userId, int orderId)
++    {
++        return await dbContext.Orders
++            .AsNoTracking()
++            .Include(x => x.Items)
++                .ThenInclude(i => i.Product)
++            .Include(x => x.Payments)
++            .Include(x => x.Invoice)
++            .FirstOrDefaultAsync(x => x.Id == orderId && x.UserId == userId);
++    }
++
++    public async Task<Invoice?> GetOwnedInvoiceAsync(int userId, int orderId)
++    {
++        return await dbContext.Invoices
++            .AsNoTracking()
++            .Include(x => x.Order)
++                .ThenInclude(o => o!.User)
++            .Include(x => x.Order)
++                .ThenInclude(o => o!.Items)
++                    .ThenInclude(i => i.Product)
++            .FirstOrDefaultAsync(x => x.OrderId == orderId && x.Order!.UserId == userId);
++    }
++
++    public async Task<bool> TryCancelPendingAsync(int userId, int orderId)
++    {
++        var affected = await dbContext.Orders
++            .Where(o => o.Id == orderId && o.UserId == userId && o.Status == OrderStatuses.Pending)
++            .ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OrderStatuses.Cancelled));
++
++        return affected == 1;
++    }
++
++    public async Task<bool> HasCompletedPaymentAsync(int orderId)
++    {
++        return await dbContext.Payments
++            .AnyAsync(p => p.OrderId == orderId && p.Status == PaymentStatuses.Completed);
++    }
++
++    public async Task FailPendingPaymentsAsync(int orderId)
++    {
++        await dbContext.Payments
++            .Where(p => p.OrderId == orderId && p.Status == PaymentStatuses.Pending)
++            .ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, PaymentStatuses.Failed));
++    }
++}
+diff --git a/PetManagementSystem/Repositories/ICartRepository.cs b/PetManagementSystem/Repositories/ICartRepository.cs
+index 5a63b2b..f9d2e13 100644
+--- a/PetManagementSystem/Repositories/ICartRepository.cs
++++ b/PetManagementSystem/Repositories/ICartRepository.cs
+@@ -6,7 +6,7 @@ namespace PetManagementSystem.Repositories;
+ public interface ICartRepository
+ {
+     Task<PetManagementSystem.Models.PagedResult<Cart>> SearchAsync(string? search, string? status, int page, int pageSize);
+-    Task<PetManagementSystem.Models.PagedResult<CartItem>> SearchItemsAsync(int? cartId, string? search, int page, int pageSize);
++    Task<PetManagementSystem.Models.PagedResult<Cart>> SearchWithItemsAsync(int? cartId, string? search, int page, int pageSize);
+     Task<Cart?> GetByIdWithItemsAsync(int id);
+     Task DeleteAsync(Cart cart);
+ }
+\ No newline at end of file
+diff --git a/PetManagementSystem/Repositories/IClientCartRepository.cs b/PetManagementSystem/Repositories/IClientCartRepository.cs
+new file mode 100644
+index 0000000..7f36a76
+--- /dev/null
++++ b/PetManagementSystem/Repositories/IClientCartRepository.cs
+@@ -0,0 +1,26 @@
++using PetManagementSystem.Models;
++
++namespace PetManagementSystem.Repositories;
++
++/// <summary>Giỏ hàng của khách hàng. Mọi truy vấn đều ràng buộc theo chủ sở hữu (user_id).</summary>
++public interface IClientCartRepository
++{
++    /// <summary>Giỏ đang hoạt động của người dùng (có theo dõi thay đổi), null nếu chưa có.</summary>
++    Task<Cart?> GetActiveCartAsync(int userId, bool includeItems);
++
++    Task<Cart> CreateActiveCartAsync(int userId);
++
++    /// <summary>Dòng giỏ hàng thuộc giỏ đang hoạt động của chính người dùng; ngược lại trả về null.</summary>
++    Task<CartItem?> GetActiveItemAsync(int userId, int itemId);
++
++    Task<Product?> GetProductAsync(int productId);
++
++    void AddItem(CartItem item);
++    void RemoveItem(CartItem item);
++
++    /// <summary>Lưu thay đổi; trả về false khi vi phạm ràng buộc (ví dụ hai yêu cầu thêm cùng sản phẩm đồng thời).</summary>
++    Task<bool> TrySaveAsync();
++
++    /// <summary>Chuyển giỏ từ active sang checked_out một cách nguyên tử. False nếu giỏ đã được xử lý.</summary>
++    Task<bool> TryMarkCheckedOutAsync(int cartId, int userId);
++}
+diff --git a/PetManagementSystem/Repositories/IClientOrderRepository.cs b/PetManagementSystem/Repositories/IClientOrderRepository.cs
+new file mode 100644
+index 0000000..7c317fb
+--- /dev/null
++++ b/PetManagementSystem/Repositories/IClientOrderRepository.cs
+@@ -0,0 +1,33 @@
++using PetManagementSystem.Models;
++
++namespace PetManagementSystem.Repositories;
++
++/// <summary>Đơn hàng, thanh toán và hóa đơn của khách hàng. Mọi truy vấn đều ràng buộc theo chủ đơn (user_id).</summary>
++public interface IClientOrderRepository
++{
++    Task<IRepositoryTransaction> BeginTransactionAsync();
++
++    /// <summary>Trừ tồn kho nguyên tử: chỉ thành công khi sản phẩm đang bán và còn đủ số lượng.</summary>
++    Task<bool> TryReserveStockAsync(int productId, int quantity);
++
++    Task ReleaseStockAsync(int productId, int quantity);
++
++    Task AddOrderAsync(Order order);
++    Task AddPaymentAsync(Payment payment);
++
++    Task<PagedResult<Order>> SearchOwnedAsync(int userId, string? status, DateTime? from, DateTime? to, int page, int pageSize);
++
++    /// <summary>Đơn của chính người dùng kèm sản phẩm, thanh toán và hóa đơn (không theo dõi thay đổi).</summary>
++    Task<Order?> GetOwnedDetailsAsync(int userId, int orderId);
++
++    /// <summary>Hóa đơn của đơn hàng thuộc người dùng, kèm khách hàng và các dòng sản phẩm.</summary>
++    Task<Invoice?> GetOwnedInvoiceAsync(int userId, int orderId);
++
++    /// <summary>Chuyển pending -> cancelled nguyên tử. False nếu đơn không thuộc người dùng hoặc không còn pending.</summary>
++    Task<bool> TryCancelPendingAsync(int userId, int orderId);
++
++    Task<bool> HasCompletedPaymentAsync(int orderId);
++
++    /// <summary>Chuyển các giao dịch đang chờ của đơn sang failed (đơn đã hủy nên sẽ không thu tiền).</summary>
++    Task FailPendingPaymentsAsync(int orderId);
++}
+diff --git a/PetManagementSystem/Repositories/IRepositoryTransaction.cs b/PetManagementSystem/Repositories/IRepositoryTransaction.cs
+new file mode 100644
+index 0000000..c28f714
+--- /dev/null
++++ b/PetManagementSystem/Repositories/IRepositoryTransaction.cs
+@@ -0,0 +1,7 @@
++namespace PetManagementSystem.Repositories;
++
++/// <summary>Giao dịch CSDL do repository mở; hủy (Dispose) mà chưa Commit sẽ tự rollback.</summary>
++public interface IRepositoryTransaction : IAsyncDisposable
++{
++    Task CommitAsync();
++}
+diff --git a/PetManagementSystem/Repositories/IStorefrontRepository.cs b/PetManagementSystem/Repositories/IStorefrontRepository.cs
+new file mode 100644
+index 0000000..e82fb79
+--- /dev/null
++++ b/PetManagementSystem/Repositories/IStorefrontRepository.cs
+@@ -0,0 +1,19 @@
++using PetManagementSystem.Models;
++
++namespace PetManagementSystem.Repositories;
++
++public record ProductFilter(
++    string? Search,
++    int? CategoryId,
++    decimal? MinPrice,
++    decimal? MaxPrice,
++    bool InStockOnly,
++    string Sort);
++
++/// <summary>Truy vấn danh mục sản phẩm dành cho khách hàng (chỉ sản phẩm đang bán).</summary>
++public interface IStorefrontRepository
++{
++    Task<PagedResult<Product>> SearchAsync(ProductFilter filter, int page, int pageSize);
++    Task<Product?> GetSellableByIdAsync(int id);
++    Task<List<Category>> GetCategoriesWithSellableProductsAsync();
++}
+diff --git a/PetManagementSystem/Repositories/StorefrontRepository.cs b/PetManagementSystem/Repositories/StorefrontRepository.cs
+new file mode 100644
+index 0000000..69fa3aa
+--- /dev/null
++++ b/PetManagementSystem/Repositories/StorefrontRepository.cs
+@@ -0,0 +1,70 @@
++using Microsoft.EntityFrameworkCore;
++using PetManagementSystem.Data;
++using PetManagementSystem.Helpers;
++using PetManagementSystem.Models;
++
++namespace PetManagementSystem.Repositories;
++
++public class StorefrontRepository(AppDbContext dbContext) : IStorefrontRepository
++{
++    public async Task<PagedResult<Product>> SearchAsync(ProductFilter filter, int page, int pageSize)
++    {
++        var query = dbContext.Products
++            .AsNoTracking()
++            .Include(x => x.Category)
++            .Where(x => x.Status == ProductStatuses.Active);
++
++        if (!string.IsNullOrWhiteSpace(filter.Search))
++        {
++            var keyword = filter.Search.Trim();
++            query = query.Where(x => x.ProductName.Contains(keyword));
++        }
++
++        if (filter.CategoryId.HasValue)
++        {
++            query = query.Where(x => x.CategoryId == filter.CategoryId.Value);
++        }
++
++        if (filter.MinPrice.HasValue)
++        {
++            query = query.Where(x => x.SellPrice >= filter.MinPrice.Value);
++        }
++
++        if (filter.MaxPrice.HasValue)
++        {
++            query = query.Where(x => x.SellPrice <= filter.MaxPrice.Value);
++        }
++
++        if (filter.InStockOnly)
++        {
++            query = query.Where(x => x.StockQuantity > 0);
++        }
++
++        query = filter.Sort switch
++        {
++            ProductSorts.PriceAsc => query.OrderBy(x => x.SellPrice).ThenBy(x => x.Id),
++            ProductSorts.PriceDesc => query.OrderByDescending(x => x.SellPrice).ThenBy(x => x.Id),
++            ProductSorts.Name => query.OrderBy(x => x.ProductName).ThenBy(x => x.Id),
++            _ => query.OrderByDescending(x => x.Id)
++        };
++
++        return await query.ToPagedResultAsync(page, pageSize);
++    }
++
++    public async Task<Product?> GetSellableByIdAsync(int id)
++    {
++        return await dbContext.Products
++            .AsNoTracking()
++            .Include(x => x.Category)
++            .FirstOrDefaultAsync(x => x.Id == id && x.Status == ProductStatuses.Active);
++    }
++
++    public async Task<List<Category>> GetCategoriesWithSellableProductsAsync()
++    {
++        return await dbContext.Categories
++            .AsNoTracking()
++            .Where(c => dbContext.Products.Any(p => p.CategoryId == c.Id && p.Status == ProductStatuses.Active))
++            .OrderBy(c => c.CategoryName)
++            .ToListAsync();
++    }
++}
+diff --git a/PetManagementSystem/Services/CartService.cs b/PetManagementSystem/Services/CartService.cs
+index 793dfa4..642f4a4 100644
+--- a/PetManagementSystem/Services/CartService.cs
++++ b/PetManagementSystem/Services/CartService.cs
+@@ -39,7 +39,7 @@ public class CartService(ICartRepository cartRepository) : ICartService
+ 
+     public async Task<CartItemListViewModel> GetItemsAsync(int? cartId, string? search, int page)
+     {
+-        var result = await cartRepository.SearchItemsAsync(cartId, search, page, Paging.DefaultPageSize);
++        var result = await cartRepository.SearchWithItemsAsync(cartId, search, page, Paging.DefaultPageSize);
+ 
+         return new CartItemListViewModel
+         {
+@@ -48,7 +48,16 @@ public class CartService(ICartRepository cartRepository) : ICartService
+             Page = result.Page,
+             PageSize = result.PageSize,
+             TotalCount = result.TotalCount,
+-            Items = result.Items.Select(ToRow).ToList()
++            Items = result.Items.Select(cart => new CartGroupViewModel
++            {
++                CartId = cart.Id,
++                CustomerName = CommerceFormat.DisplayName(cart.User),
++                Username = cart.User?.Username,
++                Status = cart.Status,
++                CreatedAt = cart.CreatedAt,
++                UpdatedAt = cart.UpdatedAt,
++                Items = cart.Items.OrderBy(x => x.Id).Select(x => ToRow(x, cart)).ToList()
++            }).ToList()
+         };
+     }
+ 
+@@ -70,7 +79,7 @@ public class CartService(ICartRepository cartRepository) : ICartService
+             CreatedAt = cart.CreatedAt,
+             UpdatedAt = cart.UpdatedAt,
+             // Truy vấn có theo dõi thay đổi nên item.Cart / item.Cart.User đã được EF tự gắn.
+-            Items = cart.Items.OrderBy(x => x.Id).Select(ToRow).ToList()
++            Items = cart.Items.OrderBy(x => x.Id).Select(x => ToRow(x, cart)).ToList()
+         };
+     }
+ 
+@@ -86,12 +95,12 @@ public class CartService(ICartRepository cartRepository) : ICartService
+         return ServiceResult.Ok();
+     }
+ 
+-    private static CartItemRowViewModel ToRow(CartItem item) => new()
++    private static CartItemRowViewModel ToRow(CartItem item, Cart cart) => new()
+     {
+         Id = item.Id,
+         CartId = item.CartId,
+-        CustomerName = CommerceFormat.DisplayName(item.Cart?.User),
+-        CartStatus = item.Cart?.Status ?? string.Empty,
++        CustomerName = CommerceFormat.DisplayName(cart.User),
++        CartStatus = cart.Status,
+         ProductId = item.ProductId,
+         ProductName = item.Product?.ProductName ?? $"#{item.ProductId}",
+         Unit = item.Product?.Unit,
+diff --git a/PetManagementSystem/Services/CheckoutService.cs b/PetManagementSystem/Services/CheckoutService.cs
+new file mode 100644
+index 0000000..18d16fc
+--- /dev/null
++++ b/PetManagementSystem/Services/CheckoutService.cs
+@@ -0,0 +1,176 @@
++using System.Text.RegularExpressions;
++using PetManagementSystem.Helpers;
++using PetManagementSystem.Models;
++using PetManagementSystem.Repositories;
++using PetManagementSystem.ViewModels.Shop;
++
++namespace PetManagementSystem.Services;
++
++public class CheckoutService(
++    IClientCartService cartService,
++    IClientCartRepository cartRepository,
++    IClientOrderRepository orderRepository,
++    IUserRepository userRepository,
++    ILogger<CheckoutService> logger) : ICheckoutService
++{
++    private static readonly Regex PhoneSeparators = new(@"[\s.\-]", RegexOptions.Compiled);
++
++    public async Task<CheckoutViewModel> BuildAsync(int userId, CheckoutInputModel? input = null)
++    {
++        if (input is null)
++        {
++            var user = await userRepository.GetByIdAsync(userId);
++            input = new CheckoutInputModel
++            {
++                ShippingAddress = user?.Address ?? string.Empty,
++                Phone = user?.PhoneNumber ?? string.Empty
++            };
++        }
++
++        if (string.IsNullOrEmpty(input.PaymentMethod) || !ClientPaymentMethods.Supported.Contains(input.PaymentMethod))
++        {
++            input.PaymentMethod = ClientPaymentMethods.Supported[0];
++        }
++
++        return new CheckoutViewModel
++        {
++            Cart = await cartService.GetCartAsync(userId),
++            Input = input,
++            PaymentOptions = ClientPaymentMethods.Supported.Select(m => new PaymentOptionViewModel
++            {
++                Value = m,
++                Label = PaymentMethods.Label(m),
++                Description = ClientPaymentMethods.Description(m)
++            }).ToList()
++        };
++    }
++
++    public async Task<ServiceResult<int>> PlaceOrderAsync(int userId, CheckoutInputModel input)
++    {
++        if (!ClientPaymentMethods.Supported.Contains(input.PaymentMethod))
++        {
++            return ServiceResult<int>.Fail("Phương thức thanh toán không được hỗ trợ", nameof(input.PaymentMethod));
++        }
++
++        var phone = PhoneSeparators.Replace(input.Phone ?? string.Empty, string.Empty);
++        if (phone.Length is < 8 or > 15)
++        {
++            return ServiceResult<int>.Fail("Số điện thoại không hợp lệ", nameof(input.Phone));
++        }
++
++        var address = input.ShippingAddress.TrimToNull();
++        if (address is null)
++        {
++            return ServiceResult<int>.Fail("Địa chỉ giao hàng là bắt buộc", nameof(input.ShippingAddress));
++        }
++
++        var user = await userRepository.GetByIdAsync(userId);
++        if (user is null || !string.Equals(user.Status, "active", StringComparison.OrdinalIgnoreCase))
++        {
++            return ServiceResult<int>.Fail("Tài khoản không tồn tại hoặc đã bị khóa");
++        }
++
++        try
++        {
++            await using var transaction = await orderRepository.BeginTransactionAsync();
++
++            var cart = await cartRepository.GetActiveCartAsync(userId, includeItems: true);
++            if (cart is null || cart.Items.Count == 0)
++            {
++                return ServiceResult<int>.Fail("Giỏ hàng của bạn đang trống");
++            }
++
++            // Kiểm tra lại phía server bằng dữ liệu hiện hành trong CSDL, không dùng giá/số lượng từ client.
++            var lines = cart.Items.OrderBy(i => i.ProductId).ToList();
++            foreach (var item in lines)
++            {
++                var product = item.Product;
++                if (product is null || product.Status != ProductStatuses.Active)
++                {
++                    return ServiceResult<int>.Fail($"Sản phẩm \"{product?.ProductName ?? "#" + item.ProductId}\" đã ngừng bán, vui lòng xóa khỏi giỏ hàng");
++                }
++
++                if (item.Quantity < 1)
++                {
++                    return ServiceResult<int>.Fail("Giỏ hàng có số lượng không hợp lệ");
++                }
++
++                if (product.StockQuantity < item.Quantity)
++                {
++                    return ServiceResult<int>.Fail($"Sản phẩm \"{product.ProductName}\" chỉ còn {product.StockQuantity} trong kho");
++                }
++            }
++
++            var order = new Order
++            {
++                UserId = userId,
++                OrderDate = DateTime.Now,
++                ShippingAddress = address,
++                Phone = phone,
++                Status = OrderStatuses.Pending,
++                Note = input.Note.TrimToNull()
++            };
++
++            foreach (var item in lines)
++            {
++                var price = item.Product!.SellPrice;
++                order.Items.Add(new OrderItem
++                {
++                    ProductId = item.ProductId,
++                    Quantity = item.Quantity,
++                    Price = price,
++                    Subtotal = price * item.Quantity
++                });
++            }
++
++            order.TotalAmount = order.Items.Sum(x => x.Subtotal);
++            if (order.TotalAmount > CommerceMapping.MaxMoney)
++            {
++                return ServiceResult<int>.Fail("Tổng giá trị đơn hàng vượt quá giới hạn cho phép");
++            }
++
++            // Chốt giỏ nguyên tử: nếu bấm đặt hàng nhiều lần, chỉ yêu cầu đầu tiên giành được giỏ.
++            if (!await cartRepository.TryMarkCheckedOutAsync(cart.Id, userId))
++            {
++                return ServiceResult<int>.Fail("Giỏ hàng đã được đặt hoặc đã thay đổi. Vui lòng kiểm tra lại đơn hàng của bạn");
++            }
++
++            // Trừ kho nguyên tử theo từng sản phẩm; thiếu hàng ở bất kỳ dòng nào thì rollback toàn bộ.
++            foreach (var item in lines)
++            {
++                if (!await orderRepository.TryReserveStockAsync(item.ProductId, item.Quantity))
++                {
++                    return ServiceResult<int>.Fail($"Sản phẩm \"{item.Product!.ProductName}\" không còn đủ hàng để đặt");
++                }
++            }
++
++            await orderRepository.AddOrderAsync(order);
++
++            await orderRepository.AddPaymentAsync(new Payment
++            {
++                OrderId = order.Id,
++                PaymentMethod = input.PaymentMethod,
++                Amount = order.TotalAmount,
++                PaymentDate = order.OrderDate,
++                Status = PaymentStatuses.Pending,
++                TransactionCode = $"PAY-{order.Id}-{DateTime.Now:yyyyMMddHHmmssfff}"
++            });
++
++            // Ghi lại đơn giá đã dùng để đặt hàng vào cart_items.price của giỏ vừa chốt.
++            foreach (var item in lines)
++            {
++                item.Price = item.Product!.SellPrice;
++            }
++
++            await cartRepository.TrySaveAsync();
++
++            await transaction.CommitAsync();
++            return ServiceResult<int>.Ok(order.Id);
++        }
++        catch (Exception ex)
++        {
++            logger.LogError(ex, "Đặt hàng thất bại cho user {UserId}", userId);
++            return ServiceResult<int>.Fail("Không thể đặt hàng lúc này, vui lòng thử lại sau");
++        }
++    }
++}
+diff --git a/PetManagementSystem/Services/ClientCartService.cs b/PetManagementSystem/Services/ClientCartService.cs
+new file mode 100644
+index 0000000..b9fd66a
+--- /dev/null
++++ b/PetManagementSystem/Services/ClientCartService.cs
+@@ -0,0 +1,193 @@
++using PetManagementSystem.Helpers;
++using PetManagementSystem.Models;
++using PetManagementSystem.Repositories;
++using PetManagementSystem.ViewModels.Shop;
++
++namespace PetManagementSystem.Services;
++
++public class ClientCartService(IClientCartRepository cartRepository) : IClientCartService
++{
++    private const string SaveFailedMessage = "Không thể cập nhật giỏ hàng lúc này, vui lòng thử lại.";
++
++    public async Task<CartViewModel> GetCartAsync(int userId)
++    {
++        var cart = await cartRepository.GetActiveCartAsync(userId, includeItems: true);
++        return ToViewModel(cart);
++    }
++
++    public async Task<ServiceResult<CartChangeResult>> AddItemAsync(int userId, int productId, int quantity)
++    {
++        if (quantity < 1)
++        {
++            return ServiceResult<CartChangeResult>.Fail("Số lượng phải lớn hơn 0");
++        }
++
++        var product = await cartRepository.GetProductAsync(productId);
++        if (product is null || product.Status != ProductStatuses.Active)
++        {
++            return ServiceResult<CartChangeResult>.Fail("Sản phẩm không tồn tại hoặc đã ngừng bán");
++        }
++
++        if (product.StockQuantity <= 0)
++        {
++            return ServiceResult<CartChangeResult>.Fail($"Sản phẩm \"{product.ProductName}\" đã hết hàng");
++        }
++
++        var cart = await cartRepository.GetActiveCartAsync(userId, includeItems: true)
++                   ?? await cartRepository.CreateActiveCartAsync(userId);
++
++        var existing = cart.Items.FirstOrDefault(i => i.ProductId == productId);
++        var newQuantity = (existing?.Quantity ?? 0) + quantity;
++        if (newQuantity > product.StockQuantity)
++        {
++            var inCart = existing?.Quantity ?? 0;
++            var message = inCart > 0
++                ? $"Sản phẩm \"{product.ProductName}\" chỉ còn {product.StockQuantity} trong kho (bạn đã có {inCart} trong giỏ)"
++                : $"Sản phẩm \"{product.ProductName}\" chỉ còn {product.StockQuantity} trong kho";
++            return ServiceResult<CartChangeResult>.Fail(message, nameof(AddToCartRequest.Quantity));
++        }
++
++        if (existing is null)
++        {
++            existing = new CartItem
++            {
++                CartId = cart.Id,
++                ProductId = product.Id,
++                Quantity = newQuantity,
++                Price = product.SellPrice
++            };
++            cartRepository.AddItem(existing);
++        }
++        else
++        {
++            existing.Quantity = newQuantity;
++            existing.Price = product.SellPrice;
++        }
++
++        cart.UpdatedAt = DateTime.Now;
++        if (!await cartRepository.TrySaveAsync())
++        {
++            return ServiceResult<CartChangeResult>.Fail(SaveFailedMessage);
++        }
++
++        return await SummarizeAsync(userId, existing.Id, product.SellPrice);
++    }
++
++    public async Task<ServiceResult<CartChangeResult>> UpdateQuantityAsync(int userId, int itemId, int quantity)
++    {
++        if (quantity < 1)
++        {
++            return ServiceResult<CartChangeResult>.Fail("Số lượng phải lớn hơn 0", nameof(UpdateCartItemRequest.Quantity));
++        }
++
++        var item = await cartRepository.GetActiveItemAsync(userId, itemId);
++        if (item is null)
++        {
++            return ServiceResult<CartChangeResult>.Fail("Không tìm thấy sản phẩm trong giỏ hàng");
++        }
++
++        var product = item.Product;
++        if (product is null || product.Status != ProductStatuses.Active)
++        {
++            return ServiceResult<CartChangeResult>.Fail("Sản phẩm đã ngừng bán, vui lòng xóa khỏi giỏ hàng");
++        }
++
++        if (quantity > product.StockQuantity)
++        {
++            return ServiceResult<CartChangeResult>.Fail(
++                $"Sản phẩm \"{product.ProductName}\" chỉ còn {product.StockQuantity} trong kho",
++                nameof(UpdateCartItemRequest.Quantity));
++        }
++
++        item.Quantity = quantity;
++        item.Price = product.SellPrice;
++        item.Cart!.UpdatedAt = DateTime.Now;
++
++        if (!await cartRepository.TrySaveAsync())
++        {
++            return ServiceResult<CartChangeResult>.Fail(SaveFailedMessage);
++        }
++
++        return await SummarizeAsync(userId, item.Id, product.SellPrice);
++    }
++
++    public async Task<ServiceResult<CartChangeResult>> RemoveItemAsync(int userId, int itemId)
++    {
++        var item = await cartRepository.GetActiveItemAsync(userId, itemId);
++        if (item is null)
++        {
++            return ServiceResult<CartChangeResult>.Fail("Không tìm thấy sản phẩm trong giỏ hàng");
++        }
++
++        item.Cart!.UpdatedAt = DateTime.Now;
++        cartRepository.RemoveItem(item);
++
++        if (!await cartRepository.TrySaveAsync())
++        {
++            return ServiceResult<CartChangeResult>.Fail(SaveFailedMessage);
++        }
++
++        return await SummarizeAsync(userId, null, 0);
++    }
++
++    private async Task<ServiceResult<CartChangeResult>> SummarizeAsync(int userId, int? itemId, decimal unitPrice)
++    {
++        var cart = await cartRepository.GetActiveCartAsync(userId, includeItems: true);
++        var view = ToViewModel(cart);
++        var line = itemId.HasValue ? view.Items.FirstOrDefault(x => x.ItemId == itemId.Value) : null;
++
++        return ServiceResult<CartChangeResult>.Ok(new CartChangeResult
++        {
++            ItemId = itemId,
++            Quantity = line?.Quantity ?? 0,
++            LineTotal = line?.LineTotal ?? (itemId.HasValue ? unitPrice : 0),
++            CartTotal = view.TotalAmount,
++            CartQuantity = view.TotalQuantity,
++            LineCount = view.Items.Count
++        });
++    }
++
++    /// <summary>Đơn giá luôn lấy từ products.sell_price hiện hành; cart_items.price chỉ là giá ghi nhận ở lần cập nhật gần nhất.</summary>
++    internal static CartViewModel ToViewModel(Cart? cart)
++    {
++        var model = new CartViewModel();
++        if (cart is null)
++        {
++            return model;
++        }
++
++        foreach (var item in cart.Items.OrderBy(i => i.Id))
++        {
++            var product = item.Product;
++            var line = new CartLineViewModel
++            {
++                ItemId = item.Id,
++                ProductId = item.ProductId,
++                ProductName = product?.ProductName ?? $"#{item.ProductId}",
++                ImageUrl = product?.ImageUrl,
++                Unit = product?.Unit,
++                UnitPrice = product?.SellPrice ?? item.Price,
++                Quantity = item.Quantity,
++                StockQuantity = product?.StockQuantity ?? 0,
++                PriceChanged = product is not null && product.SellPrice != item.Price
++            };
++
++            if (product is null || product.Status != ProductStatuses.Active)
++            {
++                line.Issue = "Sản phẩm đã ngừng bán";
++            }
++            else if (product.StockQuantity <= 0)
++            {
++                line.Issue = "Sản phẩm đã hết hàng";
++            }
++            else if (item.Quantity > product.StockQuantity)
++            {
++                line.Issue = $"Chỉ còn {product.StockQuantity} sản phẩm trong kho";
++            }
++
++            model.Items.Add(line);
++        }
++
++        return model;
++    }
++}
+diff --git a/PetManagementSystem/Services/ClientOrderService.cs b/PetManagementSystem/Services/ClientOrderService.cs
+new file mode 100644
+index 0000000..fd9335d
+--- /dev/null
++++ b/PetManagementSystem/Services/ClientOrderService.cs
+@@ -0,0 +1,173 @@
++using PetManagementSystem.Helpers;
++using PetManagementSystem.Models;
++using PetManagementSystem.Repositories;
++using PetManagementSystem.ViewModels.Shop;
++
++namespace PetManagementSystem.Services;
++
++public class ClientOrderService(
++    IClientOrderRepository orderRepository,
++    ILogger<ClientOrderService> logger) : IClientOrderService
++{
++    public async Task<MyOrderListViewModel> GetOrdersAsync(int userId, MyOrdersQuery query)
++    {
++        var status = CommerceMapping.NormalizeOption(query.Status, OrderStatuses.All);
++        var result = await orderRepository.SearchOwnedAsync(
++            userId,
++            status.Length == 0 ? null : status,
++            query.From,
++            query.To,
++            query.Page,
++            Paging.DefaultPageSize);
++
++        return new MyOrderListViewModel
++        {
++            Status = status.Length == 0 ? null : status,
++            From = query.From,
++            To = query.To,
++            Page = result.Page,
++            PageSize = result.PageSize,
++            TotalCount = result.TotalCount,
++            Items = result.Items.Select(o => new MyOrderRowViewModel
++            {
++                Id = o.Id,
++                OrderDate = o.OrderDate,
++                TotalAmount = o.TotalAmount,
++                Status = o.Status,
++                ItemCount = o.Items.Count,
++                PaymentStatus = SummarizePayment(o)
++            }).ToList()
++        };
++    }
++
++    public async Task<MyOrderDetailsViewModel?> GetOrderAsync(int userId, int orderId)
++    {
++        var order = await orderRepository.GetOwnedDetailsAsync(userId, orderId);
++        if (order is null)
++        {
++            return null;
++        }
++
++        var paid = order.Payments.Where(p => p.Status == PaymentStatuses.Completed).Sum(p => p.Amount);
++
++        return new MyOrderDetailsViewModel
++        {
++            Id = order.Id,
++            OrderDate = order.OrderDate,
++            ShippingAddress = order.ShippingAddress,
++            Phone = order.Phone,
++            Note = order.Note,
++            Status = order.Status,
++            TotalAmount = order.TotalAmount,
++            PaidAmount = paid,
++            CanCancel = order.Status == OrderStatuses.Pending && paid == 0,
++            HasInvoice = order.Invoice is not null,
++            Items = order.Items.OrderBy(i => i.Id).Select(ToItem).ToList(),
++            Payments = order.Payments.OrderByDescending(p => p.PaymentDate).ThenByDescending(p => p.Id).Select(p => new MyPaymentViewModel
++            {
++                Id = p.Id,
++                PaymentMethod = p.PaymentMethod,
++                Amount = p.Amount,
++                PaymentDate = p.PaymentDate,
++                Status = p.Status,
++                TransactionCode = p.TransactionCode
++            }).ToList()
++        };
++    }
++
++    public async Task<ServiceResult> CancelAsync(int userId, int orderId)
++    {
++        var order = await orderRepository.GetOwnedDetailsAsync(userId, orderId);
++        if (order is null)
++        {
++            return ServiceResult.Fail("Không tìm thấy đơn hàng");
++        }
++
++        if (order.Status != OrderStatuses.Pending)
++        {
++            return ServiceResult.Fail("Chỉ có thể hủy đơn khi đơn đang chờ xác nhận. Vui lòng liên hệ cửa hàng để được hỗ trợ.");
++        }
++
++        try
++        {
++            await using var transaction = await orderRepository.BeginTransactionAsync();
++
++            // Chuyển trạng thái có điều kiện (đang pending) để tránh xung đột với nhân viên vừa xác nhận đơn.
++            if (!await orderRepository.TryCancelPendingAsync(userId, orderId))
++            {
++                return ServiceResult.Fail("Đơn hàng vừa được cập nhật trạng thái nên không thể hủy. Vui lòng tải lại trang.");
++            }
++
++            if (await orderRepository.HasCompletedPaymentAsync(orderId))
++            {
++                return ServiceResult.Fail("Đơn hàng đã có thanh toán thành công. Vui lòng liên hệ cửa hàng để được hoàn tiền và hủy đơn.");
++            }
++
++            foreach (var item in order.Items.OrderBy(i => i.ProductId))
++            {
++                await orderRepository.ReleaseStockAsync(item.ProductId, item.Quantity);
++            }
++
++            await orderRepository.FailPendingPaymentsAsync(orderId);
++
++            await transaction.CommitAsync();
++            return ServiceResult.Ok();
++        }
++        catch (Exception ex)
++        {
++            logger.LogError(ex, "Hủy đơn {OrderId} thất bại cho user {UserId}", orderId, userId);
++            return ServiceResult.Fail("Không thể hủy đơn lúc này, vui lòng thử lại sau");
++        }
++    }
++
++    public async Task<MyInvoiceViewModel?> GetInvoiceAsync(int userId, int orderId)
++    {
++        var invoice = await orderRepository.GetOwnedInvoiceAsync(userId, orderId);
++        if (invoice?.Order is null)
++        {
++            return null;
++        }
++
++        return new MyInvoiceViewModel
++        {
++            InvoiceId = invoice.Id,
++            OrderId = invoice.OrderId,
++            InvoiceDate = invoice.InvoiceDate,
++            CustomerName = CommerceFormat.DisplayName(invoice.Order.User),
++            Email = invoice.Order.User?.Email,
++            Phone = invoice.Order.Phone,
++            ShippingAddress = invoice.Order.ShippingAddress,
++            TotalAmount = invoice.TotalAmount,
++            TaxAmount = invoice.TaxAmount,
++            Items = invoice.Order.Items.OrderBy(i => i.Id).Select(ToItem).ToList()
++        };
++    }
++
++    private static MyOrderItemViewModel ToItem(OrderItem item) => new()
++    {
++        ProductId = item.ProductId,
++        ProductName = item.Product?.ProductName ?? $"#{item.ProductId}",
++        ImageUrl = item.Product?.ImageUrl,
++        Unit = item.Product?.Unit,
++        Quantity = item.Quantity,
++        Price = item.Price,
++        Subtotal = item.Subtotal
++    };
++
++    /// <summary>Trạng thái thanh toán tổng hợp của đơn: đã đủ tiền -> completed, ngược lại lấy giao dịch gần nhất.</summary>
++    private static string? SummarizePayment(Order order)
++    {
++        if (order.Payments.Count == 0)
++        {
++            return null;
++        }
++
++        var paid = order.Payments.Where(p => p.Status == PaymentStatuses.Completed).Sum(p => p.Amount);
++        if (order.TotalAmount > 0 && paid >= order.TotalAmount)
++        {
++            return PaymentStatuses.Completed;
++        }
++
++        return order.Payments.OrderByDescending(p => p.PaymentDate).ThenByDescending(p => p.Id).First().Status;
++    }
++}
+diff --git a/PetManagementSystem/Services/ICheckoutService.cs b/PetManagementSystem/Services/ICheckoutService.cs
+new file mode 100644
+index 0000000..f632d30
+--- /dev/null
++++ b/PetManagementSystem/Services/ICheckoutService.cs
+@@ -0,0 +1,12 @@
++using PetManagementSystem.ViewModels.Shop;
++
++namespace PetManagementSystem.Services;
++
++public interface ICheckoutService
++{
++    /// <summary>Dựng model trang thanh toán; <c>input</c> null thì điền sẵn từ hồ sơ người dùng.</summary>
++    Task<CheckoutViewModel> BuildAsync(int userId, CheckoutInputModel? input = null);
++
++    /// <summary>Đặt hàng từ giỏ đang hoạt động. Trả về mã đơn hàng.</summary>
++    Task<ServiceResult<int>> PlaceOrderAsync(int userId, CheckoutInputModel input);
++}
+diff --git a/PetManagementSystem/Services/IClientCartService.cs b/PetManagementSystem/Services/IClientCartService.cs
+new file mode 100644
+index 0000000..956d1c4
+--- /dev/null
++++ b/PetManagementSystem/Services/IClientCartService.cs
+@@ -0,0 +1,12 @@
++using PetManagementSystem.ViewModels.Shop;
++
++namespace PetManagementSystem.Services;
++
++/// <summary>Giỏ hàng của người dùng đang đăng nhập. <c>userId</c> luôn lấy từ claim xác thực, không nhận từ client.</summary>
++public interface IClientCartService
++{
++    Task<CartViewModel> GetCartAsync(int userId);
++    Task<ServiceResult<CartChangeResult>> AddItemAsync(int userId, int productId, int quantity);
++    Task<ServiceResult<CartChangeResult>> UpdateQuantityAsync(int userId, int itemId, int quantity);
++    Task<ServiceResult<CartChangeResult>> RemoveItemAsync(int userId, int itemId);
++}
+diff --git a/PetManagementSystem/Services/IClientOrderService.cs b/PetManagementSystem/Services/IClientOrderService.cs
+new file mode 100644
+index 0000000..151b0f7
+--- /dev/null
++++ b/PetManagementSystem/Services/IClientOrderService.cs
+@@ -0,0 +1,15 @@
++using PetManagementSystem.ViewModels.Shop;
++
++namespace PetManagementSystem.Services;
++
++/// <summary>Đơn hàng, thanh toán, hóa đơn của chính người dùng. Đơn không thuộc người dùng được coi như không tồn tại.</summary>
++public interface IClientOrderService
++{
++    Task<MyOrderListViewModel> GetOrdersAsync(int userId, MyOrdersQuery query);
++    Task<MyOrderDetailsViewModel?> GetOrderAsync(int userId, int orderId);
++
++    /// <summary>Khách chỉ được hủy khi đơn còn chờ xác nhận; hoàn lại tồn kho và đóng giao dịch đang chờ.</summary>
++    Task<ServiceResult> CancelAsync(int userId, int orderId);
++
++    Task<MyInvoiceViewModel?> GetInvoiceAsync(int userId, int orderId);
++}
+diff --git a/PetManagementSystem/Services/IStorefrontService.cs b/PetManagementSystem/Services/IStorefrontService.cs
+new file mode 100644
+index 0000000..1dbb8da
+--- /dev/null
++++ b/PetManagementSystem/Services/IStorefrontService.cs
+@@ -0,0 +1,11 @@
++using PetManagementSystem.ViewModels.Shop;
++
++namespace PetManagementSystem.Services;
++
++public interface IStorefrontService
++{
++    Task<ProductListViewModel> GetProductsAsync(ProductCatalogQuery query);
++
++    /// <summary>Chi tiết sản phẩm đang bán; null nếu không tồn tại hoặc đã ngừng bán.</summary>
++    Task<ProductDetailViewModel?> GetProductAsync(int id);
++}
+diff --git a/PetManagementSystem/Services/StorefrontService.cs b/PetManagementSystem/Services/StorefrontService.cs
+new file mode 100644
+index 0000000..5ea7764
+--- /dev/null
++++ b/PetManagementSystem/Services/StorefrontService.cs
+@@ -0,0 +1,85 @@
++using PetManagementSystem.Helpers;
++using PetManagementSystem.Models;
++using PetManagementSystem.Repositories;
++using PetManagementSystem.ViewModels.Shop;
++
++namespace PetManagementSystem.Services;
++
++public class StorefrontService(IStorefrontRepository storefrontRepository) : IStorefrontService
++{
++    private const int ProductPageSize = 12;
++
++    public async Task<ProductListViewModel> GetProductsAsync(ProductCatalogQuery query)
++    {
++        var sort = CommerceMapping.NormalizeOption(query.Sort, ProductSorts.All);
++        if (sort.Length == 0)
++        {
++            sort = ProductSorts.Newest;
++        }
++
++        var minPrice = query.MinPrice is >= 0 ? query.MinPrice : null;
++        var maxPrice = query.MaxPrice is >= 0 ? query.MaxPrice : null;
++        if (minPrice.HasValue && maxPrice.HasValue && minPrice > maxPrice)
++        {
++            (minPrice, maxPrice) = (maxPrice, minPrice);
++        }
++
++        var filter = new ProductFilter(
++            query.Search.TrimToNull(),
++            query.CategoryId,
++            minPrice,
++            maxPrice,
++            query.InStock,
++            sort);
++
++        var result = await storefrontRepository.SearchAsync(filter, query.Page, ProductPageSize);
++        var categories = await storefrontRepository.GetCategoriesWithSellableProductsAsync();
++
++        return new ProductListViewModel
++        {
++            Search = filter.Search,
++            CategoryId = filter.CategoryId,
++            MinPrice = filter.MinPrice,
++            MaxPrice = filter.MaxPrice,
++            InStock = filter.InStockOnly,
++            Sort = sort,
++            Page = result.Page,
++            PageSize = result.PageSize,
++            TotalCount = result.TotalCount,
++            Categories = categories.Select(c => new CategoryFilterViewModel { Id = c.Id, Name = c.CategoryName }).ToList(),
++            Items = result.Items.Select(p => new ProductCardViewModel
++            {
++                Id = p.Id,
++                Name = p.ProductName,
++                Description = p.Description,
++                ImageUrl = p.ImageUrl,
++                Unit = p.Unit,
++                CategoryName = p.Category?.CategoryName,
++                Price = p.SellPrice,
++                StockQuantity = p.StockQuantity
++            }).ToList()
++        };
++    }
++
++    public async Task<ProductDetailViewModel?> GetProductAsync(int id)
++    {
++        var product = await storefrontRepository.GetSellableByIdAsync(id);
++        if (product is null)
++        {
++            return null;
++        }
++
++        return new ProductDetailViewModel
++        {
++            Id = product.Id,
++            Name = product.ProductName,
++            Description = product.Description,
++            ImageUrl = product.ImageUrl,
++            Unit = product.Unit,
++            CategoryId = product.CategoryId,
++            CategoryName = product.Category?.CategoryName,
++            Price = product.SellPrice,
++            StockQuantity = product.StockQuantity
++        };
++    }
++}
+diff --git a/PetManagementSystem/ViewModels/Commerce/CartViewModels.cs b/PetManagementSystem/ViewModels/Commerce/CartViewModels.cs
+index e0c66e0..af24012 100644
+--- a/PetManagementSystem/ViewModels/Commerce/CartViewModels.cs
++++ b/PetManagementSystem/ViewModels/Commerce/CartViewModels.cs
+@@ -45,7 +45,20 @@ public class CartDetailsViewModel
+     public decimal TotalAmount => Items.Sum(x => x.Subtotal);
+ }
+ 
+-public class CartItemListViewModel : PagedListViewModel<CartItemRowViewModel>
++/// <summary>Một giỏ hàng cùng toàn bộ dòng sản phẩm của nó (đơn vị hiển thị và phân trang của trang Chi tiết giỏ hàng).</summary>
++public class CartGroupViewModel
++{
++    public int CartId { get; set; }
++    public string CustomerName { get; set; } = string.Empty;
++    public string? Username { get; set; }
++    public string Status { get; set; } = string.Empty;
++    public DateTime? CreatedAt { get; set; }
++    public DateTime? UpdatedAt { get; set; }
++    public List<CartItemRowViewModel> Items { get; set; } = [];
++    public decimal TotalAmount => Items.Sum(x => x.Subtotal);
++}
++
++public class CartItemListViewModel : PagedListViewModel<CartGroupViewModel>
+ {
+     public int? CartId { get; set; }
+     public string? Search { get; set; }
+diff --git a/PetManagementSystem/ViewModels/Commerce/PaymentViewModels.cs b/PetManagementSystem/ViewModels/Commerce/PaymentViewModels.cs
+index 302fa43..4409d1e 100644
+--- a/PetManagementSystem/ViewModels/Commerce/PaymentViewModels.cs
++++ b/PetManagementSystem/ViewModels/Commerce/PaymentViewModels.cs
+@@ -32,7 +32,7 @@ public class PaymentUpsertViewModel
+     [RegularExpression("^(cash|bank_transfer|credit_card|e_wallet)$", ErrorMessage = "Phương thức thanh toán không hợp lệ")]
+     public string PaymentMethod { get; set; } = "cash";
+ 
+-    [Range(typeof(decimal), "0.01", "99999999999999", ErrorMessage = "Số tiền phải lớn hơn 0")]
++    [Range(typeof(decimal), "0.01", "99999999999999", ParseLimitsInInvariantCulture = true, ConvertValueInInvariantCulture = true, ErrorMessage = "Số tiền phải lớn hơn 0")]
+     public decimal Amount { get; set; }
+ 
+     [Required(ErrorMessage = "Ngày thanh toán là bắt buộc")]
+diff --git a/PetManagementSystem/ViewModels/Shop/CartViewModels.cs b/PetManagementSystem/ViewModels/Shop/CartViewModels.cs
+new file mode 100644
+index 0000000..fbe94c7
+--- /dev/null
++++ b/PetManagementSystem/ViewModels/Shop/CartViewModels.cs
+@@ -0,0 +1,56 @@
++using System.ComponentModel.DataAnnotations;
++
++namespace PetManagementSystem.ViewModels.Shop;
++
++public class CartLineViewModel
++{
++    public int ItemId { get; set; }
++    public int ProductId { get; set; }
++    public string ProductName { get; set; } = string.Empty;
++    public string? ImageUrl { get; set; }
++    public string? Unit { get; set; }
++
++    /// <summary>Đơn giá hiện hành của sản phẩm (lấy từ bảng products).</summary>
++    public decimal UnitPrice { get; set; }
++    public int Quantity { get; set; }
++    public decimal LineTotal => UnitPrice * Quantity;
++    public int StockQuantity { get; set; }
++
++    /// <summary>Lý do dòng này không thể đặt hàng (ngừng bán, hết hàng, vượt tồn kho); null nếu hợp lệ.</summary>
++    public string? Issue { get; set; }
++    public bool PriceChanged { get; set; }
++}
++
++public class CartViewModel
++{
++    public List<CartLineViewModel> Items { get; set; } = [];
++    public decimal TotalAmount => Items.Sum(x => x.LineTotal);
++    public int TotalQuantity => Items.Sum(x => x.Quantity);
++    public bool HasIssues => Items.Any(x => x.Issue is not null);
++}
++
++/// <summary>Kết quả sau mỗi thay đổi giỏ hàng, dùng để cập nhật giao diện.</summary>
++public class CartChangeResult
++{
++    public int? ItemId { get; set; }
++    public int Quantity { get; set; }
++    public decimal LineTotal { get; set; }
++    public decimal CartTotal { get; set; }
++    public int CartQuantity { get; set; }
++    public int LineCount { get; set; }
++}
++
++public class AddToCartRequest
++{
++    [Range(1, int.MaxValue, ErrorMessage = "Sản phẩm không hợp lệ")]
++    public int ProductId { get; set; }
++
++    [Range(1, 9999, ErrorMessage = "Số lượng phải từ 1 đến 9.999")]
++    public int Quantity { get; set; } = 1;
++}
++
++public class UpdateCartItemRequest
++{
++    [Range(1, 9999, ErrorMessage = "Số lượng phải từ 1 đến 9.999")]
++    public int Quantity { get; set; }
++}
+diff --git a/PetManagementSystem/ViewModels/Shop/CheckoutViewModels.cs b/PetManagementSystem/ViewModels/Shop/CheckoutViewModels.cs
+new file mode 100644
+index 0000000..cf80880
+--- /dev/null
++++ b/PetManagementSystem/ViewModels/Shop/CheckoutViewModels.cs
+@@ -0,0 +1,37 @@
++using System.ComponentModel.DataAnnotations;
++using PetManagementSystem.Helpers;
++
++namespace PetManagementSystem.ViewModels.Shop;
++
++/// <summary>Dữ liệu khách hàng nhập khi đặt hàng. Giá, tổng tiền và trạng thái luôn do server quyết định.</summary>
++public class CheckoutInputModel
++{
++    [Required(ErrorMessage = "Địa chỉ giao hàng là bắt buộc")]
++    [StringLength(255, ErrorMessage = "Địa chỉ giao hàng tối đa 255 ký tự")]
++    public string ShippingAddress { get; set; } = string.Empty;
++
++    [Required(ErrorMessage = "Số điện thoại là bắt buộc")]
++    [StringLength(15, ErrorMessage = "Số điện thoại tối đa 15 ký tự")]
++    [RegularExpression(@"^\+?[0-9][0-9\s.\-]{7,14}$", ErrorMessage = "Số điện thoại không hợp lệ")]
++    public string Phone { get; set; } = string.Empty;
++
++    [StringLength(255, ErrorMessage = "Ghi chú tối đa 255 ký tự")]
++    public string? Note { get; set; }
++
++    [Required(ErrorMessage = "Vui lòng chọn phương thức thanh toán")]
++    public string PaymentMethod { get; set; } = PaymentMethods.Cash;
++}
++
++public class PaymentOptionViewModel
++{
++    public string Value { get; set; } = string.Empty;
++    public string Label { get; set; } = string.Empty;
++    public string Description { get; set; } = string.Empty;
++}
++
++public class CheckoutViewModel
++{
++    public CartViewModel Cart { get; set; } = new();
++    public CheckoutInputModel Input { get; set; } = new();
++    public List<PaymentOptionViewModel> PaymentOptions { get; set; } = [];
++}
+diff --git a/PetManagementSystem/ViewModels/Shop/OrderViewModels.cs b/PetManagementSystem/ViewModels/Shop/OrderViewModels.cs
+new file mode 100644
+index 0000000..f88a064
+--- /dev/null
++++ b/PetManagementSystem/ViewModels/Shop/OrderViewModels.cs
+@@ -0,0 +1,92 @@
++using PetManagementSystem.Helpers;
++using PetManagementSystem.ViewModels.Commerce;
++
++namespace PetManagementSystem.ViewModels.Shop;
++
++public class MyOrdersQuery
++{
++    public string? Status { get; set; }
++    public DateTime? From { get; set; }
++    public DateTime? To { get; set; }
++    public int Page { get; set; } = 1;
++}
++
++public class MyOrderRowViewModel
++{
++    public int Id { get; set; }
++    public DateTime OrderDate { get; set; }
++    public decimal TotalAmount { get; set; }
++    public string Status { get; set; } = string.Empty;
++    public int ItemCount { get; set; }
++
++    /// <summary>Trạng thái thanh toán tổng hợp; null nếu chưa có giao dịch.</summary>
++    public string? PaymentStatus { get; set; }
++}
++
++public class MyOrderListViewModel : PagedListViewModel<MyOrderRowViewModel>
++{
++    public string? Status { get; set; }
++    public DateTime? From { get; set; }
++    public DateTime? To { get; set; }
++
++    public bool HasFilter => !string.IsNullOrEmpty(Status) || From.HasValue || To.HasValue;
++
++    public Dictionary<string, string?> RouteValues => new()
++    {
++        ["status"] = Status,
++        ["from"] = From?.ToString("yyyy-MM-dd"),
++        ["to"] = To?.ToString("yyyy-MM-dd")
++    };
++}
++
++public class MyOrderItemViewModel
++{
++    public int ProductId { get; set; }
++    public string ProductName { get; set; } = string.Empty;
++    public string? ImageUrl { get; set; }
++    public string? Unit { get; set; }
++    public int Quantity { get; set; }
++    public decimal Price { get; set; }
++    public decimal Subtotal { get; set; }
++}
++
++public class MyPaymentViewModel
++{
++    public int Id { get; set; }
++    public string PaymentMethod { get; set; } = string.Empty;
++    public decimal Amount { get; set; }
++    public DateTime PaymentDate { get; set; }
++    public string Status { get; set; } = string.Empty;
++    public string? TransactionCode { get; set; }
++}
++
++public class MyOrderDetailsViewModel
++{
++    public int Id { get; set; }
++    public DateTime OrderDate { get; set; }
++    public string ShippingAddress { get; set; } = string.Empty;
++    public string Phone { get; set; } = string.Empty;
++    public string? Note { get; set; }
++    public string Status { get; set; } = string.Empty;
++    public decimal TotalAmount { get; set; }
++    public decimal PaidAmount { get; set; }
++    public decimal RemainingAmount => Math.Max(0, TotalAmount - PaidAmount);
++    public bool CanCancel { get; set; }
++    public bool HasInvoice { get; set; }
++    public List<MyOrderItemViewModel> Items { get; set; } = [];
++    public List<MyPaymentViewModel> Payments { get; set; } = [];
++}
++
++public class MyInvoiceViewModel
++{
++    public int InvoiceId { get; set; }
++    public int OrderId { get; set; }
++    public DateTime InvoiceDate { get; set; }
++    public string CustomerName { get; set; } = string.Empty;
++    public string? Email { get; set; }
++    public string Phone { get; set; } = string.Empty;
++    public string ShippingAddress { get; set; } = string.Empty;
++    public decimal TotalAmount { get; set; }
++    public decimal TaxAmount { get; set; }
++    public List<MyOrderItemViewModel> Items { get; set; } = [];
++}
+diff --git a/PetManagementSystem/ViewModels/Shop/ProductViewModels.cs b/PetManagementSystem/ViewModels/Shop/ProductViewModels.cs
+new file mode 100644
+index 0000000..a284e6a
+--- /dev/null
++++ b/PetManagementSystem/ViewModels/Shop/ProductViewModels.cs
+@@ -0,0 +1,76 @@
++using PetManagementSystem.Helpers;
++using PetManagementSystem.ViewModels.Commerce;
++
++namespace PetManagementSystem.ViewModels.Shop;
++
++/// <summary>Tiêu chí tìm kiếm/lọc lấy từ query string; được giữ nguyên khi chuyển trang.</summary>
++public class ProductCatalogQuery
++{
++    public string? Search { get; set; }
++    public int? CategoryId { get; set; }
++    public decimal? MinPrice { get; set; }
++    public decimal? MaxPrice { get; set; }
++    public bool InStock { get; set; }
++    public string? Sort { get; set; }
++    public int Page { get; set; } = 1;
++}
++
++public class CategoryFilterViewModel
++{
++    public int Id { get; set; }
++    public string Name { get; set; } = string.Empty;
++}
++
++public class ProductCardViewModel
++{
++    public int Id { get; set; }
++    public string Name { get; set; } = string.Empty;
++    public string? Description { get; set; }
++    public string? ImageUrl { get; set; }
++    public string? Unit { get; set; }
++    public string? CategoryName { get; set; }
++    public decimal Price { get; set; }
++    public int StockQuantity { get; set; }
++    public bool InStock => StockQuantity > 0;
++}
++
++public class ProductListViewModel : PagedListViewModel<ProductCardViewModel>
++{
++    public string? Search { get; set; }
++    public int? CategoryId { get; set; }
++    public decimal? MinPrice { get; set; }
++    public decimal? MaxPrice { get; set; }
++    public bool InStock { get; set; }
++    public string Sort { get; set; } = ProductSorts.Newest;
++    public List<CategoryFilterViewModel> Categories { get; set; } = [];
++
++    public bool HasFilter =>
++        !string.IsNullOrWhiteSpace(Search) || CategoryId.HasValue || MinPrice.HasValue || MaxPrice.HasValue || InStock;
++
++    /// <summary>Giá trị route dùng để giữ nguyên bộ lọc khi phân trang.</summary>
++    public Dictionary<string, string?> RouteValues => new()
++    {
++        ["search"] = Search,
++        ["categoryId"] = CategoryId?.ToString(),
++        ["minPrice"] = MinPrice?.ToString(System.Globalization.CultureInfo.InvariantCulture),
++        ["maxPrice"] = MaxPrice?.ToString(System.Globalization.CultureInfo.InvariantCulture),
++        ["inStock"] = InStock ? "true" : null,
++        ["sort"] = Sort == ProductSorts.Newest ? null : Sort
++    };
++}
++
++public class ProductDetailViewModel
++{
++    public int Id { get; set; }
++    public string Name { get; set; } = string.Empty;
++    public string? Description { get; set; }
++    public string? ImageUrl { get; set; }
++    public string? Unit { get; set; }
++    public int CategoryId { get; set; }
++    public string? CategoryName { get; set; }
++    public decimal Price { get; set; }
++
++    /// <summary>Số lượng tối đa có thể mua (tồn kho hiện tại).</summary>
++    public int StockQuantity { get; set; }
++    public bool InStock => StockQuantity > 0;
++}
+diff --git a/PetManagementSystem/Views/Cart/Index.cshtml b/PetManagementSystem/Views/Cart/Index.cshtml
+index fc648e8..8b98069 100644
+--- a/PetManagementSystem/Views/Cart/Index.cshtml
++++ b/PetManagementSystem/Views/Cart/Index.cshtml
+@@ -1,12 +1,17 @@
+-@model IEnumerable<PetManagementSystem.Models.CartItem>
+-
++@using PetManagementSystem.Helpers
++@model PetManagementSystem.ViewModels.Shop.CartViewModel
+ @{
+     ViewData["Title"] = "Giỏ hàng";
+ }
+ 
++<link rel="stylesheet" href="~/css/shop.css" asp-append-version="true" />
++@Html.AntiForgeryToken()
++
+ <h2 class="mb-4">Giỏ hàng của tôi</h2>
+ 
+-@if (!Model.Any())
++<partial name="Shop/_Alerts" />
++
++@if (Model.Items.Count == 0)
+ {
+     <div class="alert alert-info">
+         Giỏ hàng của bạn đang trống. <a asp-controller="Product" asp-action="Index">Tiếp tục mua sắm</a>
+@@ -14,92 +19,82 @@
+ }
+ else
+ {
+-    <div class="table-responsive">
+-        <table class="table table-hover align-middle">
+-            <thead class="table-light">
+-                <tr>
+-                    <th>Sản phẩm</th>
+-                    <th>Giá</th>
+-                    <th>Số lượng</th>
+-                    <th>Thành tiền</th>
+-                    <th></th>
+-                </tr>
+-            </thead>
+-            <tbody>
+-                @foreach (var item in Model)
+-                {
++    <div class="card border-0 shadow-sm rounded-4">
++        <div class="table-responsive">
++            <table id="cart-table" class="table align-middle mb-0">
++                <thead class="table-light">
+                     <tr>
+-                        <td>
+-                            <div class="d-flex align-items-center">
+-                                <img src="@(item.Product?.ImageUrl ?? "/images/default-product.jpg")" alt="@item.Product?.ProductName" class="me-2" style="width: 50px; height: 50px; object-fit: cover;">
+-                                <div>
+-                                    <strong>@item.Product?.ProductName</strong><br>
+-                                    <small class="text-muted">@item.Product?.Description</small>
++                        <th>Sản phẩm</th>
++                        <th class="text-end">Đơn giá</th>
++                        <th style="width:130px;">Số lượng</th>
++                        <th class="text-end">Thành tiền</th>
++                        <th></th>
++                    </tr>
++                </thead>
++                <tbody>
++                    @foreach (var item in Model.Items)
++                    {
++                        <tr>
++                            <td>
++                                <div class="d-flex align-items-center gap-2">
++                                    <div class="shop-thumb-sm">
++                                        @if (!string.IsNullOrEmpty(item.ImageUrl))
++                                        {
++                                            <img src="@item.ImageUrl" alt="@item.ProductName" />
++                                        }
++                                        else
++                                        {
++                                            <i class="bi bi-box-seam text-muted"></i>
++                                        }
++                                    </div>
++                                    <div>
++                                        <a asp-controller="Product" asp-action="Details" asp-route-id="@item.ProductId" class="fw-semibold text-dark text-decoration-none">@item.ProductName</a>
++                                        @if (!string.IsNullOrEmpty(item.Unit))
++                                        {
++                                            <div class="small text-muted">Đơn vị: @item.Unit</div>
++                                        }
++                                        @if (item.Issue is not null)
++                                        {
++                                            <div class="small text-danger line-issue"><i class="bi bi-exclamation-triangle me-1"></i>@item.Issue</div>
++                                        }
++                                        @if (item.PriceChanged)
++                                        {
++                                            <div class="small text-warning-emphasis">Giá đã được cập nhật theo giá bán hiện tại</div>
++                                        }
++                                    </div>
+                                 </div>
+-                            </div>
+-                        </td>
+-                        <td>@(item.Product?.SellPrice.ToString("#,##0") + "đ")</td>
+-                        <td>
+-                            <input type="number" class="form-control form-control-sm qty-input" value="@item.Quantity" min="1" data-item-id="@item.Id" />
+-                        </td>
+-                        <td>@(((item.Product?.SellPrice ?? 0) * item.Quantity).ToString("#,##0") + "đ")</td>
+-                        <td>
+-                            <a asp-controller="Cart" asp-action="Remove" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Xóa</a>
+-                        </td>
++                            </td>
++                            <td class="text-end">@CommerceFormat.Money(item.UnitPrice)</td>
++                            <td>
++                                <input type="number" class="form-control form-control-sm qty-input" value="@item.Quantity" data-prev="@item.Quantity"
++                                       min="1" max="@Math.Max(1, item.StockQuantity)" data-item-id="@item.ItemId" aria-label="Số lượng" />
++                            </td>
++                            <td class="text-end fw-semibold line-total">@CommerceFormat.Money(item.LineTotal)</td>
++                            <td class="text-end">
++                                <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-item-id="@item.ItemId" title="Xóa khỏi giỏ">
++                                    <i class="bi bi-trash"></i>
++                                </button>
++                            </td>
++                        </tr>
++                    }
++                </tbody>
++                <tfoot>
++                    <tr class="table-light">
++                        <td colspan="3" class="text-end fw-bold">Tổng cộng (<span id="cart-count">@Model.TotalQuantity</span> sản phẩm):</td>
++                        <td id="cart-total" class="text-end fw-bold shop-price fs-5">@CommerceFormat.Money(Model.TotalAmount)</td>
++                        <td></td>
+                     </tr>
+-                }
+-                <tr class="table-light">
+-                    <td colspan="3" class="text-end fw-bold">Tổng cộng:</td>
+-                    <td id="cart-total" class="fw-bold">
+-                        @{
+-                            decimal total = Model.Sum(i => (i.Product?.SellPrice ?? 0) * i.Quantity);
+-                            @(total.ToString("#,##0") + "đ")
+-                        }
+-                    </td>
+-                    <td></td>
+-                </tr>
+-            </tbody>
+-        </table>
++                </tfoot>
++            </table>
++        </div>
+     </div>
+ 
+-    <div class="mt-4">
+-        <a asp-controller="Product" asp-action="Index" class="btn btn-outline-secondary me-2">Tiếp tục mua sắm</a>
+-        <a asp-controller="Cart" asp-action="Checkout" class="btn btn-success">Thanh toán</a>
++    <div class="mt-4 d-flex gap-2">
++        <a asp-controller="Product" asp-action="Index" class="btn btn-outline-secondary">Tiếp tục mua sắm</a>
++        <a asp-controller="Checkout" asp-action="Index" class="btn btn-shop px-4">Thanh toán</a>
+     </div>
+ }
+ 
+ @section Scripts {
+-    <script>
+-        $(document).ready(function () {
+-            $(".qty-input").change(function () {
+-                var qtyInput = $(this);
+-                var newQty = parseInt(qtyInput.val()) || 1;
+-                if (newQty < 1) newQty = 1;
+-                qtyInput.val(newQty);
+-
+-                var itemId = qtyInput.data("item-id");
+-                var row = qtyInput.closest("tr");
+-                var priceCell = row.find("td:nth-child(2)");
+-                var price = parseFloat(priceCell.text().replace(/[^\d,-]/g, "")) || 0;
+-                var totalCell = row.find("td:nth-child(4)");
+-                var total = price * newQty;
+-                totalCell.text(total.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) + " đ");
+-
+-                // Update cart total
+-                var cartTotal = 0;
+-                $(".qty-input").each(function () {
+-                    var qty = parseInt($(this).val()) || 1;
+-                    var price = parseFloat($(this).closest("tr").find("td:nth-child(2)").text().replace(/[^\d,-]/g, "")) || 0;
+-                    cartTotal += price * qty;
+-                });
+-                $("#cart-total").text(cartTotal.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) + " đ");
+-
+-                // Send update to server (optional)
+-                $.post("/Cart/UpdateQuantity", { id: itemId, quantity: newQty })
+-                    .fail(function () {
+-                        alert("Có lỗi xảy ra khi cập nhật số lượng.");
+-                    });
+-            });
+-        });
+-    </script>
+-}
+\ No newline at end of file
++    <script src="~/js/shop.js" asp-append-version="true"></script>
++}
+diff --git a/PetManagementSystem/Views/Checkout/Index.cshtml b/PetManagementSystem/Views/Checkout/Index.cshtml
+new file mode 100644
+index 0000000..181a322
+--- /dev/null
++++ b/PetManagementSystem/Views/Checkout/Index.cshtml
+@@ -0,0 +1,77 @@
++@using PetManagementSystem.Helpers
++@model PetManagementSystem.ViewModels.Shop.CheckoutViewModel
++@{
++    ViewData["Title"] = "Thanh toán";
++}
++
++<link rel="stylesheet" href="~/css/shop.css" asp-append-version="true" />
++
++<h2 class="mb-4">Thanh toán</h2>
++
++<form id="checkout-form" asp-controller="Checkout" asp-action="Place" method="post">
++    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
++
++    <div class="row g-4">
++        <div class="col-lg-7">
++            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
++                <h5 class="fw-bold mb-3">Thông tin giao hàng</h5>
++                <div class="mb-3">
++                    <label asp-for="Input.ShippingAddress" class="form-label">Địa chỉ giao hàng</label>
++                    <input asp-for="Input.ShippingAddress" class="form-control" maxlength="255" required />
++                    <span asp-validation-for="Input.ShippingAddress" class="text-danger small"></span>
++                </div>
++                <div class="mb-3">
++                    <label asp-for="Input.Phone" class="form-label">Số điện thoại</label>
++                    <input asp-for="Input.Phone" class="form-control" maxlength="15" inputmode="tel" required />
++                    <span asp-validation-for="Input.Phone" class="text-danger small"></span>
++                </div>
++                <div class="mb-0">
++                    <label asp-for="Input.Note" class="form-label">Ghi chú (không bắt buộc)</label>
++                    <textarea asp-for="Input.Note" class="form-control" rows="2" maxlength="255"></textarea>
++                    <span asp-validation-for="Input.Note" class="text-danger small"></span>
++                </div>
++            </div>
++
++            <div class="card border-0 shadow-sm rounded-4 p-4">
++                <h5 class="fw-bold mb-3">Phương thức thanh toán</h5>
++                @foreach (var option in Model.PaymentOptions)
++                {
++                    <div class="form-check mb-2">
++                        <input class="form-check-input" type="radio" name="Input.PaymentMethod" id="pm-@option.Value" value="@option.Value"
++                               checked="@(Model.Input.PaymentMethod == option.Value)" />
++                        <label class="form-check-label" for="pm-@option.Value">
++                            <strong>@option.Label</strong>
++                            <span class="d-block small text-muted">@option.Description</span>
++                        </label>
++                    </div>
++                }
++                <span asp-validation-for="Input.PaymentMethod" class="text-danger small"></span>
++            </div>
++        </div>
++
++        <div class="col-lg-5">
++            <div class="card border-0 shadow-sm rounded-4 p-4">
++                <h5 class="fw-bold mb-3">Đơn hàng của bạn</h5>
++                @foreach (var item in Model.Cart.Items)
++                {
++                    <div class="d-flex justify-content-between small mb-2">
++                        <span>@item.ProductName <span class="text-muted">x @item.Quantity</span></span>
++                        <span>@CommerceFormat.Money(item.LineTotal)</span>
++                    </div>
++                }
++                <hr />
++                <div class="d-flex justify-content-between fw-bold fs-5">
++                    <span>Tổng cộng</span>
++                    <span class="shop-price">@CommerceFormat.Money(Model.Cart.TotalAmount)</span>
++                </div>
++                <p class="small text-muted mt-2 mb-3">Giá và tồn kho sẽ được kiểm tra lại khi đặt hàng.</p>
++                <button type="submit" class="btn btn-shop w-100 py-2">Đặt hàng</button>
++                <a asp-controller="Cart" asp-action="Index" class="btn btn-link w-100 mt-1">Quay lại giỏ hàng</a>
++            </div>
++        </div>
++    </div>
++</form>
++
++@section Scripts {
++    <script src="~/js/shop.js" asp-append-version="true"></script>
++}
+diff --git a/PetManagementSystem/Views/Commerce/CartItems.cshtml b/PetManagementSystem/Views/Commerce/CartItems.cshtml
+index 81cf11d..1e2303b 100644
+--- a/PetManagementSystem/Views/Commerce/CartItems.cshtml
++++ b/PetManagementSystem/Views/Commerce/CartItems.cshtml
+@@ -7,7 +7,7 @@
+ <div class="card shadow-sm border-0">
+     <div class="card-header bg-white">
+         <h5 class="mb-0">Chi tiết giỏ hàng</h5>
+-        <small class="text-muted">@Model.TotalCount dòng sản phẩm</small>
++        <small class="text-muted">@Model.TotalCount giỏ hàng</small>
+     </div>
+     <div class="card-body">
+         <form method="get" class="row g-2 mb-3">
+@@ -22,44 +22,62 @@
+             </div>
+         </form>
+ 
+-        <div class="table-responsive">
+-            <table class="table table-striped table-hover align-middle">
+-                <thead class="table-light">
+-                    <tr>
+-                        <th>Giỏ hàng</th>
+-                        <th>Khách hàng</th>
+-                        <th>Trạng thái giỏ</th>
+-                        <th>Sản phẩm</th>
+-                        <th>Đơn vị</th>
+-                        <th>Số lượng</th>
+-                        <th>Đơn giá</th>
+-                        <th>Thành tiền</th>
+-                    </tr>
+-                </thead>
+-                <tbody>
+-                    @if (!Model.Items.Any())
+-                    {
+-                        <tr><td colspan="8" class="text-center text-muted py-4">Không có dữ liệu</td></tr>
+-                    }
+-                    else
+-                    {
+-                        foreach (var item in Model.Items)
+-                        {
+-                            <tr>
+-                                <td><a asp-action="CartDetails" asp-route-id="@item.CartId">#@item.CartId</a></td>
+-                                <td>@item.CustomerName</td>
+-                                <td><span class="badge @CartStatuses.Badge(item.CartStatus)">@CartStatuses.Label(item.CartStatus)</span></td>
+-                                <td>@item.ProductName</td>
+-                                <td>@(item.Unit ?? "-")</td>
+-                                <td>@item.Quantity</td>
+-                                <td>@CommerceFormat.Money(item.Price)</td>
+-                                <td>@CommerceFormat.Money(item.Subtotal)</td>
+-                            </tr>
+-                        }
+-                    }
+-                </tbody>
+-            </table>
+-        </div>
++        @if (!Model.Items.Any())
++        {
++            <div class="text-center text-muted py-4">Không có dữ liệu</div>
++        }
++        else
++        {
++            foreach (var cart in Model.Items)
++            {
++                <div class="card mb-4 shadow-sm" id="cart-@cart.CartId" style="border-left: 4px solid var(--bs-primary);">
++                    <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center gap-2">
++                        <div>
++                            <h6 class="mb-0">
++                                <a asp-action="CartDetails" asp-route-id="@cart.CartId" class="text-decoration-none">Giỏ hàng #@cart.CartId</a>
++                                <span class="badge ms-2 @CartStatuses.Badge(cart.Status)">@CartStatuses.Label(cart.Status)</span>
++                            </h6>
++                            <small class="text-muted">
++                                Khách hàng: <strong>@cart.CustomerName</strong>@(string.IsNullOrEmpty(cart.Username) ? "" : $" ({cart.Username})")
++                                @if ((cart.UpdatedAt ?? cart.CreatedAt) is DateTime changedAt)
++                                {
++                                    <span> &middot; Cập nhật: @CommerceFormat.DateTimeText(changedAt)</span>
++                                }
++                            </small>
++                        </div>
++                        <div class="text-end">
++                            <div class="small text-muted">@cart.Items.Count dòng sản phẩm</div>
++                            <div class="fw-bold">Tổng: @CommerceFormat.Money(cart.TotalAmount)</div>
++                        </div>
++                    </div>
++                    <div class="table-responsive">
++                        <table class="table table-hover align-middle mb-0">
++                            <thead class="table-light">
++                                <tr>
++                                    <th>Sản phẩm</th>
++                                    <th>Đơn vị</th>
++                                    <th class="text-end">Số lượng</th>
++                                    <th class="text-end">Đơn giá</th>
++                                    <th class="text-end">Thành tiền</th>
++                                </tr>
++                            </thead>
++                            <tbody>
++                                @foreach (var item in cart.Items)
++                                {
++                                    <tr>
++                                        <td>@item.ProductName</td>
++                                        <td>@(item.Unit ?? "-")</td>
++                                        <td class="text-end">@item.Quantity</td>
++                                        <td class="text-end">@CommerceFormat.Money(item.Price)</td>
++                                        <td class="text-end">@CommerceFormat.Money(item.Subtotal)</td>
++                                    </tr>
++                                }
++                            </tbody>
++                        </table>
++                    </div>
++                </div>
++            }
++        }
+ 
+         <partial name="~/Views/Shared/Commerce/_Pagination.cshtml"
+                  view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
+diff --git a/PetManagementSystem/Views/Order/Details.cshtml b/PetManagementSystem/Views/Order/Details.cshtml
+new file mode 100644
+index 0000000..d9ff67d
+--- /dev/null
++++ b/PetManagementSystem/Views/Order/Details.cshtml
+@@ -0,0 +1,173 @@
++@using PetManagementSystem.Helpers
++@model PetManagementSystem.ViewModels.Shop.MyOrderDetailsViewModel
++@{
++    ViewData["Title"] = $"Đơn hàng #{Model.Id}";
++    var steps = new[] { OrderStatuses.Pending, OrderStatuses.Confirmed, OrderStatuses.Shipping, OrderStatuses.Completed };
++    var currentIndex = Array.IndexOf(steps, Model.Status);
++    var cancelled = Model.Status == OrderStatuses.Cancelled;
++}
++
++<link rel="stylesheet" href="~/css/shop.css" asp-append-version="true" />
++
++<nav aria-label="breadcrumb">
++    <ol class="breadcrumb">
++        <li class="breadcrumb-item"><a asp-action="Index">Đơn hàng của tôi</a></li>
++        <li class="breadcrumb-item active" aria-current="page">#@Model.Id</li>
++    </ol>
++</nav>
++
++<partial name="Shop/_Alerts" />
++
++<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
++    <h2 class="mb-0">Đơn hàng #@Model.Id <span class="badge fs-6 @OrderStatuses.Badge(Model.Status)">@OrderStatuses.Label(Model.Status)</span></h2>
++    <div class="d-flex gap-2">
++        @if (Model.HasInvoice)
++        {
++            <a asp-action="Invoice" asp-route-id="@Model.Id" class="btn btn-outline-primary"><i class="bi bi-receipt me-1"></i>Xem hóa đơn</a>
++        }
++        @if (Model.CanCancel)
++        {
++            <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Bạn chắc chắn muốn hủy đơn hàng này?');">
++                <button type="submit" class="btn btn-outline-danger">Hủy đơn</button>
++            </form>
++        }
++    </div>
++</div>
++
++<div class="card border-0 shadow-sm rounded-4 p-3 mb-4">
++    <div class="shop-steps">
++        @if (cancelled)
++        {
++            <div class="shop-step cancelled">Đơn hàng đã hủy</div>
++        }
++        else
++        {
++            @for (var i = 0; i < steps.Length; i++)
++            {
++                <div class="shop-step @(i <= currentIndex ? "done" : "")">@OrderStatuses.Label(steps[i])</div>
++            }
++        }
++    </div>
++</div>
++
++<div class="row g-4">
++    <div class="col-lg-8">
++        <div class="card border-0 shadow-sm rounded-4 mb-4">
++            <div class="card-header bg-white fw-bold">Sản phẩm</div>
++            <div class="table-responsive">
++                <table class="table align-middle mb-0">
++                    <thead class="table-light">
++                        <tr>
++                            <th>Sản phẩm</th>
++                            <th class="text-end">Đơn giá</th>
++                            <th class="text-center">SL</th>
++                            <th class="text-end">Thành tiền</th>
++                        </tr>
++                    </thead>
++                    <tbody>
++                        @foreach (var item in Model.Items)
++                        {
++                            <tr>
++                                <td>
++                                    <div class="d-flex align-items-center gap-2">
++                                        <div class="shop-thumb-sm">
++                                            @if (!string.IsNullOrEmpty(item.ImageUrl))
++                                            {
++                                                <img src="@item.ImageUrl" alt="@item.ProductName" />
++                                            }
++                                            else
++                                            {
++                                                <i class="bi bi-box-seam text-muted"></i>
++                                            }
++                                        </div>
++                                        <div>
++                                            <a asp-controller="Product" asp-action="Details" asp-route-id="@item.ProductId" class="fw-semibold text-dark text-decoration-none">@item.ProductName</a>
++                                            @if (!string.IsNullOrEmpty(item.Unit))
++                                            {
++                                                <div class="small text-muted">@item.Unit</div>
++                                            }
++                                        </div>
++                                    </div>
++                                </td>
++                                <td class="text-end">@CommerceFormat.Money(item.Price)</td>
++                                <td class="text-center">@item.Quantity</td>
++                                <td class="text-end">@CommerceFormat.Money(item.Subtotal)</td>
++                            </tr>
++                        }
++                    </tbody>
++                    <tfoot>
++                        <tr class="table-light">
++                            <td colspan="3" class="text-end fw-bold">Tổng cộng</td>
++                            <td class="text-end fw-bold shop-price">@CommerceFormat.Money(Model.TotalAmount)</td>
++                        </tr>
++                    </tfoot>
++                </table>
++            </div>
++        </div>
++
++        <div class="card border-0 shadow-sm rounded-4">
++            <div class="card-header bg-white fw-bold">Thanh toán</div>
++            @if (Model.Payments.Count == 0)
++            {
++                <div class="card-body text-muted">Chưa phát sinh giao dịch thanh toán cho đơn hàng này.</div>
++            }
++            else
++            {
++                <div class="table-responsive">
++                    <table class="table align-middle mb-0">
++                        <thead class="table-light">
++                            <tr>
++                                <th>Phương thức</th>
++                                <th class="text-end">Số tiền</th>
++                                <th>Ngày</th>
++                                <th>Trạng thái</th>
++                                <th>Mã giao dịch</th>
++                            </tr>
++                        </thead>
++                        <tbody>
++                            @foreach (var payment in Model.Payments)
++                            {
++                                <tr>
++                                    <td>@PaymentMethods.Label(payment.PaymentMethod)</td>
++                                    <td class="text-end">@CommerceFormat.Money(payment.Amount)</td>
++                                    <td>@CommerceFormat.DateTimeText(payment.PaymentDate)</td>
++                                    <td><span class="badge @PaymentStatuses.Badge(payment.Status)">@PaymentStatuses.Label(payment.Status)</span></td>
++                                    <td class="small">@(payment.TransactionCode ?? "-")</td>
++                                </tr>
++                            }
++                        </tbody>
++                    </table>
++                </div>
++            }
++        </div>
++    </div>
++
++    <div class="col-lg-4">
++        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
++            <h5 class="fw-bold mb-3">Thông tin giao hàng</h5>
++            <dl class="mb-0">
++                <dt>Ngày đặt</dt>
++                <dd>@CommerceFormat.DateTimeText(Model.OrderDate)</dd>
++                <dt>Địa chỉ</dt>
++                <dd>@Model.ShippingAddress</dd>
++                <dt>Số điện thoại</dt>
++                <dd>@Model.Phone</dd>
++                <dt>Ghi chú</dt>
++                <dd class="mb-0">@(string.IsNullOrWhiteSpace(Model.Note) ? "-" : Model.Note)</dd>
++            </dl>
++        </div>
++        <div class="card border-0 shadow-sm rounded-4 p-4">
++            <h5 class="fw-bold mb-3">Tóm tắt thanh toán</h5>
++            <div class="d-flex justify-content-between"><span>Giá trị đơn hàng</span><span>@CommerceFormat.Money(Model.TotalAmount)</span></div>
++            <div class="d-flex justify-content-between"><span>Đã thanh toán</span><span>@CommerceFormat.Money(Model.PaidAmount)</span></div>
++            @if (!cancelled)
++            {
++                <div class="d-flex justify-content-between fw-bold"><span>Còn phải thanh toán</span><span>@CommerceFormat.Money(Model.RemainingAmount)</span></div>
++            }
++            @if (!Model.HasInvoice)
++            {
++                <p class="small text-muted mt-3 mb-0">Hóa đơn sẽ do cửa hàng phát hành; bạn sẽ xem được tại đây khi có.</p>
++            }
++        </div>
++    </div>
++</div>
+diff --git a/PetManagementSystem/Views/Order/Index.cshtml b/PetManagementSystem/Views/Order/Index.cshtml
+new file mode 100644
+index 0000000..f49bd68
+--- /dev/null
++++ b/PetManagementSystem/Views/Order/Index.cshtml
+@@ -0,0 +1,110 @@
++@using PetManagementSystem.Helpers
++@using Microsoft.AspNetCore.Mvc.ViewFeatures
++@model PetManagementSystem.ViewModels.Shop.MyOrderListViewModel
++@{
++    ViewData["Title"] = "Đơn hàng của tôi";
++    var pagerData = new ViewDataDictionary(ViewData)
++    {
++        ["Page"] = Model.Page,
++        ["TotalPages"] = Model.TotalPages,
++        ["Action"] = "Index",
++        ["RouteValues"] = Model.RouteValues
++    };
++}
++
++<link rel="stylesheet" href="~/css/shop.css" asp-append-version="true" />
++
++<h2 class="mb-4">Đơn hàng của tôi</h2>
++
++<partial name="Shop/_Alerts" />
++
++<form method="get" asp-action="Index" class="card border-0 shadow-sm rounded-4 p-3 mb-4">
++    <div class="row g-2 align-items-end">
++        <div class="col-12 col-md-4">
++            <label class="form-label small mb-1" for="status">Trạng thái</label>
++            <select id="status" name="status" class="form-select">
++                <option value="">Tất cả</option>
++                @foreach (var status in OrderStatuses.All)
++                {
++                    <option value="@status" selected="@(Model.Status == status)">@OrderStatuses.Label(status)</option>
++                }
++            </select>
++        </div>
++        <div class="col-6 col-md-3">
++            <label class="form-label small mb-1" for="from">Từ ngày</label>
++            <input id="from" name="from" type="date" class="form-control" value="@Model.From?.ToString("yyyy-MM-dd")" />
++        </div>
++        <div class="col-6 col-md-3">
++            <label class="form-label small mb-1" for="to">Đến ngày</label>
++            <input id="to" name="to" type="date" class="form-control" value="@Model.To?.ToString("yyyy-MM-dd")" />
++        </div>
++        <div class="col-12 col-md-2 d-grid">
++            <button type="submit" class="btn btn-shop">Lọc</button>
++        </div>
++    </div>
++    @if (Model.HasFilter)
++    {
++        <div class="mt-2"><a asp-action="Index" class="small">Xóa bộ lọc</a></div>
++    }
++</form>
++
++@if (Model.Items.Count == 0)
++{
++    <div class="alert alert-info">
++        @if (Model.HasFilter)
++        {
++            <span>Không có đơn hàng nào phù hợp với bộ lọc.</span>
++        }
++        else
++        {
++            <span>Bạn chưa có đơn hàng nào. <a asp-controller="Product" asp-action="Index">Mua sắm ngay</a></span>
++        }
++    </div>
++}
++else
++{
++    <div class="card border-0 shadow-sm rounded-4">
++        <div class="table-responsive">
++            <table class="table table-hover align-middle mb-0">
++                <thead class="table-light">
++                    <tr>
++                        <th>Mã đơn</th>
++                        <th>Ngày đặt</th>
++                        <th class="text-center">Sản phẩm</th>
++                        <th class="text-end">Tổng tiền</th>
++                        <th>Trạng thái</th>
++                        <th>Thanh toán</th>
++                        <th></th>
++                    </tr>
++                </thead>
++                <tbody>
++                    @foreach (var order in Model.Items)
++                    {
++                        <tr>
++                            <td class="fw-semibold">#@order.Id</td>
++                            <td>@CommerceFormat.DateTimeText(order.OrderDate)</td>
++                            <td class="text-center">@order.ItemCount</td>
++                            <td class="text-end">@CommerceFormat.Money(order.TotalAmount)</td>
++                            <td><span class="badge @OrderStatuses.Badge(order.Status)">@OrderStatuses.Label(order.Status)</span></td>
++                            <td>
++                                @if (order.PaymentStatus is null)
++                                {
++                                    <span class="text-muted">-</span>
++                                }
++                                else
++                                {
++                                    <span class="badge @PaymentStatuses.Badge(order.PaymentStatus)">@PaymentStatuses.Label(order.PaymentStatus)</span>
++                                }
++                            </td>
++                            <td class="text-end">
++                                <a asp-action="Details" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a>
++                            </td>
++                        </tr>
++                    }
++                </tbody>
++            </table>
++        </div>
++    </div>
++
++    <partial name="Commerce/_Pagination" view-data="pagerData" />
++}
+diff --git a/PetManagementSystem/Views/Order/Invoice.cshtml b/PetManagementSystem/Views/Order/Invoice.cshtml
+new file mode 100644
+index 0000000..3404831
+--- /dev/null
++++ b/PetManagementSystem/Views/Order/Invoice.cshtml
+@@ -0,0 +1,69 @@
++@using PetManagementSystem.Helpers
++@model PetManagementSystem.ViewModels.Shop.MyInvoiceViewModel
++@{
++    ViewData["Title"] = $"Hóa đơn #{Model.InvoiceId}";
++}
++
++<link rel="stylesheet" href="~/css/shop.css" asp-append-version="true" />
++
++<div class="d-flex justify-content-between mb-3 no-print">
++    <a asp-action="Details" asp-route-id="@Model.OrderId" class="btn btn-outline-secondary">&larr; Về đơn hàng</a>
++    <button type="button" class="btn btn-shop" onclick="window.print()"><i class="bi bi-printer me-1"></i>In hóa đơn</button>
++</div>
++
++<div class="card border-0 shadow-sm rounded-4 p-4">
++    <div class="d-flex justify-content-between flex-wrap gap-2 mb-4">
++        <div>
++            <h3 class="fw-bold mb-0">HÓA ĐƠN #@Model.InvoiceId</h3>
++            <div class="text-muted">PetCare - Hệ thống quản lý thú cưng</div>
++        </div>
++        <div class="text-md-end">
++            <div>Ngày lập: <strong>@CommerceFormat.DateTimeText(Model.InvoiceDate)</strong></div>
++            <div>Đơn hàng: <strong>#@Model.OrderId</strong></div>
++        </div>
++    </div>
++
++    <div class="row mb-4">
++        <div class="col-md-6">
++            <h6 class="fw-bold">Khách hàng</h6>
++            <div>@Model.CustomerName</div>
++            @if (!string.IsNullOrEmpty(Model.Email)) { <div class="text-muted">@Model.Email</div> }
++            <div class="text-muted">@Model.Phone</div>
++            <div class="text-muted">@Model.ShippingAddress</div>
++        </div>
++    </div>
++
++    <div class="table-responsive">
++        <table class="table align-middle">
++            <thead class="table-light">
++                <tr>
++                    <th>Sản phẩm</th>
++                    <th class="text-end">Đơn giá</th>
++                    <th class="text-center">SL</th>
++                    <th class="text-end">Thành tiền</th>
++                </tr>
++            </thead>
++            <tbody>
++                @foreach (var item in Model.Items)
++                {
++                    <tr>
++                        <td>@item.ProductName@(string.IsNullOrEmpty(item.Unit) ? "" : " (" + item.Unit + ")")</td>
++                        <td class="text-end">@CommerceFormat.Money(item.Price)</td>
++                        <td class="text-center">@item.Quantity</td>
++                        <td class="text-end">@CommerceFormat.Money(item.Subtotal)</td>
++                    </tr>
++                }
++            </tbody>
++            <tfoot>
++                <tr>
++                    <td colspan="3" class="text-end">Tiền thuế</td>
++                    <td class="text-end">@CommerceFormat.Money(Model.TaxAmount)</td>
++                </tr>
++                <tr class="table-light">
++                    <td colspan="3" class="text-end fw-bold">Tổng tiền hóa đơn</td>
++                    <td class="text-end fw-bold shop-price">@CommerceFormat.Money(Model.TotalAmount)</td>
++                </tr>
++            </tfoot>
++        </table>
++    </div>
++</div>
+diff --git a/PetManagementSystem/Views/Product/Details.cshtml b/PetManagementSystem/Views/Product/Details.cshtml
+new file mode 100644
+index 0000000..c03e5a6
+--- /dev/null
++++ b/PetManagementSystem/Views/Product/Details.cshtml
+@@ -0,0 +1,93 @@
++@using PetManagementSystem.Helpers
++@model PetManagementSystem.ViewModels.Shop.ProductDetailViewModel
++@{
++    ViewData["Title"] = Model.Name;
++}
++
++<link rel="stylesheet" href="~/css/shop.css" asp-append-version="true" />
++@Html.AntiForgeryToken()
++
++<nav aria-label="breadcrumb">
++    <ol class="breadcrumb">
++        <li class="breadcrumb-item"><a asp-action="Index">Sản phẩm</a></li>
++        @if (!string.IsNullOrEmpty(Model.CategoryName))
++        {
++            <li class="breadcrumb-item"><a asp-action="Index" asp-route-categoryId="@Model.CategoryId">@Model.CategoryName</a></li>
++        }
++        <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
++    </ol>
++</nav>
++
++<partial name="Shop/_Alerts" />
++
++<div class="card border-0 shadow-sm rounded-4 p-4">
++    <div class="row g-4">
++        <div class="col-md-5">
++            <div class="shop-thumb rounded-4" style="height:340px;">
++                @if (!string.IsNullOrEmpty(Model.ImageUrl))
++                {
++                    <img src="@Model.ImageUrl" alt="@Model.Name" />
++                }
++                else
++                {
++                    <i class="bi bi-box-seam text-muted" style="font-size:5rem;"></i>
++                }
++            </div>
++        </div>
++        <div class="col-md-7">
++            <h2 class="fw-bold">@Model.Name</h2>
++            <div class="mb-2">
++                @if (!string.IsNullOrEmpty(Model.CategoryName))
++                {
++                    <span class="badge text-bg-light border">@Model.CategoryName</span>
++                }
++                @if (Model.InStock)
++                {
++                    <span class="badge text-bg-success">Còn hàng</span>
++                }
++                else
++                {
++                    <span class="badge text-bg-secondary">Hết hàng</span>
++                }
++            </div>
++            <div class="shop-price fs-2 mb-3">@CommerceFormat.Money(Model.Price)@(string.IsNullOrEmpty(Model.Unit) ? "" : " / " + Model.Unit)</div>
++
++            <dl class="row mb-3">
++                <dt class="col-sm-4">Đơn vị tính</dt>
++                <dd class="col-sm-8">@(Model.Unit ?? "-")</dd>
++                <dt class="col-sm-4">Số lượng có thể mua</dt>
++                <dd class="col-sm-8">@Model.StockQuantity</dd>
++            </dl>
++
++            @if (Model.InStock)
++            {
++                @if (User.Identity?.IsAuthenticated == true)
++                {
++                    <div class="d-flex gap-2 align-items-center">
++                        <input id="detail-qty" type="number" class="form-control" style="max-width:110px;" value="1" min="1" max="@Model.StockQuantity" />
++                        <button type="button" class="btn btn-shop px-4" data-add-to-cart="@Model.Id" data-qty-input="#detail-qty">
++                            <i class="bi bi-cart-plus me-1"></i>Thêm vào giỏ
++                        </button>
++                        <a asp-controller="Cart" asp-action="Index" class="btn btn-outline-secondary">Xem giỏ hàng</a>
++                    </div>
++                }
++                else
++                {
++                    <a class="btn btn-shop px-4" href="/Account/Login?returnUrl=@Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString)">Đăng nhập để mua hàng</a>
++                }
++            }
++            else
++            {
++                <button type="button" class="btn btn-secondary" disabled>Hết hàng</button>
++            }
++        </div>
++    </div>
++
++    <hr class="my-4" />
++    <h5 class="fw-bold">Mô tả sản phẩm</h5>
++    <p style="white-space:pre-line;">@(string.IsNullOrWhiteSpace(Model.Description) ? "Chưa có mô tả cho sản phẩm này." : Model.Description)</p>
++</div>
++
++@section Scripts {
++    <script src="~/js/shop.js" asp-append-version="true"></script>
++}
+diff --git a/PetManagementSystem/Views/Product/Index.cshtml b/PetManagementSystem/Views/Product/Index.cshtml
+index df024da..5374040 100644
+--- a/PetManagementSystem/Views/Product/Index.cshtml
++++ b/PetManagementSystem/Views/Product/Index.cshtml
+@@ -1,70 +1,152 @@
+-@model List<PetManagementSystem.Models.Product>
++@using PetManagementSystem.Helpers
++@using Microsoft.AspNetCore.Mvc.ViewFeatures
++@model PetManagementSystem.ViewModels.Shop.ProductListViewModel
+ @{
+-    Layout = "_Layout";
+     ViewData["Title"] = "Sản phẩm thú cưng";
++    var pagerData = new ViewDataDictionary(ViewData)
++    {
++        ["Page"] = Model.Page,
++        ["TotalPages"] = Model.TotalPages,
++        ["Action"] = "Index",
++        ["RouteValues"] = Model.RouteValues
++    };
+ }
+ 
+-<div class="container py-4">
+-    <div class="text-center mb-5">
+-        <h2 class="fw-bold" style="color: #4a2c2a;">Sản phẩm & Phụ kiện thú cưng</h2>
+-        <p class="text-muted">Thức ăn, đồ chơi và phụ kiện chính hãng chất lượng cao cho thú cưng của bạn.</p>
++<link rel="stylesheet" href="~/css/shop.css" asp-append-version="true" />
++@Html.AntiForgeryToken()
++
++<div class="py-2">
++    <div class="text-center mb-4">
++        <h2 class="fw-bold">Sản phẩm &amp; Phụ kiện thú cưng</h2>
++        <p class="text-muted mb-0">Thức ăn, đồ chơi và phụ kiện chất lượng cao cho thú cưng của bạn.</p>
+     </div>
+ 
+-    <div class="row g-4">
+-        @if (Model != null && Model.Any())
+-        {
+-            foreach (var item in Model)
++    <partial name="Shop/_Alerts" />
++
++    <form method="get" asp-controller="Product" asp-action="Index" class="card border-0 shadow-sm rounded-4 p-3 mb-4">
++        <div class="row g-2 align-items-end">
++            <div class="col-12 col-md-4">
++                <label class="form-label small mb-1" for="search">Tên sản phẩm</label>
++                <input id="search" name="search" value="@Model.Search" class="form-control" maxlength="150" placeholder="Tìm kiếm sản phẩm..." />
++            </div>
++            <div class="col-6 col-md-3">
++                <label class="form-label small mb-1" for="categoryId">Danh mục</label>
++                <select id="categoryId" name="categoryId" class="form-select">
++                    <option value="">Tất cả</option>
++                    @foreach (var category in Model.Categories)
++                    {
++                        <option value="@category.Id" selected="@(Model.CategoryId == category.Id)">@category.Name</option>
++                    }
++                </select>
++            </div>
++            <div class="col-6 col-md-2">
++                <label class="form-label small mb-1" for="sort">Sắp xếp</label>
++                <select id="sort" name="sort" class="form-select">
++                    @foreach (var sort in ProductSorts.All)
++                    {
++                        <option value="@sort" selected="@(Model.Sort == sort)">@ProductSorts.Label(sort)</option>
++                    }
++                </select>
++            </div>
++            <div class="col-6 col-md-1">
++                <label class="form-label small mb-1" for="minPrice">Giá từ</label>
++                <input id="minPrice" name="minPrice" type="number" min="0" step="1000" value="@Model.MinPrice" class="form-control" />
++            </div>
++            <div class="col-6 col-md-1">
++                <label class="form-label small mb-1" for="maxPrice">Đến</label>
++                <input id="maxPrice" name="maxPrice" type="number" min="0" step="1000" value="@Model.MaxPrice" class="form-control" />
++            </div>
++            <div class="col-12 col-md-1 d-grid">
++                <button type="submit" class="btn btn-shop">Lọc</button>
++            </div>
++        </div>
++        <div class="form-check mt-2">
++            <input class="form-check-input" type="checkbox" id="inStock" name="inStock" value="true" checked="@Model.InStock" />
++            <label class="form-check-label small" for="inStock">Chỉ hiện sản phẩm còn hàng</label>
++            @if (Model.HasFilter)
++            {
++                <a asp-action="Index" class="ms-3 small">Xóa bộ lọc</a>
++            }
++        </div>
++    </form>
++
++    @if (Model.Items.Count == 0)
++    {
++        <div class="text-center py-5">
++            <i class="bi bi-box-seam text-muted" style="font-size:3rem;"></i>
++            <p class="text-muted fs-5 mt-2">
++                @(Model.HasFilter ? "Không tìm thấy sản phẩm phù hợp với bộ lọc." : "Hiện chưa có sản phẩm nào đang bán.")
++            </p>
++        </div>
++    }
++    else
++    {
++        <p class="text-muted small">Tìm thấy @Model.TotalCount sản phẩm</p>
++        <div class="row g-4">
++            @foreach (var item in Model.Items)
+             {
+-                <div class="col-md-3">
+-                    <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden product-card">
+-                        <div class="bg-light text-center p-4 position-relative" style="height: 200px; display: flex; align-items: center; justify-content: center;">
+-                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+-                            {
+-                                <img src="@item.ImageUrl" alt="@item.ProductName" class="img-fluid" style="max-height: 100%; object-fit: contain;" />
+-                            }
+-                            else
++                <div class="col-6 col-md-4 col-lg-3">
++                    <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden shop-card">
++                        <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none">
++                            <div class="shop-thumb p-3">
++                                @if (!string.IsNullOrEmpty(item.ImageUrl))
++                                {
++                                    <img src="@item.ImageUrl" alt="@item.Name" loading="lazy" />
++                                }
++                                else
++                                {
++                                    <i class="bi bi-box-seam text-muted" style="font-size:3rem;"></i>
++                                }
++                                @if (item.InStock)
++                                {
++                                    <span class="badge text-bg-success position-absolute top-0 end-0 m-2">Còn hàng</span>
++                                }
++                                else
++                                {
++                                    <span class="badge text-bg-secondary position-absolute top-0 end-0 m-2">Hết hàng</span>
++                                }
++                            </div>
++                        </a>
++                        <div class="card-body d-flex flex-column">
++                            @if (!string.IsNullOrEmpty(item.CategoryName))
+                             {
+-                                <i class="bi bi-box-seam text-muted" style="font-size: 3rem;"></i>
++                                <span class="small text-muted">@item.CategoryName</span>
+                             }
+-                            <span class="badge bg-danger position-absolute top-0 end-0 m-3">Còn @item.StockQuantity</span>
+-                        </div>
+-                        <div class="card-body d-flex flex-column">
+-                            <h5 class="card-title fw-bold text-dark fs-6 mb-2">@item.ProductName</h5>
+-                            <p class="card-text text-muted small flex-grow-1">@(item.Description ?? "Không có mô tả.")</p>
+-                            <div class="d-flex align-items-center justify-content-between mt-3">
+-                                <span class="fw-bold fs-5" style="color: #ff7b72;">@item.SellPrice.ToString("N0") đ</span>
+-                                <a href="#" class="btn btn-sm btn-custom-primary rounded-pill px-3"><i class="bi bi-cart-plus me-1"></i> Mua ngay</a>
++                            <h5 class="card-title fw-bold fs-6 mb-2">
++                                <a asp-action="Details" asp-route-id="@item.Id" class="text-dark text-decoration-none">@item.Name</a>
++                            </h5>
++                            <div class="mt-auto">
++                                <div class="shop-price fs-5">@CommerceFormat.Money(item.Price)@(string.IsNullOrEmpty(item.Unit) ? "" : " / " + item.Unit)</div>
++                                @if (item.InStock)
++                                {
++                                    @if (User.Identity?.IsAuthenticated == true)
++                                    {
++                                        <button type="button" class="btn btn-sm btn-shop w-100 mt-2" data-add-to-cart="@item.Id">
++                                            <i class="bi bi-cart-plus me-1"></i>Thêm vào giỏ
++                                        </button>
++                                    }
++                                    else
++                                    {
++                                        <a class="btn btn-sm btn-shop w-100 mt-2" href="/Account/Login?returnUrl=@Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString)">
++                                            <i class="bi bi-cart-plus me-1"></i>Đăng nhập để mua
++                                        </a>
++                                    }
++                                }
++                                else
++                                {
++                                    <button type="button" class="btn btn-sm btn-secondary w-100 mt-2" disabled>Hết hàng</button>
++                                }
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+             }
+-        }
+-        else
+-        {
+-            <div class="col-12 text-center py-5">
+-                <p class="text-muted fs-5">Hiện chưa có sản phẩm nào trong hệ thống.</p>
+-            </div>
+-        }
+-    </div>
+-</div>
++        </div>
+ 
+-<style>
+-    .product-card {
+-        transition: transform 0.2s, box-shadow 0.2s;
++        <partial name="Commerce/_Pagination" view-data="pagerData" />
+     }
+-    .product-card:hover {
+-        transform: translateY(-5px);
+-        box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important;
+-    }
+-    .btn-custom-primary {
+-        background-color: #ff7b72;
+-        border-color: #ff7b72;
+-        color: white;
+-    }
+-    .btn-custom-primary:hover {
+-        background-color: #fa655b;
+-        border-color: #fa655b;
+-        color: white;
+-    }
+-</style>
++</div>
++
++@section Scripts {
++    <script src="~/js/shop.js" asp-append-version="true"></script>
++}
+diff --git a/PetManagementSystem/Views/Shared/Shop/_Alerts.cshtml b/PetManagementSystem/Views/Shared/Shop/_Alerts.cshtml
+new file mode 100644
+index 0000000..7fdb044
+--- /dev/null
++++ b/PetManagementSystem/Views/Shared/Shop/_Alerts.cshtml
+@@ -0,0 +1,14 @@
++@if (TempData["SuccessMessage"] is string successMessage)
++{
++    <div class="alert alert-success alert-dismissible fade show" role="alert">
++        @successMessage
++        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
++    </div>
++}
++@if (TempData["ErrorMessage"] is string errorMessage)
++{
++    <div class="alert alert-danger alert-dismissible fade show" role="alert">
++        @errorMessage
++        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
++    </div>
++}
+diff --git a/PetManagementSystem/wwwroot/css/shop.css b/PetManagementSystem/wwwroot/css/shop.css
+new file mode 100644
+index 0000000..27fe5bb
+--- /dev/null
++++ b/PetManagementSystem/wwwroot/css/shop.css
+@@ -0,0 +1,16 @@
++.shop-card { transition: transform .2s, box-shadow .2s; }
++.shop-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,.08) !important; }
++.shop-thumb { height: 200px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; position: relative; }
++.shop-thumb img { max-height: 100%; max-width: 100%; object-fit: contain; }
++.shop-thumb-sm { width: 56px; height: 56px; border-radius: 8px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
++.shop-thumb-sm img { width: 100%; height: 100%; object-fit: cover; }
++.shop-price { color: #ff7b72; font-weight: 700; }
++.btn-shop { background-color: #ff7b72; border-color: #ff7b72; color: #fff; border-radius: 50px; font-weight: 600; }
++.btn-shop:hover, .btn-shop:focus { background-color: #fa655b; border-color: #fa655b; color: #fff; }
++.btn-shop:disabled { opacity: .6; }
++.shop-toast { position: fixed; right: 1rem; bottom: 1rem; z-index: 1080; max-width: 360px; }
++.shop-steps { display: flex; gap: .5rem; flex-wrap: wrap; }
++.shop-step { flex: 1 1 120px; text-align: center; padding: .5rem; border-radius: 12px; background: #f1f3f5; color: #868e96; font-size: .875rem; }
++.shop-step.done { background: #d3f9d8; color: #2b8a3e; font-weight: 600; }
++.shop-step.cancelled { background: #ffe3e3; color: #c92a2a; font-weight: 600; }
++@media print { nav, footer, .no-print { display: none !important; } body { background: #fff !important; } }
+diff --git a/PetManagementSystem/wwwroot/js/shop.js b/PetManagementSystem/wwwroot/js/shop.js
+new file mode 100644
+index 0000000..d9febda
+--- /dev/null
++++ b/PetManagementSystem/wwwroot/js/shop.js
+@@ -0,0 +1,151 @@
++(function () {
++    'use strict';
++
++    var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
++
++    function formatMoney(value) {
++        return Number(value).toLocaleString('vi-VN', { maximumFractionDigits: 2 }) + 'đ';
++    }
++
++    function showToast(message, type) {
++        var el = document.createElement('div');
++        el.className = 'shop-toast alert alert-' + (type || 'success') + ' shadow';
++        el.setAttribute('role', 'alert');
++        el.textContent = message;
++        document.body.appendChild(el);
++        setTimeout(function () { el.remove(); }, 3500);
++    }
++
++    // Gọi API /api/client/...; trả về null nếu phiên đăng nhập hết hạn (đã chuyển hướng tới trang đăng nhập).
++    async function callApi(method, url, body) {
++        var headers = { 'Accept': 'application/json', 'RequestVerificationToken': tokenInput ? tokenInput.value : '' };
++        if (body !== undefined) { headers['Content-Type'] = 'application/json'; }
++
++        var response;
++        try {
++            response = await fetch(url, {
++                method: method,
++                headers: headers,
++                credentials: 'same-origin',
++                body: body !== undefined ? JSON.stringify(body) : undefined
++            });
++        } catch (e) {
++            return { success: false, message: 'Không thể kết nối tới máy chủ.' };
++        }
++
++        var contentType = response.headers.get('content-type') || '';
++        if (response.redirected || response.status === 401 || contentType.indexOf('json') === -1) {
++            window.location.href = '/Account/Login?returnUrl=' + encodeURIComponent(location.pathname + location.search);
++            return null;
++        }
++
++        return response.json();
++    }
++
++    function setBusy(button, busy) {
++        if (!button) { return; }
++        button.disabled = busy;
++        button.classList.toggle('disabled', busy);
++    }
++
++    // ---- Thêm vào giỏ (danh sách + chi tiết sản phẩm) ----
++    document.addEventListener('click', async function (event) {
++        var button = event.target.closest('[data-add-to-cart]');
++        if (!button) { return; }
++        event.preventDefault();
++
++        // Nút ở danh sách sản phẩm không có ô số lượng (mặc định 1); trang chi tiết trỏ tới ô nhập qua data-qty-input.
++        var qtySelector = button.getAttribute('data-qty-input');
++        var qtyInput = qtySelector ? document.querySelector(qtySelector) : null;
++        var quantity = qtyInput ? parseInt(qtyInput.value, 10) || 1 : 1;
++
++        setBusy(button, true);
++        var result = await callApi('POST', '/api/client/cart/items', {
++            productId: parseInt(button.getAttribute('data-add-to-cart'), 10),
++            quantity: quantity
++        });
++        setBusy(button, false);
++
++        if (result === null) { return; }
++        var message = result.success ? result.message : (result.errors && result.errors[0]) || result.message;
++        showToast(message, result.success ? 'success' : 'danger');
++    });
++
++    // ---- Trang giỏ hàng ----
++    var cartTable = document.getElementById('cart-table');
++    if (cartTable) {
++        function applySummary(data) {
++            var total = document.getElementById('cart-total');
++            if (total) { total.textContent = formatMoney(data.cartTotal); }
++            var count = document.getElementById('cart-count');
++            if (count) { count.textContent = data.cartQuantity; }
++        }
++
++        cartTable.addEventListener('change', async function (event) {
++            var input = event.target.closest('.qty-input');
++            if (!input) { return; }
++
++            var row = input.closest('tr');
++            var previous = input.getAttribute('data-prev');
++            var quantity = parseInt(input.value, 10);
++            if (!quantity || quantity < 1) {
++                input.value = previous;
++                showToast('Số lượng phải lớn hơn 0.', 'danger');
++                return;
++            }
++
++            input.disabled = true;
++            var result = await callApi('PUT', '/api/client/cart/items/' + input.getAttribute('data-item-id'), { quantity: quantity });
++            input.disabled = false;
++            if (result === null) { return; }
++
++            if (!result.success) {
++                input.value = previous;
++                showToast((result.errors && result.errors[0]) || result.message, 'danger');
++                return;
++            }
++
++            input.setAttribute('data-prev', result.data.quantity);
++            input.value = result.data.quantity;
++            row.querySelector('.line-total').textContent = formatMoney(result.data.lineTotal);
++            var issue = row.querySelector('.line-issue');
++            if (issue) { issue.remove(); }
++            applySummary(result.data);
++        });
++
++        cartTable.addEventListener('click', async function (event) {
++            var button = event.target.closest('.remove-item');
++            if (!button) { return; }
++            if (!confirm('Xóa sản phẩm này khỏi giỏ hàng?')) { return; }
++
++            setBusy(button, true);
++            var result = await callApi('DELETE', '/api/client/cart/items/' + button.getAttribute('data-item-id'));
++            setBusy(button, false);
++            if (result === null) { return; }
++
++            if (!result.success) {
++                showToast((result.errors && result.errors[0]) || result.message, 'danger');
++                return;
++            }
++
++            if (result.data.lineCount === 0) {
++                window.location.reload();
++                return;
++            }
++
++            button.closest('tr').remove();
++            applySummary(result.data);
++        });
++    }
++
++    // ---- Thanh toán: chặn gửi trùng ----
++    var checkoutForm = document.getElementById('checkout-form');
++    if (checkoutForm) {
++        checkoutForm.addEventListener('submit', function () {
++            var submit = checkoutForm.querySelector('[type="submit"]');
++            if (submit) {
++                setTimeout(function () { submit.disabled = true; submit.textContent = 'Đang xử lý...'; }, 0);
++            }
++        });
++    }
++})();

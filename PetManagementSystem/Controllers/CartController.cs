@@ -11,18 +11,18 @@ namespace PetManagementSystem.Controllers;
 /// </summary>
 [Authorize]
 public class CartController(IClientCartService cartService) : Controller
-{
+        {
     [HttpGet]
     public async Task<IActionResult> Index()
-    {
+        {
         var userId = User.GetUserId();
         if (userId is null)
-        {
+            {
             return Challenge();
-        }
+            }
 
         return View(await cartService.GetCartAsync(userId.Value));
-    }
+            }
 
     /// <summary>Giữ lại đường dẫn cũ /Cart/Checkout: chuyển sang trang thanh toán chính thức.</summary>
     [HttpGet]

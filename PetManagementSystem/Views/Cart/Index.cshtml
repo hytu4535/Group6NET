@@ -19,22 +19,22 @@
 else
 {
     <div class="card border-0 shadow-sm rounded-4">
-        <div class="table-responsive">
+    <div class="table-responsive">
             <table id="cart-table" class="table align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Sản phẩm</th>
+            <thead class="table-light">
+                <tr>
+                    <th>Sản phẩm</th>
                         <th class="text-end">Đơn giá</th>
                         <th style="width:130px;">Số lượng</th>
                         <th class="text-end">Thành tiền</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
                     @foreach (var item in Model.Items)
-                    {
-                        <tr>
-                            <td>
+                {
+                    <tr>
+                        <td>
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="shop-thumb-sm">
                                         @if (!string.IsNullOrEmpty(item.ImageUrl))
@@ -46,7 +46,7 @@ else
                                             <i class="bi bi-box-seam text-muted"></i>
                                         }
                                     </div>
-                                    <div>
+                                <div>
                                         <a asp-controller="Product" asp-action="Details" asp-route-id="@item.ProductId" class="fw-semibold text-dark text-decoration-none">@item.ProductName</a>
                                         @if (!string.IsNullOrEmpty(item.Unit))
                                         {
@@ -56,32 +56,32 @@ else
                                         {
                                             <div class="small text-danger line-issue"><i class="bi bi-exclamation-triangle me-1"></i>@item.Issue</div>
                                         }
-                                    </div>
                                 </div>
-                            </td>
+                            </div>
+                        </td>
                             <td class="text-end">@CommerceFormat.Money(item.UnitPrice)</td>
-                            <td>
+                        <td>
                                 <input type="number" class="form-control form-control-sm qty-input" value="@item.Quantity" data-prev="@item.Quantity"
                                        min="1" max="9999" data-item-id="@item.ItemId" aria-label="Số lượng @item.ProductName" />
-                            </td>
+                        </td>
                             <td class="text-end line-total">@CommerceFormat.Money(item.LineTotal)</td>
                             <td class="text-end">
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-item-id="@item.ItemId" aria-label="Xóa @item.ProductName">
                                     <i class="bi bi-trash"></i>
                                 </button>
-                            </td>
-                        </tr>
-                    }
+                        </td>
+                    </tr>
+                }
                 </tbody>
                 <tfoot>
-                    <tr class="table-light">
+                <tr class="table-light">
                         <td colspan="3" class="text-end fw-bold">Tổng cộng (<span id="cart-count">@Model.TotalQuantity</span> sản phẩm)</td>
                         <td id="cart-total" class="text-end fw-bold shop-price">@CommerceFormat.Money(Model.TotalAmount)</td>
-                        <td></td>
-                    </tr>
+                    <td></td>
+                </tr>
                 </tfoot>
-            </table>
-        </div>
+        </table>
+    </div>
     </div>
 
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
