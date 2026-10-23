@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 using PetManagementSystem.Helpers;
 using PetManagementSystem.Models;
@@ -13,17 +14,22 @@ public class CheckoutService(
     IUserRepository userRepository,
     ILogger<CheckoutService> logger) : ICheckoutService
 {
-    private static readonly Regex PhoneSeparators = new(@"[\s.\-]", RegexOptions.Compiled);
+    private static readonly Regex PhoneRegex = new(CheckoutInputModel.PhonePattern, RegexOptions.Compiled);
+    private static readonly EmailAddressAttribute EmailValidator = new();
 
     public async Task<CheckoutViewModel> BuildAsync(int userId, CheckoutInputModel? input = null)
     {
+        var user = await userRepository.GetByIdAsync(userId);
+
+        // Lần đầu vào trang: tự điền sẵn họ tên, email, số điện thoại, địa chỉ từ hồ sơ cá nhân để khách không phải gõ lại.
         if (input is null)
         {
-            var user = await userRepository.GetByIdAsync(userId);
             input = new CheckoutInputModel
             {
-                ShippingAddress = user?.Address ?? string.Empty,
-                Phone = user?.PhoneNumber ?? string.Empty
+                FullName = user?.FullName?.Trim() ?? string.Empty,
+                Email = user?.Email?.Trim() ?? string.Empty,
+                Phone = user?.PhoneNumber ?? string.Empty,
+                ShippingAddress = user?.Address?.Trim() ?? string.Empty
             };
         }
 
@@ -36,6 +42,7 @@ public class CheckoutService(
         {
             Cart = await cartService.GetCartAsync(userId),
             Input = input,
+            SavedAddresses = await BuildSavedAddressesAsync(userId, user?.Address),
             PaymentOptions = ClientPaymentMethods.Supported.Select(m => new PaymentOptionViewModel
             {
                 Value = m,
@@ -45,6 +52,33 @@ public class CheckoutService(
         };
     }
 
+    /// <summary>Địa chỉ trong hồ sơ (nếu có) + tối đa 4 địa chỉ đã giao gần đây, không trùng nhau.</summary>
+    private async Task<List<SavedAddressViewModel>> BuildSavedAddressesAsync(int userId, string? profileAddress)
+    {
+        var result = new List<SavedAddressViewModel>();
+
+        var profile = profileAddress.TrimToNull();
+        if (profile is not null)
+        {
+            result.Add(new SavedAddressViewModel { Address = profile, Source = "Hồ sơ" });
+        }
+
+        foreach (var address in await orderRepository.GetRecentShippingAddressesAsync(userId, 5))
+        {
+            if (result.Count >= 5)
+            {
+                break;
+            }
+
+            if (!result.Any(x => string.Equals(x.Address, address, StringComparison.OrdinalIgnoreCase)))
+            {
+                result.Add(new SavedAddressViewModel { Address = address, Source = "Đã dùng" });
+            }
+        }
+
+        return result;
+    }
+
     public async Task<ServiceResult<int>> PlaceOrderAsync(int userId, CheckoutInputModel input)
     {
         if (!ClientPaymentMethods.Supported.Contains(input.PaymentMethod))
@@ -52,16 +86,34 @@ public class CheckoutService(
             return ServiceResult<int>.Fail("Phương thức thanh toán không được hỗ trợ", nameof(input.PaymentMethod));
         }
 
-        var phone = PhoneSeparators.Replace(input.Phone ?? string.Empty, string.Empty);
-        if (phone.Length is < 8 or > 15)
+        var fullName = input.FullName.TrimToNull();
+        if (fullName is null || fullName.Length > 150)
         {
-            return ServiceResult<int>.Fail("Số điện thoại không hợp lệ", nameof(input.Phone));
+            return ServiceResult<int>.Fail("Họ tên người nhận là bắt buộc (tối đa 150 ký tự)", nameof(input.FullName));
+        }
+
+        var email = input.Email.TrimToNull();
+        if (email is null || email.Length > 150 || !EmailValidator.IsValid(email))
+        {
+            return ServiceResult<int>.Fail("Email không hợp lệ", nameof(input.Email));
+        }
+
+        var phone = input.Phone.NormalizePhone();
+        if (!PhoneRegex.IsMatch(phone))
+        {
+            return ServiceResult<int>.Fail(CheckoutInputModel.PhoneError, nameof(input.Phone));
         }
 
         var address = input.ShippingAddress.TrimToNull();
-        if (address is null)
+        if (address is null || address.Length > 255)
         {
-            return ServiceResult<int>.Fail("Địa chỉ giao hàng là bắt buộc", nameof(input.ShippingAddress));
+            return ServiceResult<int>.Fail("Địa chỉ nhận hàng là bắt buộc (tối đa 255 ký tự)", nameof(input.ShippingAddress));
+        }
+
+        var note = input.Note.TrimToNull();
+        if (note is not null && note.Length > 255)
+        {
+            return ServiceResult<int>.Fail("Ghi chú tối đa 255 ký tự", nameof(input.Note));
         }
 
         var user = await userRepository.GetByIdAsync(userId);
@@ -105,10 +157,12 @@ public class CheckoutService(
             {
                 UserId = userId,
                 OrderDate = DateTime.Now,
+                ReceiverName = fullName,
+                ReceiverEmail = email,
                 ShippingAddress = address,
                 Phone = phone,
                 Status = OrderStatuses.Pending,
-                Note = input.Note.TrimToNull()
+                Note = note
             };
 
             foreach (var item in lines)

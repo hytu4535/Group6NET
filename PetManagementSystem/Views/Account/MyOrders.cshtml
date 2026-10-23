@@ -1,3 +1,4 @@
+@using PetManagementSystem.Helpers
 @model IEnumerable<PetManagementSystem.Models.Order>
 
 @{
@@ -18,6 +19,7 @@ else
         <table class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
+                    <th>Mã đơn hàng</th>
                     <th>Ngày đặt</th>
                     <th>Tổng tiền</th>
                     <th>Trạng thái</th>
@@ -29,34 +31,10 @@ else
                 @foreach (var order in Model)
                 {
                     <tr>
+                        <td class="fw-semibold">#@order.Id</td>
                         <td>@order.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
                         <td>@order.TotalAmount.ToString("#,##0") đ</td>
-                        <td>
-                            @switch (order.Status)
-                            {
-                                case "pending":
-                                    <span class="badge bg-warning text-dark">Chờ xử lý</span>
-                                    break;
-                                case "confirmed":
-                                    <span class="badge bg-success">Đã xác nhận</span>
-                                    break;
-                                case "shipping":
-                                    <span class="badge bg-info">Đang giao</span>
-                                    break;
-                                case "completed":
-                                    <span class="bg-success text-white">Hoàn thành</span>
-                                    break;
-                                case "cancelled":
-                                    <span class="badge bg-danger">Đã hủy</span>
-                                    break;
-                                case "refunded":
-                                    <span class="badge bg-secondary">Hoàn tiền</span>
-                                    break;
-                                default:
-                                    <span class="badge bg-secondary">@order.Status</span>
-                                    break;
-                            }
-                        </td>
+                        <td><span class="badge @OrderStatuses.Badge(order.Status)">@OrderStatuses.Label(order.Status)</span></td>
                         <td>@order.Note</td>
                         <td>
                             <a asp-controller="Order" asp-action="Details" asp-route-id="@order.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a>

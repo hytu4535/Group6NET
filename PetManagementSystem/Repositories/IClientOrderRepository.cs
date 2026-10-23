@@ -12,6 +12,9 @@ public interface IClientOrderRepository
 
     Task ReleaseStockAsync(int productId, int quantity);
 
+    /// <summary>Các địa chỉ giao hàng khác nhau trong những đơn gần đây của người dùng (mới nhất trước).</summary>
+    Task<List<string>> GetRecentShippingAddressesAsync(int userId, int take);
+
     Task AddOrderAsync(Order order);
     Task AddPaymentAsync(Payment payment);
 

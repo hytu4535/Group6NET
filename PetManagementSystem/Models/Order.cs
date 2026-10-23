@@ -5,6 +5,10 @@ public class Order
     public int Id { get; set; }
     public int UserId { get; set; }
     public DateTime OrderDate { get; set; }
+    /// <summary>Họ tên người nhận hàng (chụp lại tại thời điểm đặt, không đổi theo hồ sơ về sau).</summary>
+    public string? ReceiverName { get; set; }
+    /// <summary>Email nhận thông tin đơn hàng.</summary>
+    public string? ReceiverEmail { get; set; }
     public string ShippingAddress { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
     public decimal TotalAmount { get; set; }

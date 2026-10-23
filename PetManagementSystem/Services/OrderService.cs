@@ -73,6 +73,8 @@ public class OrderService(
             CustomerName = CommerceFormat.DisplayName(order.User),
             Username = order.User?.Username,
             Email = order.User?.Email,
+            ReceiverName = order.ReceiverName,
+            ReceiverEmail = order.ReceiverEmail,
             Phone = order.Phone,
             ShippingAddress = order.ShippingAddress,
             OrderDate = order.OrderDate,

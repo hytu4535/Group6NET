@@ -54,6 +54,8 @@ public class ClientOrderService(
         {
             Id = order.Id,
             OrderDate = order.OrderDate,
+            ReceiverName = order.ReceiverName,
+            ReceiverEmail = order.ReceiverEmail,
             ShippingAddress = order.ShippingAddress,
             Phone = order.Phone,
             Note = order.Note,

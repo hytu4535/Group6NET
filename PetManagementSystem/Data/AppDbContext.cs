@@ -496,6 +496,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.OrderDate).HasColumnName("order_date");
+            entity.Property(e => e.ReceiverName).HasColumnName("receiver_name").HasMaxLength(150).IsUnicode(true);
+            entity.Property(e => e.ReceiverEmail).HasColumnName("receiver_email").HasMaxLength(150).IsUnicode(true);
             entity.Property(e => e.ShippingAddress).HasColumnName("shipping_address").HasMaxLength(255).IsUnicode(true);
             entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(15).IsUnicode(false);
             entity.Property(e => e.TotalAmount).HasColumnName("total_amount").HasPrecision(14, 2);

@@ -19,6 +19,23 @@ public class ClientOrderRepository(AppDbContext dbContext) : IClientOrderReposit
         return new EfTransaction(await dbContext.Database.BeginTransactionAsync());
     }
 
+    public async Task<List<string>> GetRecentShippingAddressesAsync(int userId, int take)
+    {
+        var addresses = await dbContext.Orders
+            .AsNoTracking()
+            .Where(o => o.UserId == userId && o.ShippingAddress != "")
+            .OrderByDescending(o => o.OrderDate)
+            .Select(o => o.ShippingAddress)
+            .Take(30)
+            .ToListAsync();
+
+        return addresses
+            .Select(a => a.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(take)
+            .ToList();
+    }
+
     public async Task<bool> TryReserveStockAsync(int productId, int quantity)
     {
         var now = DateTime.Now;

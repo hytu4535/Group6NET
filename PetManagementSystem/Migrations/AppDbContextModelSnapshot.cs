@@ -517,6 +517,18 @@ namespace PetManagementSystem.Migrations
                         .HasColumnType("varchar(15)")
                         .HasColumnName("phone");
 
+                    b.Property<string>("ReceiverEmail")
+                        .HasMaxLength(150)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("receiver_email");
+
+                    b.Property<string>("ReceiverName")
+                        .HasMaxLength(150)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("receiver_name");
+
                     b.Property<string>("ShippingAddress")
                         .IsRequired()
                         .HasMaxLength(255)

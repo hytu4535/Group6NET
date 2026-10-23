@@ -1,5 +1,6 @@
 @using PetManagementSystem.Helpers
 @model PetManagementSystem.ViewModels.Shop.MyOrderDetailsViewModel
+@inject IConfiguration Configuration
 @{
     ViewData["Title"] = $"Đơn hàng #{Model.Id}";
     var steps = new[] { OrderStatuses.Pending, OrderStatuses.Confirmed, OrderStatuses.Shipping, OrderStatuses.Completed };
@@ -138,8 +139,30 @@
                         </tbody>
                     </table>
                 </div>
+
+                @* Chuyển khoản / ví điện tử chưa có cổng thanh toán tự động: hướng dẫn khách và chờ nhân viên xác nhận. *@
+                @foreach (var pending in Model.Payments.Where(p => p.Status == PaymentStatuses.Pending
+                                                                   && (p.PaymentMethod == PaymentMethods.BankTransfer || p.PaymentMethod == PaymentMethods.EWallet)
+                                                                   && !cancelled))
+                {
+                    var info = Configuration[pending.PaymentMethod == PaymentMethods.BankTransfer ? "PaymentInfo:BankTransfer" : "PaymentInfo:EWallet"];
+                    <div class="alert alert-warning m-3 mb-3">
+                        <div class="fw-semibold mb-1">Hướng dẫn thanh toán (@PaymentMethods.Label(pending.PaymentMethod))</div>
+                        @if (!string.IsNullOrWhiteSpace(info))
+                        {
+                            <div>Thông tin nhận tiền: <strong>@info</strong></div>
             }
+                        else
+                        {
+                            <div>Cửa hàng sẽ liên hệ để hướng dẫn thanh toán.</div>
+                        }
+                        <div>Số tiền: <strong>@CommerceFormat.Money(pending.Amount)</strong></div>
+                        <div>Nội dung chuyển khoản: <strong>@pending.TransactionCode</strong></div>
+                        <div class="small text-muted mt-1">Đơn hàng sẽ được xử lý sau khi cửa hàng xác nhận đã nhận tiền.</div>
         </div>
+                }
+            }
+    </div>
     </div>
 
     <div class="col-lg-4">
@@ -148,6 +171,12 @@
             <dl class="mb-0">
                 <dt>Ngày đặt</dt>
                 <dd>@CommerceFormat.DateTimeText(Model.OrderDate)</dd>
+                <dt>Người nhận</dt>
+                <dd>@(string.IsNullOrWhiteSpace(Model.ReceiverName) ? "-" : Model.ReceiverName)</dd>
+                <dt>Số điện thoại</dt>
+                <dd>@Model.Phone</dd>
+                <dt>Email</dt>
+                <dd>@(string.IsNullOrWhiteSpace(Model.ReceiverEmail) ? "-" : Model.ReceiverEmail)</dd>
                 <dt>Địa chỉ</dt>
                 <dd>@Model.ShippingAddress</dd>
                 <dt>Số điện thoại</dt>
