@@ -19,7 +19,7 @@
             <div id="galleryAlert" class="alert d-none" role="alert" aria-live="polite"></div>
 
             <form id="petImageFilters" class="row g-3 align-items-end mb-4">
-                <div class="col-12 col-md-5">
+                <div class="col-12 col-md-4">
                     <label for="imageSearch" class="form-label">Tìm kiếm</label>
                     <input id="imageSearch" name="searchKeyword" type="search" maxlength="100"
                            class="form-control" placeholder="Tên thú cưng, giống hoặc chủ nuôi" />
@@ -38,46 +38,71 @@
                         <option value="false">Ảnh thư viện</option>
                     </select>
                 </div>
-                <div class="col-12 col-md-2 d-grid">
+                <div class="col-12 col-md-3 d-flex gap-2">
                     <button class="btn btn-outline-primary" type="submit">
                         <i class="bi bi-search me-1"></i>Lọc ảnh
+                    </button>
+                    <button id="clearImageFilters" class="btn btn-outline-secondary" type="button">
+                        <i class="bi bi-x-circle me-1"></i>Xóa lọc
                     </button>
                 </div>
             </form>
 
-            <section id="petImageUploadSection" class="border rounded p-3 mb-4">
-                <h2 class="h6 mb-3">Tải ảnh thú cưng</h2>
-                <form id="petImageUploadForm" class="row g-3 align-items-end" enctype="multipart/form-data">
-                    @Html.AntiForgeryToken()
-                    <div class="col-12 col-lg-3">
-                        <label for="uploadPetId" class="form-label">Thú cưng</label>
-                        <select id="uploadPetId" name="PetId" class="form-select" required>
-                            <option value="">Chọn thú cưng</option>
-                        </select>
-                    </div>
-                    <div class="col-12 col-lg-4">
-                        <label for="uploadImage" class="form-label">Tệp ảnh</label>
-                        <input id="uploadImage" name="Image" type="file"
-                               accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-                               class="form-control" required />
-                        <div class="form-text">JPG, PNG hoặc WEBP; tối đa 5 MB.</div>
-                    </div>
-                    <div class="col-12 col-lg-3">
-                        <div class="form-check mb-2">
-                            <input id="setAsAvatar" name="SetAsAvatar" type="checkbox" value="true"
-                                   class="form-check-input" />
-                            <label for="setAsAvatar" class="form-check-label">Đặt làm ảnh đại diện</label>
+            <section id="petImageUploadSection" class="mb-4">
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-primary"
+                            data-bs-toggle="modal" data-bs-target="#petImageUploadModal">
+                        <i class="bi bi-cloud-arrow-up me-1"></i>Tải ảnh thú cưng
+                    </button>
+                </div>
+                <div class="modal fade" id="petImageUploadModal" tabindex="-1"
+                     aria-labelledby="petImageUploadModalTitle" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <form id="petImageUploadForm" enctype="multipart/form-data">
+                                @Html.AntiForgeryToken()
+                                <div class="modal-header">
+                                    <h2 class="modal-title h5" id="petImageUploadModalTitle">Tải ảnh thú cưng</h2>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Đóng"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-12 col-lg-4">
+                                            <label for="uploadPetId" class="form-label">Thú cưng</label>
+                                            <select id="uploadPetId" name="PetId" class="form-select" required>
+                                                <option value="">Chọn thú cưng</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-lg-5">
+                                            <label for="uploadImage" class="form-label">Tệp ảnh</label>
+                                            <input id="uploadImage" name="Image" type="file"
+                                                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                                                   class="form-control" required />
+                                            <div class="form-text">JPG, PNG hoặc WEBP; tối đa 5 MB.</div>
+                                        </div>
+                                        <div class="col-12 col-lg-3">
+                                            <div class="form-check mb-2">
+                                                <input id="setAsAvatar" name="SetAsAvatar" type="checkbox" value="true"
+                                                       class="form-check-input" />
+                                                <label for="setAsAvatar" class="form-check-label">Đặt làm ảnh đại diện</label>
+                                            </div>
+                                            <img id="uploadPreview" src="/images/pet-avatar-default.jpeg"
+                                                 alt="Xem trước ảnh tải lên" class="rounded border object-fit-cover"
+                                                 width="88" height="72" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                                    <button id="uploadButton" class="btn btn-primary" type="submit">
+                                        <i class="bi bi-cloud-arrow-up me-1"></i>Tải ảnh lên
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                        <img id="uploadPreview" src="/images/pet-avatar-default.jpeg"
-                             alt="Xem trước ảnh tải lên" class="rounded border object-fit-cover"
-                             width="88" height="72" />
                     </div>
-                    <div class="col-12 col-lg-2 d-grid">
-                        <button id="uploadButton" class="btn btn-primary" type="submit">
-                            <i class="bi bi-cloud-arrow-up me-1"></i>Tải ảnh lên
-                        </button>
-                    </div>
-                </form>
+                </div>
             </section>
 
             <div class="d-flex justify-content-between align-items-center gap-3 mb-3">

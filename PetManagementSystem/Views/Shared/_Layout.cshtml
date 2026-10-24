@@ -66,9 +66,10 @@
                     <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0">
                         @if (User.Identity?.IsAuthenticated == true && User.IsInRole("member"))
                         {
-                            <a class="btn btn-outline-primary rounded-pill text-nowrap"
-                               asp-controller="Account" asp-action="MyFeedback">
-                                <i class="bi bi-chat-left-text me-1"></i>Gửi phản hồi
+                            <a class="btn btn-light rounded-circle d-inline-flex align-items-center justify-content-center p-2"
+                               asp-controller="Account" asp-action="MyFeedback"
+                               aria-label="Gửi phản hồi" title="Gửi phản hồi">
+                                <i class="bi bi-chat-left-text"></i>
                             </a>
                             <div class="dropdown">
                                 <button class="btn btn-light rounded-circle position-relative" type="button"
@@ -150,7 +151,12 @@
                     </button>
                 </header>
                 <div class="ai-chat-notice" role="status">
-                    Khung chat đã sẵn sàng. Kết nối AI chưa được cấu hình; tin nhắn hiện chưa được gửi hoặc lưu.
+                    Trợ lý ưu tiên câu hỏi thường gặp. Tin nhắn được lưu để xem lịch sử; câu trả lời không thay thế tư vấn thú y.
+                </div>
+                <div class="ai-chat-suggestions" id="aiChatSuggestions" aria-label="Câu hỏi gợi ý">
+                    <button type="button" data-chat-question="Tôi muốn đặt lịch hẹn">Đặt lịch hẹn</button>
+                    <button type="button" data-chat-question="Tôi muốn xem dịch vụ">Xem dịch vụ</button>
+                    <button type="button" data-chat-question="Tôi muốn xem sản phẩm">Xem sản phẩm</button>
                 </div>
                 <div class="ai-chat-messages" id="aiChatMessages" aria-live="polite">
                     <div class="ai-chat-empty">Xin chào! Bạn có thể nhập câu hỏi về chăm sóc thú cưng.</div>

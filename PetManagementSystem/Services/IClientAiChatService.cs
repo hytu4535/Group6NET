@@ -6,5 +6,5 @@ namespace PetManagementSystem.Services;
 public interface IClientAiChatService
 {
     Task<PagedResult<ChatConversation>> GetHistoryAsync(int userId, int page, int pageSize);
-    Task<ServiceResult<string>> SendMessageAsync(string message);
+    Task<ServiceResult<string>> SendMessageAsync(int userId, string message, CancellationToken cancellationToken);
 }
