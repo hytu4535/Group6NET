@@ -48,7 +48,7 @@ public class PetRepository(AppDbContext dbContext) : IPetRepository
             .Take(pageSize)
             .ToListAsync();
 
-        return new PagedResult<Pet>(items, page, pageSize, totalItems);
+        return new PagedResult<Pet>(items, totalItems, page, pageSize);
     }
 
     public async Task<Pet?> GetByIdAsync(int id)

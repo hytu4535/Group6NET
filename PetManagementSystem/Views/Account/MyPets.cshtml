@@ -1,56 +1,348 @@
-@model IEnumerable<PetManagementSystem.Models.Pet>
+@model PetManagementSystem.ViewModels.Pets.MyPetsPageViewModel
 
 @{
     ViewData["Title"] = "Thú cưng của tôi";
 }
 
-<h2 class="mb-4">Thú cưng của tôi</h2>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <h2 class="mb-1">Thú cưng của tôi</h2>
+        <p class="text-muted mb-0">Quản lý thông tin và ảnh đại diện thú cưng của bạn.</p>
+    </div>
+    <button id="addPetButton" type="button" class="btn btn-custom-primary">
+        <i class="bi bi-plus-lg me-1"></i>Thêm thú cưng
+    </button>
+</div>
 
-@if (!Model.Any())
-{
-    <div class="alert alert-info">
-        Bạn chưa có thú cưng nào. <a asp-controller="Pets" asp-action="Create">Thêm thú cưng đầu tiên</a>
-    </div>
-}
-else
-{
-    <div class="row row-cols-1 row-cols-md-2 g-4">
-        @foreach (var pet in Model)
-        {
-            var avatarUrl = pet.PetImages
-                .Where(image => image.IsAvatar)
-                .OrderByDescending(image => image.Id)
-                .Select(image => image.ImageUrl)
-                .FirstOrDefault()
-                ?? pet.PetImages
-                    .OrderByDescending(image => image.Id)
-                    .Select(image => image.ImageUrl)
-                    .FirstOrDefault()
-                ?? "/images/pet-avatar-default.jpeg";
-            <div class="col">
-                <div class="card h-100 shadow-sm overflow-hidden">
-                    <div class="row g-0 align-items-center h-100">
-                        <div class="col-4">
-                            <div class="ratio ratio-1x1">
-                                <img src="@avatarUrl"
-                                     class="w-100 h-100 object-fit-cover" alt="@pet.Name"
-                                     onerror="this.onerror=null;this.src='/images/pet-avatar-default.jpeg';">
-                            </div>
-                        </div>
-                        <div class="col-8">
-                            <div class="card-body d-flex flex-column h-100">
-                                <h5 class="card-title">@pet.Name</h5>
-                                <p class="card-text small">
-                                    <strong>Giống:</strong> @pet.Breed<br>
-                                    <strong>Loài:</strong> @pet.Species<br>
-                                    <strong>Cân nặng:</strong> @pet.WeightKg kg
-                                </p>
-                                <a asp-controller="Pets" asp-action="Details" asp-route-id="@pet.Id" class="btn btn-primary btn-sm mt-auto">Xem chi tiết</a>
-                            </div>
-                        </div>
-                    </div>
+<div id="petsAlert" class="alert d-none" role="alert" aria-live="polite"></div>
+<div id="petsLoading" class="text-center py-5" role="status">
+    <div class="spinner-border text-primary" aria-hidden="true"></div>
+    <span class="visually-hidden">Đang tải danh sách thú cưng...</span>
+</div>
+<div id="petsEmpty" class="alert alert-info d-none">
+    Bạn chưa có thú cưng nào. Hãy thêm hồ sơ thú cưng đầu tiên.
+</div>
+<div id="petsList" class="row row-cols-1 row-cols-md-2 g-4" aria-live="polite"></div>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4">
+    <span id="petsPaginationInfo" class="small text-muted"></span>
+    <nav id="petsPaginationNav" class="d-none" aria-label="Phân trang thú cưng">
+        <ul id="petsPagination" class="pagination justify-content-center mb-0"></ul>
+    </nav>
+</div>
+
+<div class="modal fade" id="petModal" tabindex="-1" aria-labelledby="petModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="petForm" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5" id="petModalTitle">Thêm thú cưng</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
-            </div>
-        }
+                <div class="modal-body">
+                    <input id="petId" type="hidden">
+                    <div class="mb-3">
+                        <label for="petName" class="form-label">Tên thú cưng</label>
+                        <input id="petName" name="Name" class="form-control" maxlength="100" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="petSpecies" class="form-label">Loài</label>
+                        <input id="petSpecies" name="Species" class="form-control" maxlength="50" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="petBreed" class="form-label">Giống</label>
+                        <input id="petBreed" name="Breed" class="form-control" maxlength="80">
+                    </div>
+                    <div class="mb-3">
+                        <label for="petGender" class="form-label">Giới tính</label>
+                        <select id="petGender" name="Gender" class="form-select" required>
+                            <option value="">Chọn giới tính</option>
+                            <option value="Male">Đực</option>
+                            <option value="Female">Cái</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="petWeight" class="form-label">Cân nặng (kg)</label>
+                        <input id="petWeight" name="WeightKg" type="number" class="form-control"
+                               min="0.01" max="999.99" step="0.01">
+                    </div>
+                    <div>
+                        <label for="petImage" class="form-label">Ảnh đại diện</label>
+                        <input id="petImage" name="Image" type="file" class="form-control" accept="image/*">
+                        <div class="form-text">Ảnh tùy chọn, dung lượng tối đa 6 MB.</div>
+                    </div>
+                    <div id="petFormError" class="alert alert-danger d-none mt-3 mb-0" role="alert"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button id="savePetButton" type="submit" class="btn btn-custom-primary">Lưu thú cưng</button>
+                </div>
+            </form>
+        </div>
     </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const apiUrl = '/api/client/pets';
+            const pageSize = @Model.PageSize;
+            const alertBox = document.getElementById('petsAlert');
+            const list = document.getElementById('petsList');
+            const emptyMessage = document.getElementById('petsEmpty');
+            const loading = document.getElementById('petsLoading');
+            const paginationInfo = document.getElementById('petsPaginationInfo');
+            const paginationNav = document.getElementById('petsPaginationNav');
+            const pagination = document.getElementById('petsPagination');
+            const form = document.getElementById('petForm');
+            const modalElement = document.getElementById('petModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+            const formError = document.getElementById('petFormError');
+            const saveButton = document.getElementById('savePetButton');
+            let currentPage = @Model.Page;
+            let totalItems = 0;
+            let petsOnPage = [];
+
+            function showAlert(message, isError = false) {
+                alertBox.textContent = message;
+                alertBox.className = `alert ${isError ? 'alert-danger' : 'alert-success'}`;
+            }
+
+            function getAntiForgeryToken() {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                if (!token) {
+                    throw new Error('Không tìm thấy mã bảo mật. Vui lòng tải lại trang.');
+                }
+                return token;
+            }
+
+            async function request(url, options = {}) {
+                const headers = new Headers(options.headers || {});
+                if (options.method) {
+                    headers.set('RequestVerificationToken', getAntiForgeryToken());
+                }
+
+                const response = await fetch(url, {
+                    ...options,
+                    headers,
+                    credentials: 'same-origin'
+                });
+                let result;
+                try {
+                    result = await response.json();
+                } catch {
+                    throw new Error(`Máy chủ trả về phản hồi không hợp lệ (HTTP ${response.status}).`);
+                }
+
+                if (!response.ok || !result.success) {
+                    const errors = Array.isArray(result.errors)
+                        ? [...new Set(result.errors.filter(Boolean))].join(' ')
+                        : '';
+                    throw new Error(errors || result.message || 'Không thể thực hiện yêu cầu.');
+                }
+                return result;
+            }
+
+            function renderPets(pets) {
+                list.replaceChildren();
+                emptyMessage.classList.toggle('d-none', pets.length !== 0);
+
+                for (const pet of pets) {
+                    const column = document.createElement('div');
+                    column.className = 'col';
+
+                    const card = document.createElement('article');
+                    card.className = 'card h-100 shadow-sm overflow-hidden';
+                    const row = document.createElement('div');
+                    row.className = 'row g-0 align-items-center h-100';
+                    const imageColumn = document.createElement('div');
+                    imageColumn.className = 'col-4';
+                    const imageRatio = document.createElement('div');
+                    imageRatio.className = 'ratio ratio-1x1';
+                    const image = document.createElement('img');
+                    image.className = 'w-100 h-100 object-fit-cover';
+                    image.src = pet.avatarUrl || '/images/pet-avatar-default.jpeg';
+                    image.alt = pet.name;
+                    image.onerror = () => {
+                        image.onerror = null;
+                        image.src = '/images/pet-avatar-default.jpeg';
+                    };
+                    imageRatio.append(image);
+                    imageColumn.append(imageRatio);
+
+                    const contentColumn = document.createElement('div');
+                    contentColumn.className = 'col-8';
+                    const body = document.createElement('div');
+                    body.className = 'card-body d-flex flex-column h-100';
+                    const name = document.createElement('h3');
+                    name.className = 'h5 card-title';
+                    name.textContent = pet.name;
+                    const details = document.createElement('p');
+                    details.className = 'card-text small';
+                    const breed = pet.breed || 'Chưa cập nhật';
+                    const weight = pet.weightKg == null ? 'Chưa cập nhật' : `${pet.weightKg} kg`;
+                    details.textContent = `Loài: ${pet.species} · Giống: ${breed} · Cân nặng: ${weight}`;
+                    const actions = document.createElement('div');
+                    actions.className = 'd-flex gap-2 mt-auto';
+
+                    const editButton = document.createElement('button');
+                    editButton.type = 'button';
+                    editButton.className = 'btn btn-outline-primary btn-sm';
+                    editButton.dataset.action = 'edit';
+                    editButton.dataset.petId = pet.id;
+                    editButton.textContent = 'Sửa';
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.type = 'button';
+                    deleteButton.className = 'btn btn-outline-danger btn-sm';
+                    deleteButton.dataset.action = 'delete';
+                    deleteButton.dataset.petId = pet.id;
+                    deleteButton.textContent = 'Xóa';
+
+                    actions.append(editButton, deleteButton);
+                    body.append(name, details, actions);
+                    contentColumn.append(body);
+                    row.append(imageColumn, contentColumn);
+                    card.append(row);
+                    column.append(card);
+                    list.append(column);
+                }
+            }
+
+            function renderPagination(page, size, total) {
+                const totalPages = Math.max(1, Math.ceil(total / size));
+                paginationInfo.textContent =
+                    `Trang ${page}/${totalPages} · ${total.toLocaleString('vi-VN')} thú cưng`;
+                pagination.replaceChildren();
+                paginationNav.classList.toggle('d-none', totalPages <= 1);
+
+                for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+                    const item = document.createElement('li');
+                    item.className = `page-item ${pageNumber === page ? 'active' : ''}`;
+
+                    if (pageNumber === page) {
+                        const currentPageLink = document.createElement('span');
+                        currentPageLink.className = 'page-link';
+                        currentPageLink.textContent = pageNumber;
+                        currentPageLink.setAttribute('aria-current', 'page');
+                        item.append(currentPageLink);
+                    } else {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'page-link';
+                        button.textContent = pageNumber;
+                        button.addEventListener('click', () => loadPets(pageNumber));
+
+                        item.append(button);
+                    }
+                    pagination.append(item);
+                }
+            }
+
+            async function loadPets(page = currentPage) {
+                loading.classList.remove('d-none');
+                try {
+                    const result = await request(`${apiUrl}?page=${page}&pageSize=${pageSize}`);
+                    if (!Array.isArray(result.data) || !Number.isInteger(result.page) ||
+                        !Number.isInteger(result.pageSize) || !Number.isInteger(result.totalItems)) {
+                        throw new Error('Dữ liệu danh sách thú cưng không đúng định dạng.');
+                    }
+
+                    currentPage = result.page;
+                    totalItems = result.totalItems;
+                    petsOnPage = result.data;
+                    renderPets(petsOnPage);
+                    renderPagination(currentPage, result.pageSize, totalItems);
+                    return true;
+                } catch (error) {
+                    showAlert(error.message, true);
+                    return false;
+                } finally {
+                    loading.classList.add('d-none');
+                }
+            }
+
+            function openCreateForm() {
+                form.reset();
+                document.getElementById('petId').value = '';
+                document.getElementById('petModalTitle').textContent = 'Thêm thú cưng';
+                formError.classList.add('d-none');
+                modal.show();
+            }
+
+            async function openEditForm(id) {
+                try {
+                    const result = await request(`${apiUrl}/${id}`);
+                    const pet = result.data;
+                    document.getElementById('petId').value = pet.id;
+                    document.getElementById('petName').value = pet.name;
+                    document.getElementById('petSpecies').value = pet.species;
+                    document.getElementById('petBreed').value = pet.breed || '';
+                    document.getElementById('petGender').value = pet.gender;
+                    document.getElementById('petWeight').value = pet.weightKg ?? '';
+                    document.getElementById('petImage').value = '';
+                    document.getElementById('petModalTitle').textContent = 'Cập nhật thú cưng';
+                    formError.classList.add('d-none');
+                    modal.show();
+                } catch (error) {
+                    showAlert(error.message, true);
+                }
+            }
+
+            document.getElementById('addPetButton').addEventListener('click', openCreateForm);
+
+            list.addEventListener('click', async event => {
+                const button = event.target.closest('button[data-action]');
+                if (!button) return;
+
+                const id = Number(button.dataset.petId);
+                if (button.dataset.action === 'edit') {
+                    await openEditForm(id);
+                    return;
+                }
+                if (button.dataset.action !== 'delete' ||
+                    !window.confirm('Bạn có chắc chắn muốn xóa hồ sơ thú cưng này?')) {
+                    return;
+                }
+
+                button.disabled = true;
+                try {
+                    const result = await request(`${apiUrl}/${id}`, { method: 'DELETE' });
+                    if (petsOnPage.length === 1 && currentPage > 1) currentPage--;
+                    if (await loadPets(currentPage)) showAlert(result.message);
+                } catch (error) {
+                    showAlert(error.message, true);
+                    button.disabled = false;
+                }
+            });
+
+            form.addEventListener('submit', async event => {
+                event.preventDefault();
+                if (!form.reportValidity()) return;
+
+                formError.classList.add('d-none');
+                saveButton.disabled = true;
+                try {
+                    const petId = document.getElementById('petId').value;
+                    const result = await request(
+                        petId ? `${apiUrl}/${petId}` : apiUrl,
+                        {
+                            method: petId ? 'PUT' : 'POST',
+                            body: new FormData(form)
+                        });
+
+                    modal.hide();
+                    const page = petId ? currentPage : 1;
+                    if (await loadPets(page)) showAlert(result.message);
+                } catch (error) {
+                    formError.textContent = error.message;
+                    formError.classList.remove('d-none');
+                } finally {
+                    saveButton.disabled = false;
+                }
+            });
+
+            loadPets(@Model.Page);
+        })();
+    </script>
 }

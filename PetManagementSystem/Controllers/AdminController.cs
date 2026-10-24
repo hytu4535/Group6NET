@@ -29,12 +29,19 @@ namespace PetManagementSystem.Controllers
             return View();
         }
 
-        public async Task<IActionResult> Pets(string? searchKeyword, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Pets(string? searchKeyword, int page = 1)
         {
             SetNav("Quản lý Thú cưng", "Pets", "PetCare");
             page = Math.Max(page, 1);
-            pageSize = Math.Clamp(pageSize, 1, 100);
+            const int pageSize = 10;
             var pagedPets = await _petService.GetPagedPetsAsync(searchKeyword, page, pageSize);
+            var lastPage = Math.Max(1, (int)Math.Ceiling(pagedPets.TotalItems / (double)pagedPets.PageSize));
+            if (page > lastPage)
+            {
+                page = lastPage;
+                pagedPets = await _petService.GetPagedPetsAsync(searchKeyword, page, pageSize);
+            }
+
             var users = await _userRepository.GetAllWithRoleAsync();
             ViewData["SearchKeyword"] = searchKeyword;
             ViewData["PetOwners"] = users;
@@ -49,7 +56,10 @@ namespace PetManagementSystem.Controllers
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(MaximumAvatarRequestBytes)]
         [RequestFormLimits(MultipartBodyLengthLimit = MaximumAvatarRequestBytes)]
-        public async Task<IActionResult> CreatePet(CreatePetViewModel model)
+        public async Task<IActionResult> CreatePet(
+            CreatePetViewModel model,
+            string? searchKeyword,
+            int pageSize = 10)
         {
             if (ModelState.IsValid)
             {
@@ -77,7 +87,7 @@ namespace PetManagementSystem.Controllers
                 TempData["ErrorMessage"] = "Dữ liệu nhập vào không hợp lệ!";
             }
 
-            return RedirectToAction(nameof(Pets));
+            return RedirectToAction(nameof(Pets), new { searchKeyword, pageSize });
         }
 
         // POST: /Admin/UpdatePet

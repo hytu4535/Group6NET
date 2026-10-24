@@ -8,6 +8,7 @@ using PetManagementSystem.Models;
 using PetManagementSystem.Repositories;
 using PetManagementSystem.Services;
 using PetManagementSystem.ViewModels;
+using PetManagementSystem.ViewModels.Pets;
 using System.Security.Claims;
 using System.Linq;
 using Microsoft.AspNetCore.Identity;
@@ -481,20 +482,9 @@ namespace PetManagementSystem.Controllers
         // New actions for client portal
         [Authorize(Roles = "member")]
         [HttpGet("/Account/MyPets")]
-        public async Task<IActionResult> MyPets()
+        public IActionResult MyPets()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var pets = await _dbContext.Pets
-                .Where(p => p.UserId == userId || p.UserId == 0)
-                .Include(p => p.PetImages)
-                .OrderByDescending(p => p.CreatedAt)
-                .ToListAsync();
-
-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-            {
-                return JsonResponse(true, "Danh sách thú cưng lấy thành công.", pets);
-            }
-            return View(pets);
+            return View(new MyPetsPageViewModel());
         }
 
         [Authorize(Roles = "member")]

@@ -93,7 +93,7 @@ public class PetService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Lỗi hệ thống khi lấy trang danh sách thú cưng.");
-            return new PagedResult<Pet>([], page, pageSize, 0);
+            return new PagedResult<Pet>([], 0, page, pageSize);
         }
     }
 
