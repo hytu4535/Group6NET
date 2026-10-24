@@ -43,6 +43,11 @@
             <dt class="col-sm-2">Email</dt>
             <dd class="col-sm-4">@(Model.Email ?? "-")</dd>
 
+            <dt class="col-sm-2">Người nhận</dt>
+            <dd class="col-sm-4">@(string.IsNullOrWhiteSpace(Model.ReceiverName) ? "-" : Model.ReceiverName)</dd>
+            <dt class="col-sm-2">Email người nhận</dt>
+            <dd class="col-sm-4">@(string.IsNullOrWhiteSpace(Model.ReceiverEmail) ? "-" : Model.ReceiverEmail)</dd>
+
             <dt class="col-sm-2">SĐT nhận hàng</dt>
             <dd class="col-sm-4">@Model.Phone</dd>
             <dt class="col-sm-2">Ngày đặt</dt>

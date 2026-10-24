@@ -154,6 +154,18 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+    // Đảm bảo bảng orders có cột thông tin người nhận (họ tên, email). Idempotent; tương đương Database/AddOrderReceiverInfo.sql.
+    try
+    {
+        dbContext.Database.ExecuteSqlRaw(
+            "IF COL_LENGTH('dbo.orders', 'receiver_name') IS NULL ALTER TABLE dbo.orders ADD receiver_name NVARCHAR(150) NULL; " +
+            "IF COL_LENGTH('dbo.orders', 'receiver_email') IS NULL ALTER TABLE dbo.orders ADD receiver_email NVARCHAR(150) NULL;");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[SETUP] Could not ensure orders receiver columns: {ex.Message}");
+    }
+
     var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
     var adminUser = dbContext.Users.FirstOrDefault(x => x.Username == "admin01");
     if (adminUser != null)

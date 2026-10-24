@@ -21,12 +21,15 @@ public static class ProductSorts
 /// <summary>Các phương thức thanh toán khách hàng thực sự dùng được khi đặt hàng.</summary>
 public static class ClientPaymentMethods
 {
-    // Hệ thống chưa tích hợp cổng thanh toán trực tuyến nên chỉ hỗ trợ thanh toán khi nhận hàng.
-    public static readonly string[] Supported = [PaymentMethods.Cash];
+    // Khách được chọn Tiền mặt / Chuyển khoản / Ví điện tử. Hệ thống chưa tích hợp cổng thanh toán trực tuyến:
+    // giao dịch chuyển khoản và ví điện tử được tạo ở trạng thái "pending" và nhân viên xác nhận trong Quản lý thanh toán.
+    public static readonly string[] Supported = [PaymentMethods.Cash, PaymentMethods.BankTransfer, PaymentMethods.EWallet];
 
     public static string Description(string method) => method switch
     {
         PaymentMethods.Cash => "Thanh toán bằng tiền mặt khi nhận hàng (COD).",
+        PaymentMethods.BankTransfer => "Chuyển khoản ngân hàng. Thông tin tài khoản và nội dung chuyển khoản hiển thị sau khi đặt hàng.",
+        PaymentMethods.EWallet => "Thanh toán qua ví điện tử. Thông tin thanh toán hiển thị sau khi đặt hàng.",
         _ => string.Empty
     };
 }

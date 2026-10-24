@@ -64,6 +64,8 @@ public class MyOrderDetailsViewModel
 {
     public int Id { get; set; }
     public DateTime OrderDate { get; set; }
+    public string? ReceiverName { get; set; }
+    public string? ReceiverEmail { get; set; }
     public string ShippingAddress { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
     public string? Note { get; set; }

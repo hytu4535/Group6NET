@@ -160,12 +160,18 @@
                                     ? "Chưa có mô tả sản phẩm."
                                     : product.Description)
                             </p>
-                            <div class="d-flex align-items-center justify-content-between gap-2 mt-2">
+                            <div class="mt-2">
                                 <span class="fw-bold fs-5 text-nowrap">@CommerceFormat.Money(product.Price)</span>
+                            </div>
+                            <div class="d-flex gap-2 mt-2">
                                 <a asp-action="Details" asp-route-id="@product.Id"
-                                   class="btn btn-sm btn-shop rounded-pill px-3">
-                                    Xem chi tiết
+                                   class="btn btn-sm btn-outline-secondary rounded-pill flex-fill">
+                                    Chi tiết
                                 </a>
+                                <button type="button" class="btn btn-sm btn-shop rounded-pill flex-fill"
+                                        data-add-to-cart="@product.Id" data-qty="1" disabled="@(!product.InStock)">
+                                    <i class="bi bi-cart-plus me-1"></i>@(product.InStock ? "Thêm vào giỏ" : "Hết hàng")
+                                </button>
                             </div>
                         </div>
                     </article>
@@ -183,6 +189,10 @@
                  ["RouteValues"] = Model.RouteValues
              }' />
 </div>
+
+@section Scripts {
+    <script src="~/js/shop.js" asp-append-version="true"></script>
+}
 
 <style>
     .product-card {
