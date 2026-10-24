@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using PetManagementSystem.Models;
 using PetManagementSystem.Services;
 using PetManagementSystem.ViewModels.AI;
@@ -47,10 +48,12 @@ public class ClientAiChatApiController(IClientAiChatService aiChatService) : Con
 
     [HttpPost("messages")]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting("ai-chat")]
     public async Task<ActionResult<ApiResponse<object>>> SendMessage(
-        [FromBody] SendAiChatMessageViewModel model)
+        [FromBody] SendAiChatMessageViewModel model,
+        CancellationToken cancellationToken)
     {
-        if (!TryGetUserId(out _))
+        if (!TryGetUserId(out var userId))
         {
             return Unauthorized(ApiResponse<object>.Fail("Vui lòng đăng nhập lại."));
         }
@@ -65,7 +68,7 @@ public class ClientAiChatApiController(IClientAiChatService aiChatService) : Con
             return BadRequest(ApiResponse<object>.Fail("Tin nhắn không hợp lệ.", errors));
         }
 
-        var result = await aiChatService.SendMessageAsync(model.Message);
+        var result = await aiChatService.SendMessageAsync(userId, model.Message, cancellationToken);
         if (!result.Success)
         {
             return result.Field is not null

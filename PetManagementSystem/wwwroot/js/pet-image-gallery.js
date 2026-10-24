@@ -230,8 +230,22 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    document.getElementById('petImageFilters').addEventListener('submit', function (event) {
+    var filters = document.getElementById('petImageFilters');
+    filters.addEventListener('submit', function (event) {
         event.preventDefault();
+        currentPage = 1;
+        loadImages();
+    });
+
+    ['petFilter', 'avatarFilter'].forEach(function (id) {
+        document.getElementById(id).addEventListener('change', function () {
+            currentPage = 1;
+            loadImages();
+        });
+    });
+
+    document.getElementById('clearImageFilters').addEventListener('click', function () {
+        filters.reset();
         currentPage = 1;
         loadImages();
     });

@@ -54,6 +54,29 @@
     font-size: 0.78rem;
 }
 
+.ai-chat-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.65rem 0.85rem 0;
+    background: #fffafa;
+}
+
+.ai-chat-suggestions button {
+    border: 1px solid #f2c8c4;
+    border-radius: 1rem;
+    padding: 0.3rem 0.65rem;
+    background: #fff;
+    color: #75423e;
+    font-size: 0.75rem;
+}
+
+.ai-chat-suggestions button:hover,
+.ai-chat-suggestions button:focus-visible {
+    border-color: #ff7b72;
+    background: #fff4f2;
+}
+
 .ai-chat-messages {
     flex: 1;
     overflow-y: auto;

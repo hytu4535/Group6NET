@@ -103,6 +103,12 @@ public class ChatConversationRepository(AppDbContext dbContext) : IChatConversat
             .FirstOrDefaultAsync(conversation => conversation.Id == id);
     }
 
+    public async Task AddAsync(ChatConversation conversation)
+    {
+        dbContext.ChatConversations.Add(conversation);
+        await dbContext.SaveChangesAsync();
+    }
+
     public async Task<bool> DeleteAsync(int id)
     {
         var conversation = await dbContext.ChatConversations.FindAsync(id);

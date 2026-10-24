@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Security.Claims;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -34,7 +36,8 @@ builder.Services.AddScoped<IPetRepository, PetRepository>();
 builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IChatConversationRepository, ChatConversationRepository>();
-builder.Services.AddScoped<IClientAiChatService, ClientAiChatService>();
+builder.Services.AddHttpClient<IClientAiChatService, ClientAiChatService>(client =>
+    client.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddScoped<IClientCartRepository, ClientCartRepository>();
 builder.Services.AddScoped<IClientOrderRepository, ClientOrderRepository>();
 builder.Services.AddScoped<IStorefrontRepository, StorefrontRepository>();
@@ -102,6 +105,27 @@ builder.Services
 
 builder.Services.AddAuthorization();
 builder.Services.AddPermissionPolicies();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            ApiResponse<object>.Fail("Bạn đã gửi nhiều câu hỏi trong thời gian ngắn. Vui lòng thử lại sau."),
+            cancellationToken);
+    };
+    options.AddPolicy("ai-chat", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.User.FindFirstValue(ClaimTypes.NameIdentifier) ??
+                context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+});
 
 builder.Services.AddHttpClient<IPetRecognitionService, PetRecognitionService>(
     (serviceProvider, client) =>
@@ -173,6 +197,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseMiddleware<AuditUserActionMiddleware>();
 app.UseAuthorization();
 

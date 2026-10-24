@@ -6,6 +6,7 @@
     const input = document.getElementById('aiChatInput');
     const messages = document.getElementById('aiChatMessages');
     const sendButton = document.getElementById('aiChatSend');
+    const suggestions = document.getElementById('aiChatSuggestions');
     const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
 
     if (!panel || !launcher || !close || !form || !input || !messages || !sendButton || !token) {
@@ -15,6 +16,7 @@
     let historyLoaded = false;
 
     function addBubble(text, type) {
+        messages.querySelector('.ai-chat-empty')?.remove();
         const bubble = document.createElement('div');
         bubble.className = `ai-chat-bubble ai-chat-bubble-${type}`;
         bubble.textContent = text;
@@ -41,7 +43,12 @@
             headers.set('RequestVerificationToken', token);
         }
         const response = await fetch(url, { ...options, headers, credentials: 'same-origin' });
-        const result = await response.json();
+        let result;
+        try {
+            result = await response.json();
+        } catch {
+            throw new Error('Máy chủ trả về phản hồi không hợp lệ. Vui lòng thử lại sau.');
+        }
         if (!response.ok || !result.success) {
             throw new Error(result.errors?.join(' ') || result.message || 'Không thể hoàn tất yêu cầu.');
         }
@@ -53,7 +60,11 @@
         historyLoaded = true;
         try {
             const result = await request('/api/client/ai-chat/conversations?page=1&pageSize=10');
-            for (const conversation of (result.data || []).slice().reverse()) {
+            const conversations = result.data || [];
+            if (conversations.length) {
+                suggestions?.classList.add('d-none');
+            }
+            for (const conversation of conversations.slice().reverse()) {
                 addBubble(conversation.userMessage, 'user');
                 if (conversation.aiMessage) {
                     addBubble(conversation.aiMessage, 'assistant');
@@ -67,26 +78,37 @@
     launcher.addEventListener('click', () => togglePanel(panel.classList.contains('d-none')));
     close.addEventListener('click', () => togglePanel(false));
 
-    form.addEventListener('submit', async event => {
-        event.preventDefault();
-        const message = input.value.trim();
+    async function sendMessage(message) {
         if (!message || sendButton.disabled) return;
-
         sendButton.disabled = true;
+        suggestions?.classList.add('d-none');
+        addBubble(message, 'user');
+        input.value = '';
         try {
             const result = await request('/api/client/ai-chat/messages', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message })
             });
-            addBubble(message, 'user');
             addBubble(result.data.reply, 'assistant');
-            input.value = '';
         } catch (error) {
             addBubble(error.message, 'error');
+            input.value = message;
         } finally {
             sendButton.disabled = false;
             input.focus();
+        }
+    }
+
+    form.addEventListener('submit', event => {
+        event.preventDefault();
+        sendMessage(input.value.trim());
+    });
+
+    suggestions?.addEventListener('click', event => {
+        const button = event.target.closest('button[data-chat-question]');
+        if (button) {
+            sendMessage(button.dataset.chatQuestion);
         }
     });
 
