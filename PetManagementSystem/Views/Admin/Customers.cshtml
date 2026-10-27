@@ -1,113 +1,198 @@
+@model IReadOnlyList<PetManagementSystem.ViewModels.CustomerListItemViewModel>
+
 @{
     Layout = "_AdminLayout";
+    var search = ViewData["Search"] as string;
+    var status = ViewData["Status"] as string;
+    var sort = ViewData["Sort"] as string ?? "created";
+    var descending = ViewData["Descending"] is bool value && value;
+    var page = ViewData["Page"] is int pageValue ? pageValue : 1;
+    var pageSize = ViewData["PageSize"] is int sizeValue ? sizeValue : 10;
+    var totalItems = ViewData["TotalItems"] is int totalValue ? totalValue : 0;
+    var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+    var createCustomerForm = ViewData["CustomerForm"] as PetManagementSystem.ViewModels.CustomerFormViewModel
+        ?? new PetManagementSystem.ViewModels.CustomerFormViewModel();
 }
 
-<partial name="~/Views/Admin/Partials/Shared/_ModuleSummary.cshtml"
-         view-data='new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData)
-         {
-             ["SummaryTitle"] = "Identity: Users / Roles / Permissions",
-             ["SummaryDescription"] = "Bảng liên quan: users, roles, permissions, role_permissions.",
-             ["SummaryThemeClass"] = "module-summary-identity"
-         }' />
-
-<div class="card-panel">
-    <div class="card-panel-header">
-        <h5>Danh sách Users (mock)</h5>
-        <button class="btn btn-warning text-white" type="button" data-bs-toggle="modal" data-bs-target="#customerModal">
-            <i class="bi bi-plus-lg"></i> Thêm user
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Danh sách khách hàng</h5>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCustomerModal">
+            <i class="bi bi-person-plus me-1"></i>Thêm khách hàng
         </button>
     </div>
-    <div class="table-responsive">
-        <table class="table table-admin table-hover align-middle">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Họ tên</th>
-                    <th>Số điện thoại</th>
-                    <th>Email</th>
-                    <th>Địa chỉ</th>
-                    <th>Số thú cưng</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>1</td>
-                    <td>Nguyễn Văn A</td>
-                    <td>0912 345 678</td>
-                    <td>vana@gmail.com</td>
-                    <td>Quận 1, TP.HCM</td>
-                    <td>2</td>
-                    <td><span class="badge badge-status-active">Hoạt động</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>Trần Thị B</td>
-                    <td>0987 654 321</td>
-                    <td>tranb@gmail.com</td>
-                    <td>Quận 3, TP.HCM</td>
-                    <td>1</td>
-                    <td><span class="badge badge-status-active">Hoạt động</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>3</td>
-                    <td>Lê Văn C</td>
-                    <td>0903 456 789</td>
-                    <td>levanc@gmail.com</td>
-                    <td>Thủ Đức, TP.HCM</td>
-                    <td>3</td>
-                    <td><span class="badge badge-status-inactive">Ngưng hoạt động</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></button>
-                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+    <div class="card-body">
+        @if (TempData["SuccessMessage"] is string successMessage)
+        {
+            <div class="alert alert-success">@successMessage</div>
+        }
+        @if (TempData["ErrorMessage"] is string errorMessage)
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+
+        <form method="get" asp-action="Customers" class="row g-2 mb-3">
+            <div class="col-md-4"><label for="customerSearch" class="form-label mb-1">Từ khóa</label><input id="customerSearch" name="search" value="@search" class="form-control" placeholder="Họ tên, username, email, SĐT..." /></div>
+            <div class="col-md-2"><label for="customerStatus" class="form-label mb-1">Trạng thái</label>
+                <select id="customerStatus" name="status" class="form-select">
+                    <option value="">Tất cả</option>
+                    <option value="active" selected="@(status == "active")">Hoạt động</option>
+                    <option value="inactive" selected="@(status == "inactive")">Đã khóa</option>
+                </select>
+            </div>
+            <div class="col-md-3"><label for="customerSort" class="form-label mb-1">Sắp xếp theo</label>
+                <select id="customerSort" name="sort" class="form-select">
+                    <option value="created" selected="@(sort == "created")">Ngày tạo</option>
+                    <option value="fullname" selected="@(sort == "fullname")">Họ tên</option>
+                    <option value="email" selected="@(sort == "email")">Email</option>
+                    <option value="phone" selected="@(sort == "phone")">Số điện thoại</option>
+                    <option value="pets" selected="@(sort == "pets")">Số thú cưng</option>
+                    <option value="status" selected="@(sort == "status")">Trạng thái</option>
+                </select>
+            </div>
+            <div class="col-md-2"><label for="customerOrder" class="form-label mb-1">Thứ tự</label>
+                <select id="customerOrder" name="descending" class="form-select">
+                    <option value="false" selected="@(!descending)">Tăng dần</option>
+                    <option value="true" selected="@descending">Giảm dần</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end gap-2">
+                <button class="btn btn-outline-primary" type="submit" title="Áp dụng bộ lọc"><i class="bi bi-funnel me-1"></i>Lọc</button>
+                <a class="btn btn-outline-secondary" asp-action="Customers" title="Xóa bộ lọc"><i class="bi bi-x-lg me-1"></i>Xóa</a>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Họ tên</th>
+                        <th>Email</th>
+                        <th>Số điện thoại</th>
+                        <th>Số thú cưng</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày tạo</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr><td colspan="8" class="text-center text-muted">Chưa có khách hàng phù hợp.</td></tr>
+                    }
+                    else
+                    {
+                        var index = (page - 1) * pageSize;
+                        foreach (var customer in Model)
+                        {
+                            index++;
+                            var isActive = string.Equals(customer.Status, "active", StringComparison.OrdinalIgnoreCase);
+                            <tr>
+                                <td>@index</td>
+                                <td><span class="fw-semibold">@(string.IsNullOrWhiteSpace(customer.FullName) ? customer.Username : customer.FullName)</span><div class="small text-muted">@customer.Username</div></td>
+                                <td>@customer.Email</td>
+                                <td>@(string.IsNullOrWhiteSpace(customer.PhoneNumber) ? "-" : customer.PhoneNumber)</td>
+                                <td>@customer.PetCount</td>
+                                <td><span class="badge @(isActive ? "text-bg-success" : "text-bg-secondary")">@(isActive ? "Hoạt động" : "Đã khóa")</span></td>
+                                <td>@customer.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                <td class="text-end text-nowrap">
+                                    <a asp-action="CustomerDetails" asp-route-id="@customer.Id" class="btn btn-sm btn-outline-info" title="Chi tiết"><i class="bi bi-eye"></i></a>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editCustomer-@customer.Id" title="Sửa"><i class="bi bi-pencil-square"></i></button>
+                                    <form asp-action="ToggleCustomerStatus" method="post" class="d-inline"><input type="hidden" name="id" value="@customer.Id" /><button class="btn btn-sm btn-outline-warning" title="@(isActive ? "Khóa" : "Mở khóa")"><i class="bi @(isActive ? "bi-lock" : "bi-unlock")"></i></button></form>
+                                    <form asp-action="DeleteCustomer" method="post" class="d-inline" onsubmit="return confirm('Chỉ tài khoản chưa phát sinh dữ liệu mới được xóa. Tiếp tục?');"><input type="hidden" name="id" value="@customer.Id" /><button class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-trash"></i></button></form>
+                                </td>
+                            </tr>
+                        }
+
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (totalPages > 1)
+        {
+            <nav><ul class="pagination justify-content-end mb-0">
+                @for (var pageNumber = 1; pageNumber <= totalPages; pageNumber++)
+                {
+                    <li class="page-item @(pageNumber == page ? "active" : "")"><a class="page-link" asp-action="Customers" asp-route-search="@search" asp-route-status="@status" asp-route-sort="@sort" asp-route-descending="@descending" asp-route-page="@pageNumber" asp-route-pageSize="@pageSize">@pageNumber</a></li>
+                }
+            </ul></nav>
+        }
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.querySelectorAll('.customer-form').forEach(function (form) {
+            var select = form.querySelector('.customer-user-select');
+            var message = form.querySelector('.customer-user-message');
+            var submit = form.querySelector('button[type="submit"]');
+            if (!select) return;
+
+            function setField(name, value) {
+                var field = form.querySelector('[name="' + name + '"]');
+                if (field) field.value = value || '';
+            }
+
+            function loadUser() {
+                var id = select.value;
+                message.textContent = '';
+                if (submit) submit.disabled = false;
+                if (!id) {
+                    setField('FullName', '');
+                    setField('Email', '');
+                    setField('PhoneNumber', '');
+                    setField('Address', '');
+                    return;
+                }
+
+                fetch('@Url.Action("CustomerUserLookup", "Admin")?id=' + encodeURIComponent(id))
+                    .then(function (response) {
+                        if (!response.ok) throw new Error('Không thể tải thông tin tài khoản.');
+                        return response.json();
+                    })
+                    .then(function (user) {
+                        setField('FullName', user.fullName);
+                        setField('Email', user.email);
+                        setField('PhoneNumber', user.phoneNumber);
+                        setField('Address', user.address);
+                        if (user.isCustomer) {
+                            message.textContent = 'Username này đã có trong danh sách khách hàng, không thể thêm trùng.';
+                            if (submit && form.querySelector('select.customer-user-select:not([disabled])')) submit.disabled = true;
+                        } else {
+                            message.textContent = 'Thông tin được lấy từ trang quản lý tài khoản.';
+                        }
+                    })
+                    .catch(function (error) {
+                        message.textContent = error.message;
+                        if (submit) submit.disabled = true;
+                    });
+            }
+
+            select.addEventListener('change', loadUser);
+            if (select.value) loadUser();
+        });
+    </script>
+}
     </div>
 </div>
 
-<!-- Modal thêm/sửa khách hàng -->
-<div class="modal fade" id="customerModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Thêm khách hàng</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form>
-                    <div class="mb-3">
-                        <label class="form-label">Họ tên</label>
-                        <input type="text" class="form-control" placeholder="Nhập họ tên" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Số điện thoại</label>
-                        <input type="text" class="form-control" placeholder="Nhập số điện thoại" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-control" placeholder="Nhập email" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Địa chỉ</label>
-                        <textarea class="form-control" rows="2" placeholder="Nhập địa chỉ"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-warning text-white">Lưu</button>
-            </div>
-        </div>
-    </div>
-</div>
+<div class="modal fade" id="createCustomerModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+    <form asp-action="CreateCustomer" method="post" class="customer-form">
+        @Html.AntiForgeryToken()
+        <div class="modal-header"><h5 class="modal-title">Thêm khách hàng</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">@await Html.PartialAsync("_CustomerForm", createCustomerForm, new ViewDataDictionary(ViewData) { ["IsCreate"] = true })</div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button class="btn btn-primary">Lưu</button></div>
+    </form>
+</div></div></div>
+
+@foreach (var customer in Model)
+{
+    <div class="modal fade" id="editCustomer-@customer.Id" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+        <form asp-action="UpdateCustomer" method="post" class="customer-form">
+            @Html.AntiForgeryToken()
+            <div class="modal-header"><h5 class="modal-title">Sửa khách hàng</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">@await Html.PartialAsync("_CustomerForm", new PetManagementSystem.ViewModels.CustomerFormViewModel { Id = customer.Id, UserId = customer.Id, FullName = customer.FullName, Email = customer.Email, PhoneNumber = customer.PhoneNumber, Address = customer.Address, UserOptions = createCustomerForm.UserOptions }, new ViewDataDictionary(ViewData) { ["IsCreate"] = false })</div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button class="btn btn-primary">Lưu thay đổi</button></div>
+        </form>
+    </div></div></div>
+}

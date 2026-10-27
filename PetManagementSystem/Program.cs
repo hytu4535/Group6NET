@@ -29,6 +29,7 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
@@ -45,6 +46,7 @@ builder.Services.AddScoped<IStorefrontRepository, StorefrontRepository>();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IPetService, PetService>();
 builder.Services.AddScoped<IAppointmentManagerService, AppointmentManagerService>();
 builder.Services.AddScoped<IFeedbackService, FeedbackService>();

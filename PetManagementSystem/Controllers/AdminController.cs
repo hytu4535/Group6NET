@@ -16,7 +16,8 @@ namespace PetManagementSystem.Controllers
       AppDbContext context,
       IPetService petService,
       IFeedbackService feedbackService,
-      IUserRepository userRepository) : Controller
+      IUserRepository userRepository,
+      ICustomerService customerService) : Controller
     {
         private const long MaximumAvatarRequestBytes =
             RecognitionImageFileAttribute.MaximumFileSizeBytes + 64 * 1024;
@@ -25,6 +26,7 @@ namespace PetManagementSystem.Controllers
         private readonly IPetService _petService = petService;
         private readonly IFeedbackService _feedbackService = feedbackService;
         private readonly IUserRepository _userRepository = userRepository;
+        private readonly ICustomerService _customerService = customerService;
         public IActionResult Dashboard()
         {
             SetNav("Dashboard", "Dashboard", string.Empty);
@@ -180,10 +182,95 @@ namespace PetManagementSystem.Controllers
         }
 
 
-        public IActionResult Customers()
+        public async Task<IActionResult> Customers(
+            string? search,
+            string? status,
+            string? sort = "created",
+            bool descending = true,
+            int page = 1,
+            int pageSize = 10)
         {
-            SetNav("Quản lý Khách hàng", "Users", "Identity");
-            return View();
+            SetNav("Quản lý Khách hàng", "Customers", "Identity");
+            page = Math.Max(page, 1);
+            pageSize = Math.Clamp(pageSize, 1, 100);
+            var result = await _customerService.SearchAsync(search, status, sort, descending, page, pageSize);
+            ViewData["CustomerForm"] = await _customerService.PrepareCreateFormAsync();
+            ViewData["Search"] = search;
+            ViewData["Status"] = status;
+            ViewData["Sort"] = sort;
+            ViewData["Descending"] = descending;
+            ViewData["Page"] = result.Page;
+            ViewData["PageSize"] = result.PageSize;
+            ViewData["TotalItems"] = result.TotalItems;
+            return View(result.Items);
+        }
+
+        public async Task<IActionResult> CustomerDetails(int id)
+        {
+            SetNav("Chi tiết khách hàng", "Customers", "Identity");
+            var customer = await _customerService.GetDetailsAsync(id);
+            return customer is null ? NotFound() : View(customer);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CustomerUserLookup(int id)
+        {
+            var user = await _customerService.GetUserLookupAsync(id);
+            return user is null ? NotFound() : Json(user);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateCustomer(CustomerFormViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["ErrorMessage"] = "Dữ liệu khách hàng không hợp lệ.";
+                return RedirectToAction(nameof(Customers));
+            }
+
+            var result = await _customerService.CreateAsync(model);
+            TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] =
+                result.Success ? "Thêm khách hàng thành công!" : result.ErrorMessage;
+            return RedirectToAction(nameof(Customers));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateCustomer(CustomerFormViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["ErrorMessage"] = "Dữ liệu khách hàng không hợp lệ.";
+                return RedirectToAction(nameof(Customers));
+            }
+
+            var result = await _customerService.UpdateAsync(model);
+            TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] =
+                result.Success ? "Cập nhật khách hàng thành công!" : result.ErrorMessage;
+            return RedirectToAction(nameof(Customers));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleCustomerStatus(int id)
+        {
+            var result = await _customerService.ToggleStatusAsync(id);
+            TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] =
+                result.Success ? "Đã cập nhật trạng thái tài khoản." : result.ErrorMessage;
+            return RedirectToAction(nameof(Customers));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteCustomer(int id)
+        {
+            var result = await _customerService.DeleteAsync(id);
+            TempData[result.Success ? "SuccessMessage" : "ErrorMessage"] =
+                result.Success
+                    ? (string.IsNullOrWhiteSpace(result.ErrorMessage) ? "Xóa khách hàng thành công!" : result.ErrorMessage)
+                    : result.ErrorMessage;
+            return RedirectToAction(nameof(Customers));
         }
 
         public IActionResult Employees()

@@ -253,11 +253,29 @@ public class IdentityController(
             return RedirectToAction(nameof(Users));
         }
 
-        user.Status = "deleted";
-        user.UpdatedAt = DateTime.UtcNow;
+        if (await userRepository.HasRelatedDataAsync(id))
+        {
+            user.Status = "deleted";
+            user.UpdatedAt = DateTime.UtcNow;
+            if (user.Staff is not null)
+            {
+                user.Staff.Status = "deleted";
+                user.Staff.UpdatedAt = DateTime.UtcNow;
+            }
+            if (user.Veterinarian is not null)
+            {
+                user.Veterinarian.Status = "deleted";
+                user.Veterinarian.UpdatedAt = DateTime.UtcNow;
+            }
 
-        await userRepository.UpdateAsync(user);
-        TempData["Success"] = "Đã xóa mềm người dùng";
+            await userRepository.UpdateAsync(user);
+            TempData["Success"] = "Đã xóa mềm người dùng vì tài khoản đã phát sinh dữ liệu";
+        }
+        else
+        {
+            await userRepository.DeleteHardAsync(user);
+            TempData["Success"] = "Đã xóa cứng người dùng vì tài khoản chưa phát sinh dữ liệu";
+        }
         return RedirectToAction(nameof(Users));
     }
 
@@ -627,11 +645,17 @@ public class IdentityController(
         if (hireDateTo.HasValue) staffList = staffList.Where(s => s.HireDate <= hireDateTo.Value.Date.AddDays(1).AddTicks(-1)).ToList();
         if (string.IsNullOrWhiteSpace(status) || status.Equals("all", StringComparison.OrdinalIgnoreCase))
         {
-            staffList = staffList.Where(s => !string.Equals(s.Status, "deleted", StringComparison.OrdinalIgnoreCase)).ToList();
+            staffList = staffList.Where(s => !string.Equals(s.Status, "deleted", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(s.User?.Status, "deleted", StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+        else if (status.Equals("deleted", StringComparison.OrdinalIgnoreCase))
+        {
+            staffList = staffList.Where(s => string.Equals(s.Status, "deleted", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(s.User?.Status, "deleted", StringComparison.OrdinalIgnoreCase)).ToList();
         }
         else
         {
-            staffList = staffList.Where(s => s.Status == status).ToList();
+            staffList = staffList.Where(s => s.Status == status && s.User?.Status == status).ToList();
         }
         ViewData["Search"] = search;
         ViewData["Position"] = position;
@@ -784,6 +808,11 @@ public class IdentityController(
         }
 
         staff.UpdatedAt = DateTime.UtcNow;
+        if (staff.User is not null)
+        {
+            staff.User.Status = staff.Status;
+            staff.User.UpdatedAt = DateTime.UtcNow;
+        }
         await staffRepository.UpdateAsync(staff);
         return RedirectToAction(nameof(Staff));
     }
@@ -807,8 +836,21 @@ public class IdentityController(
 
         staff.Status = "deleted";
         staff.UpdatedAt = DateTime.UtcNow;
-        await staffRepository.UpdateAsync(staff);
-        TempData["Success"] = "Đã xóa mềm nhân viên";
+        if (await userRepository.HasRelatedDataAsync(staff.UserId))
+        {
+            if (staff.User is not null)
+            {
+                staff.User.Status = "deleted";
+                staff.User.UpdatedAt = DateTime.UtcNow;
+            }
+            await staffRepository.UpdateAsync(staff);
+            TempData["Success"] = "Đã xóa mềm nhân viên vì tài khoản đã phát sinh dữ liệu";
+        }
+        else if (staff.User is not null)
+        {
+            await userRepository.DeleteHardAsync(staff.User);
+            TempData["Success"] = "Đã xóa cứng nhân viên vì tài khoản chưa phát sinh dữ liệu";
+        }
         return RedirectToAction(nameof(Staff));
     }
 
@@ -828,11 +870,17 @@ public class IdentityController(
         if (maxExperience.HasValue) vets = vets.Where(v => v.YearsOfExperience <= maxExperience).ToList();
         if (string.IsNullOrWhiteSpace(status) || status.Equals("all", StringComparison.OrdinalIgnoreCase))
         {
-            vets = vets.Where(v => !string.Equals(v.Status, "deleted", StringComparison.OrdinalIgnoreCase)).ToList();
+            vets = vets.Where(v => !string.Equals(v.Status, "deleted", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(v.User?.Status, "deleted", StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+        else if (status.Equals("deleted", StringComparison.OrdinalIgnoreCase))
+        {
+            vets = vets.Where(v => string.Equals(v.Status, "deleted", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(v.User?.Status, "deleted", StringComparison.OrdinalIgnoreCase)).ToList();
         }
         else
         {
-            vets = vets.Where(v => v.Status == status).ToList();
+            vets = vets.Where(v => v.Status == status && v.User?.Status == status).ToList();
         }
         ViewData["Search"] = search;
         ViewData["Specialty"] = specialty;
@@ -1203,6 +1251,11 @@ public class IdentityController(
         }
 
         vet.UpdatedAt = DateTime.UtcNow;
+        if (vet.User is not null)
+        {
+            vet.User.Status = vet.Status;
+            vet.User.UpdatedAt = DateTime.UtcNow;
+        }
         await veterinarianRepository.UpdateAsync(vet);
         return RedirectToAction(nameof(Veterinarians));
     }
@@ -1226,8 +1279,21 @@ public class IdentityController(
 
         vet.Status = "deleted";
         vet.UpdatedAt = DateTime.UtcNow;
-        await veterinarianRepository.UpdateAsync(vet);
-        TempData["Success"] = "Đã xóa mềm bác sĩ thú y";
+        if (await userRepository.HasRelatedDataAsync(vet.UserId))
+        {
+            if (vet.User is not null)
+            {
+                vet.User.Status = "deleted";
+                vet.User.UpdatedAt = DateTime.UtcNow;
+            }
+            await veterinarianRepository.UpdateAsync(vet);
+            TempData["Success"] = "Đã xóa mềm bác sĩ thú y vì tài khoản đã phát sinh dữ liệu";
+        }
+        else if (vet.User is not null)
+        {
+            await userRepository.DeleteHardAsync(vet.User);
+            TempData["Success"] = "Đã xóa cứng bác sĩ thú y vì tài khoản chưa phát sinh dữ liệu";
+        }
         return RedirectToAction(nameof(Veterinarians));
     }
 

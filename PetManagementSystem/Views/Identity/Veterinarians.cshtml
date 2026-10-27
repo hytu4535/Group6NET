@@ -82,8 +82,8 @@
                                         <a class="btn btn-sm btn-outline-info" asp-action="DetailsVeterinarian" asp-route-id="@item.Id" title="Xem chi tiết"><i class="bi bi-eye"></i></a>
                                         <a class="btn btn-sm btn-outline-primary" asp-action="EditVeterinarian" asp-route-id="@item.Id" title="Chỉnh sửa"><i class="bi bi-pencil-square"></i></a>
                                         <div class="w-100"></div>
-                                        <form asp-action="SoftDeleteVeterinarian" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bác sĩ thú y này khỏi danh sách?');">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa mềm"><i class="bi bi-trash"></i></button>
+                                        <form asp-action="SoftDeleteVeterinarian" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Tài khoản có dữ liệu sẽ xóa mềm, tài khoản chưa có dữ liệu sẽ xóa cứng. Tiếp tục?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa tài khoản (tự động mềm/cứng)"><i class="bi bi-trash"></i></button>
                                             @Html.AntiForgeryToken()
                                         </form>
                                     </div>
