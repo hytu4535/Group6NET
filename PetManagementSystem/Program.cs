@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PetManagementSystem.Data;
+using PetManagementSystem.Filters;
 using PetManagementSystem.Helpers;
 using PetManagementSystem.Middleware;
 using PetManagementSystem.Models;
@@ -28,6 +29,7 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
@@ -44,6 +46,7 @@ builder.Services.AddScoped<IStorefrontRepository, StorefrontRepository>();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IPetService, PetService>();
 builder.Services.AddScoped<IAppointmentManagerService, AppointmentManagerService>();
 builder.Services.AddScoped<IFeedbackService, FeedbackService>();
@@ -77,7 +80,7 @@ builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/User/Login";
+        options.LoginPath = "/Account/Login";
         options.AccessDeniedPath = "/Auth/AccessDenied";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
@@ -105,6 +108,8 @@ builder.Services
 
 builder.Services.AddAuthorization();
 builder.Services.AddPermissionPolicies();
+builder.Services.AddScoped<AdminAccessFilter>();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -150,6 +155,18 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    // Đảm bảo bảng orders có cột thông tin người nhận (họ tên, email). Idempotent; tương đương Database/AddOrderReceiverInfo.sql.
+    try
+    {
+        dbContext.Database.ExecuteSqlRaw(
+            "IF COL_LENGTH('dbo.orders', 'receiver_name') IS NULL ALTER TABLE dbo.orders ADD receiver_name NVARCHAR(150) NULL; " +
+            "IF COL_LENGTH('dbo.orders', 'receiver_email') IS NULL ALTER TABLE dbo.orders ADD receiver_email NVARCHAR(150) NULL;");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[SETUP] Could not ensure orders receiver columns: {ex.Message}");
+    }
 
     var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
     var adminUser = dbContext.Users.FirstOrDefault(x => x.Username == "admin01");

@@ -8,7 +8,7 @@ namespace PetManagementSystem.Controllers;
 public class AuthController(IAuthService authService) : Controller
 {
     [AllowAnonymous]
-    [HttpGet("/User/Login")]
+    [HttpGet]
     public IActionResult UserLogin(string? returnUrl = null)
     {
         if (User.Identity?.IsAuthenticated == true)
@@ -21,7 +21,7 @@ public class AuthController(IAuthService authService) : Controller
     }
 
     [AllowAnonymous]
-    [HttpPost("/User/Login")]
+    [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UserLogin(LoginViewModel model, string? returnUrl = null)
     {

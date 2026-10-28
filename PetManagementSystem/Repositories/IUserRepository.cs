@@ -11,6 +11,8 @@ public interface IUserRepository
     Task<List<User>> GetAllWithRoleAsync(bool includeInactive = false);
     Task<bool> ExistsUsernameAsync(string username, int? excludeId = null);
     Task<bool> ExistsEmailAsync(string email, int? excludeId = null);
+    Task<bool> HasRelatedDataAsync(int userId);
+    Task DeleteHardAsync(User user);
     Task AddAsync(User user);
     Task UpdateAsync(User user);
 }

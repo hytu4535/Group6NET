@@ -89,6 +89,35 @@ public class UserRepository(AppDbContext dbContext) : IUserRepository
         return await query.AnyAsync(x => x.Email == email);
     }
 
+    public async Task<bool> HasRelatedDataAsync(int userId)
+    {
+        var user = await dbContext.Users
+            .Include(x => x.Staff)
+            .Include(x => x.Veterinarian)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == userId);
+
+        if (user is null)
+        {
+            return false;
+        }
+
+        return await dbContext.Pets.AnyAsync(x => x.UserId == userId)
+            || await dbContext.Appointments.AnyAsync(x => x.UserId == userId || (user.Veterinarian != null && x.VetId == user.Veterinarian.Id))
+            || await dbContext.Orders.AnyAsync(x => x.UserId == userId)
+            || await dbContext.Carts.AnyAsync(x => x.UserId == userId)
+            || await dbContext.Feedbacks.AnyAsync(x => x.UserId == userId)
+            || await dbContext.Notifications.AnyAsync(x => x.UserId == userId)
+            || await dbContext.ChatConversations.AnyAsync(x => x.UserId == userId)
+            || (user.Staff != null && await dbContext.PetRecognitionHistories.AnyAsync(x => x.StaffId == user.Staff.Id));
+    }
+
+    public async Task DeleteHardAsync(User user)
+    {
+        dbContext.Users.Remove(user);
+        await dbContext.SaveChangesAsync();
+    }
+
     public async Task AddAsync(User user)
     {
         await dbContext.Users.AddAsync(user);

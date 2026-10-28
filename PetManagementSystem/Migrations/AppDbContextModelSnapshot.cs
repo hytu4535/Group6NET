@@ -517,6 +517,18 @@ namespace PetManagementSystem.Migrations
                         .HasColumnType("varchar(15)")
                         .HasColumnName("phone");
 
+                    b.Property<string>("ReceiverEmail")
+                        .HasMaxLength(150)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("receiver_email");
+
+                    b.Property<string>("ReceiverName")
+                        .HasMaxLength(150)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("receiver_name");
+
                     b.Property<string>("ShippingAddress")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -817,10 +829,6 @@ namespace PetManagementSystem.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("uploaded_at");
-
                     b.Property<string>("ImageUrl")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -834,6 +842,10 @@ namespace PetManagementSystem.Migrations
                     b.Property<int>("PetId")
                         .HasColumnType("int")
                         .HasColumnName("pet_id");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("uploaded_at");
 
                     b.HasKey("Id");
 
@@ -878,6 +890,60 @@ namespace PetManagementSystem.Migrations
                     b.HasIndex("PetId");
 
                     b.ToTable("pet_packages", (string)null);
+                });
+
+            modelBuilder.Entity("PetManagementSystem.Models.PetRecognitionHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DetectedBreed")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("detected_breed");
+
+                    b.Property<string>("DetectedSpecies")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("detected_species");
+
+                    b.Property<int?>("ExecutionTimeMs")
+                        .HasColumnType("int")
+                        .HasColumnName("execution_time_ms");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("image_url");
+
+                    b.Property<int?>("SelectedPetId")
+                        .HasColumnType("int")
+                        .HasColumnName("selected_pet_id");
+
+                    b.Property<int>("StaffId")
+                        .HasColumnType("int")
+                        .HasColumnName("staff_id");
+
+                    b.Property<decimal?>("TopSimilarity")
+                        .HasColumnType("decimal(5,4)")
+                        .HasColumnName("top_similarity");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SelectedPetId");
+
+                    b.HasIndex("StaffId");
+
+                    b.ToTable("pet_recognition_history", (string)null);
                 });
 
             modelBuilder.Entity("PetManagementSystem.Models.Product", b =>
@@ -1653,6 +1719,24 @@ namespace PetManagementSystem.Migrations
                     b.Navigation("Pet");
 
                     b.Navigation("ServicePackage");
+                });
+
+            modelBuilder.Entity("PetManagementSystem.Models.PetRecognitionHistory", b =>
+                {
+                    b.HasOne("PetManagementSystem.Models.Pet", "SelectedPet")
+                        .WithMany()
+                        .HasForeignKey("SelectedPetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("PetManagementSystem.Models.Staff", "Staff")
+                        .WithMany()
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("SelectedPet");
+
+                    b.Navigation("Staff");
                 });
 
             modelBuilder.Entity("PetManagementSystem.Models.Product", b =>

@@ -51,6 +51,9 @@ public class OrderDetailsViewModel
     public string CustomerName { get; set; } = string.Empty;
     public string? Username { get; set; }
     public string? Email { get; set; }
+    /// <summary>Họ tên và email người nhận khách nhập lúc thanh toán (có thể khác thông tin tài khoản); null với đơn cũ.</summary>
+    public string? ReceiverName { get; set; }
+    public string? ReceiverEmail { get; set; }
     public string Phone { get; set; } = string.Empty;
     public string ShippingAddress { get; set; } = string.Empty;
     public DateTime OrderDate { get; set; }
