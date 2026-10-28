@@ -70,9 +70,9 @@ namespace PetManagementSystem.Controllers
                 var pet = new Pet
                 {
                     UserId = model.UserId,
-                    Name = model.Name,
-                    Species = model.Species,
-                    Breed = model.Breed,
+                    Name = model.Name.Trim(),
+                    Species = model.Species.Trim(),
+                    Breed = model.Breed?.Trim(),
                     Gender = model.Gender,
                     WeightKg = model.WeightKg
                 };
@@ -88,10 +88,40 @@ namespace PetManagementSystem.Controllers
             }
             else
             {
-                TempData["ErrorMessage"] = "Dữ liệu nhập vào không hợp lệ!";
+                SaveCreatePetValidationState(model);
             }
 
             return RedirectToAction(nameof(Pets), new { searchKeyword, pageSize });
+        }
+
+        private void SaveCreatePetValidationState(CreatePetViewModel model)
+        {
+            TempData["CreatePetOpenModal"] = true;
+            TempData["CreatePetUserId"] = model.UserId;
+            TempData["CreatePetName"] = model.Name;
+            TempData["CreatePetSpecies"] = model.Species;
+            TempData["CreatePetBreed"] = model.Breed;
+            TempData["CreatePetGender"] = model.Gender;
+            TempData["CreatePetWeightKg"] = model.WeightKg;
+
+            SetCreatePetFieldError(nameof(model.Name), "CreatePetNameError");
+            SetCreatePetFieldError(nameof(model.Species), "CreatePetSpeciesError");
+            SetCreatePetFieldError(nameof(model.Breed), "CreatePetBreedError");
+            SetCreatePetFieldError(nameof(model.UserId), "CreatePetUserIdError");
+            SetCreatePetFieldError(nameof(model.Gender), "CreatePetGenderError");
+            SetCreatePetFieldError(nameof(model.WeightKg), "CreatePetWeightKgError");
+        }
+
+        private void SetCreatePetFieldError(string fieldName, string tempDataKey)
+        {
+            var error = ModelState[fieldName]?.Errors
+                .Select(entry => entry.ErrorMessage)
+                .FirstOrDefault(message => !string.IsNullOrWhiteSpace(message));
+
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                TempData[tempDataKey] = error;
+            }
         }
 
         // POST: /Admin/UpdatePet
@@ -111,9 +141,9 @@ namespace PetManagementSystem.Controllers
                 {
                     Id = model.Id,
                     UserId = model.UserId,
-                    Name = model.Name,
-                    Species = model.Species,
-                    Breed = model.Breed,
+                    Name = model.Name.Trim(),
+                    Species = model.Species.Trim(),
+                    Breed = model.Breed?.Trim(),
                     Gender = model.Gender,
                     WeightKg = model.WeightKg
                 };

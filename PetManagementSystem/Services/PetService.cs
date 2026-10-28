@@ -162,14 +162,9 @@ public class PetService(
                 pet.UserId = currentUserId.Value;
             }
 
-            if (string.IsNullOrWhiteSpace(pet.Name))
+            if (!TryNormalizePetText(pet, out var validationError))
             {
-                return (false, "Tên thú cưng không được để trống.");
-            }
-
-            if (string.IsNullOrWhiteSpace(pet.Species))
-            {
-                return (false, "Loài thú cưng không được để trống.");
+                return (false, validationError);
             }
 
             (string Url, string FilePath)? avatar = avatarFile is null
@@ -221,9 +216,14 @@ public class PetService(
                 existingPet.UserId = pet.UserId;
             }
 
-            existingPet.Name = pet.Name.Trim();
-            existingPet.Species = pet.Species.Trim();
-            existingPet.Breed = pet.Breed?.Trim();
+            if (!TryNormalizePetText(pet, out var validationError))
+            {
+                return (false, validationError);
+            }
+
+            existingPet.Name = pet.Name;
+            existingPet.Species = pet.Species;
+            existingPet.Breed = pet.Breed;
             existingPet.Gender = pet.Gender;
             existingPet.WeightKg = pet.WeightKg;
 
@@ -300,6 +300,47 @@ public class PetService(
             logger.LogError(ex, "Lỗi hệ thống khi xóa thú cưng ID: {PetId}", id);
             return (false, "Không thể xóa thú cưng do lỗi hệ thống.");
         }
+    }
+
+    private static bool TryNormalizePetText(Pet pet, out string error)
+    {
+        pet.Name = pet.Name?.Trim() ?? string.Empty;
+        pet.Species = pet.Species?.Trim() ?? string.Empty;
+        pet.Breed = pet.Breed?.Trim();
+
+        if (string.IsNullOrEmpty(pet.Name))
+        {
+            error = "Tên thú cưng không được để trống.";
+            return false;
+        }
+        if (pet.Name.Length > 100)
+        {
+            error = "Tên thú cưng không được vượt quá 100 ký tự.";
+            return false;
+        }
+        if (string.IsNullOrEmpty(pet.Species))
+        {
+            error = "Loài thú cưng không được để trống.";
+            return false;
+        }
+        if (pet.Species.Length > 50)
+        {
+            error = "Loài thú cưng không được vượt quá 50 ký tự.";
+            return false;
+        }
+        if (string.IsNullOrEmpty(pet.Breed))
+        {
+            error = "Giống thú cưng không được để trống.";
+            return false;
+        }
+        if (pet.Breed.Length > 80)
+        {
+            error = "Giống thú cưng không được vượt quá 80 ký tự.";
+            return false;
+        }
+
+        error = string.Empty;
+        return true;
     }
 
     private int? GetCurrentUserId()

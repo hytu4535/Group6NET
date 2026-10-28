@@ -10,6 +10,13 @@
     var pageSize = ViewData["PageSize"] is int currentPageSize ? currentPageSize : 10;
     var totalItems = ViewData["TotalItems"] is int total ? total : 0;
     var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+    var createPetOpenModal = TempData.Peek("CreatePetOpenModal") as bool? == true;
+    var createPetUserId = TempData.Peek("CreatePetUserId") as int?;
+    var createPetName = TempData.Peek("CreatePetName") as string;
+    var createPetSpecies = TempData.Peek("CreatePetSpecies") as string;
+    var createPetBreed = TempData.Peek("CreatePetBreed") as string;
+    var createPetGender = TempData.Peek("CreatePetGender") as string;
+    var createPetWeightKg = TempData.Peek("CreatePetWeightKg") as decimal?;
     var displayTotalPages = Math.Max(1, totalPages);
 }
 
@@ -231,7 +238,8 @@
                             </div>
                             <div class="mb-3">
                                 <label for="petBreed-@pet.Id" class="form-label">Giống</label>
-                                <input id="petBreed-@pet.Id" name="Breed" value="@pet.Breed" class="form-control" />
+                                <input id="petBreed-@pet.Id" name="Breed" value="@pet.Breed" class="form-control"
+                                       maxlength="80" required />
                             </div>
                             <div class="mb-3">
                                 <label for="petGender-@pet.Id" class="form-label">Giới tính</label>
@@ -293,7 +301,7 @@
     <div class="modal fade" id="createPetModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form asp-action="CreatePet" method="post" enctype="multipart/form-data">
+                <form id="createPetForm" asp-action="CreatePet" method="post" enctype="multipart/form-data">
                     <input type="hidden" name="searchKeyword" value="@searchKeyword" />
                     <input type="hidden" name="pageSize" value="@pageSize" />
                     <div class="modal-header">
@@ -320,32 +328,42 @@
                                 <option value="">-- Chọn chủ nuôi --</option>
                                 @foreach (var user in petOwners)
                                 {
-                                    <option value="@user.Id">@(user.FullName ?? user.Username) (@user.Username)</option>
+                                    <option value="@user.Id" selected="@(createPetOpenModal && createPetUserId == user.Id)">@(user.FullName ?? user.Username) (@user.Username)</option>
                                 }
                             </select>
+                            <span class="text-danger small">@TempData["CreatePetUserIdError"]</span>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Tên thú cưng</label>
-                            <input name="Name" class="form-control" required />
+                            <label class="form-label" for="createPetName">Tên thú cưng</label>
+                            <input id="createPetName" name="Name" value="@createPetName" class="form-control"
+                                   maxlength="100" required />
+                            <span class="text-danger small">@TempData["CreatePetNameError"]</span>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Loài</label>
-                            <input name="Species" class="form-control" placeholder="Chó, Mèo..." required />
+                            <label class="form-label" for="createPetSpecies">Loài</label>
+                            <input id="createPetSpecies" name="Species" value="@createPetSpecies" class="form-control"
+                                   placeholder="Chó, Mèo..." maxlength="50" required />
+                            <span class="text-danger small">@TempData["CreatePetSpeciesError"]</span>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Giống</label>
-                            <input name="Breed" class="form-control" />
+                            <label class="form-label" for="createPetBreed">Giống</label>
+                            <input id="createPetBreed" name="Breed" value="@createPetBreed" class="form-control"
+                                   maxlength="80" required />
+                            <span class="text-danger small">@TempData["CreatePetBreedError"]</span>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Giới tính</label>
                             <select name="Gender" class="form-select" required>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
+                                <option value="Male" selected="@(createPetGender == "Male")">Male</option>
+                                <option value="Female" selected="@(createPetGender == "Female")">Female</option>
                             </select>
+                            <span class="text-danger small">@TempData["CreatePetGenderError"]</span>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Cân nặng (kg)</label>
-                            <input name="WeightKg" type="number" step="0.1" class="form-control" />
+                            <input name="WeightKg" type="number" step="0.1" value="@(createPetOpenModal ? createPetWeightKg : null)"
+                                   min="0.01" max="500" class="form-control" />
+                            <span class="text-danger small">@TempData["CreatePetWeightKgError"]</span>
                         </div>
                     </div>
 
@@ -366,6 +384,38 @@
                                 preview.style.display = "inline-block";
                             });
                         });
+
+                        const createPetForm = document.getElementById("createPetForm");
+                        const requiredTextFields = ["createPetName", "createPetSpecies", "createPetBreed"];
+
+                        requiredTextFields.forEach(fieldId => {
+                            const field = document.getElementById(fieldId);
+                            field.addEventListener("input", () => {
+                                field.setCustomValidity("");
+                            });
+                        });
+
+                        createPetForm.addEventListener("submit", event => {
+                            let isValid = true;
+                            requiredTextFields.forEach(fieldId => {
+                                const field = document.getElementById(fieldId);
+                                const trimmedValue = field.value.trim();
+                                field.value = trimmedValue;
+                                if (!trimmedValue) {
+                                    field.setCustomValidity("Vui lòng nhập thông tin này, không chỉ gồm khoảng trắng.");
+                                    isValid = false;
+                                }
+                            });
+
+                            if (!isValid) {
+                                event.preventDefault();
+                                event.stopPropagation();
+                            }
+                        });
+
+                        if (@(createPetOpenModal ? "true" : "false")) {
+                            bootstrap.Modal.getOrCreateInstance(document.getElementById("createPetModal")).show();
+                        }
                     </script>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>

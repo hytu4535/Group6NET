@@ -12,14 +12,18 @@ public class EditPetViewModel
     public int UserId { get; set; }
 
     [Required(ErrorMessage = "Vui lòng nhập tên thú cưng.")]
-    [StringLength(100)]
+    [RegularExpression(@".*\S.*", ErrorMessage = "Tên thú cưng không được chỉ chứa khoảng trắng.")]
+    [StringLength(100, ErrorMessage = "Tên thú cưng không được vượt quá 100 ký tự.")]
     public string Name { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Vui lòng nhập loài thú cưng.")]
-    [StringLength(50)]
+    [RegularExpression(@".*\S.*", ErrorMessage = "Loài thú cưng không được chỉ chứa khoảng trắng.")]
+    [StringLength(50, ErrorMessage = "Loài thú cưng không được vượt quá 50 ký tự.")]
     public string Species { get; set; } = string.Empty;
 
-    [StringLength(100)]
+    [Required(ErrorMessage = "Vui lòng nhập giống thú cưng.")]
+    [RegularExpression(@".*\S.*", ErrorMessage = "Giống thú cưng không được chỉ chứa khoảng trắng.")]
+    [StringLength(80, ErrorMessage = "Giống thú cưng không được vượt quá 80 ký tự.")]
     public string? Breed { get; set; }
 
     [Required(ErrorMessage = "Vui lòng chọn giới tính.")]
