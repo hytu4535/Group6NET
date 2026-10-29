@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pet-recognition-ai-service"
+version = "1.0.0"
+description = "ONNX and FAISS pet recognition service powered by FastAPI."
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+keywords = ["computer-vision", "onnx", "faiss", "fastapi", "pets"]
+
+# Runtime dependencies mirror requirements.txt, which is used by the service image.
+dependencies = [
+    "faiss-cpu>=1.8,<2",
+    "numpy>=1.26",
+    "onnxruntime>=1.18,<2",
+    "opencv-python-headless>=4.10,<5",
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+dev = ["ruff>=0.5"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

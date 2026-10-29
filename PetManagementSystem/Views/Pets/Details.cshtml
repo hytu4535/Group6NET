@@ -1,0 +1,191 @@
+@model PetManagementSystem.Models.Pet
+@{
+    ViewData["Title"] = $"Hồ sơ thú cưng - {Model.Name}";
+    var healthRecords = ViewBag.HealthRecords as IEnumerable<PetManagementSystem.Models.PetHealthRecord> ?? Enumerable.Empty<PetManagementSystem.Models.PetHealthRecord>();
+    var vaccinationRecords = ViewBag.VaccinationRecords as IEnumerable<PetManagementSystem.Models.VaccinationRecord> ?? Enumerable.Empty<PetManagementSystem.Models.VaccinationRecord>();
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary">Hồ sơ thú cưng: @Model.Name</h2>
+        <div class="d-flex gap-2">
+            <a asp-controller="Appointment" asp-action="Book" class="btn btn-warning text-white btn-sm"><i class="bi bi-calendar-plus"></i> Đặt lịch khám</a>
+            @if (User.IsInRole("admin"))
+            {
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Quay lại</a>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="MyPets" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Quay lại</a>
+            }
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    <div class="row g-4">
+        <!-- Thông tin cơ bản -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <img src="@(Model.PetImages.FirstOrDefault(pi => pi.IsAvatar == true)?.ImageUrl ?? "/images/default-pet.jpg")" class="rounded-circle img-fluid mb-3 shadow-sm" style="width: 150px; height: 150px; object-fit: cover;" alt="@Model.Name">
+                    <h4 class="fw-bold">@Model.Name</h4>
+                    <p class="text-muted">@Model.Species - @(Model.Breed ?? "Không rõ giống")</p>
+
+                    <ul class="list-group list-group-flush text-start mt-3">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Giới tính:</span>
+                            <span class="fw-semibold">@Model.Gender</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Cân nặng:</span>
+                            <span class="fw-semibold">@(Model.WeightKg.HasValue ? $"{Model.WeightKg} kg" : "N/A")</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Mã QR:</span>
+                            <span class="font-monospace small">@Model.QrToken</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Gói Dịch Vụ Đang Sử Dụng -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-box-seam me-2"></i> Gói Dịch Vụ Đang Sử Dụng</span>
+                    <a asp-controller="Service" asp-action="Index" class="btn btn-light btn-sm text-primary fw-semibold py-0 px-2" style="font-size: 0.8rem;">Mua gói</a>
+                </div>
+                <div class="card-body">
+                    @{
+                        var activePp = ViewBag.ActivePetPackage as PetManagementSystem.Models.PetPackage;
+                    }
+                    @if (activePp != null && activePp.ServicePackage != null)
+                    {
+                        <div class="mb-2">
+                            <h5 class="fw-bold text-dark mb-1">@activePp.ServicePackage.Name</h5>
+                            <p class="text-muted small mb-2">@activePp.ServicePackage.Description</p>
+                        </div>
+                        <div class="p-2 bg-light rounded-3 mb-2 small">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Đăng ký:</span>
+                                <strong class="text-dark">@activePp.StartDate.ToString("dd/MM/yyyy")</strong>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Hết hạn:</span>
+                                <strong class="text-danger">@activePp.EndDate.ToString("dd/MM/yyyy")</strong>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="d-block small fw-semibold text-muted mb-1">Dịch vụ trong gói:</span>
+                            @if (activePp.ServicePackage.ServicePackageServices != null && activePp.ServicePackage.ServicePackageServices.Any())
+                            {
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var sps in activePp.ServicePackage.ServicePackageServices)
+                                    {
+                                        <span class="badge bg-white text-dark border px-2 py-1">@sps.Service?.Name</span>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Không có dịch vụ thành phần.</span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-2 text-muted small">
+                            <p class="mb-2">Thú cưng chưa có gói dịch vụ nào active.</p>
+                            <a asp-controller="Service" asp-action="Index" class="btn btn-outline-primary btn-sm rounded-pill px-3">Xem danh sách gói</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Hồ sơ sức khỏe & Tiêm phòng (Read-Only) -->
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-success text-white fw-bold">Sổ sức khỏe & Tiêm phòng (Read-Only)</div>
+                <div class="card-body">
+                    <!-- Hồ sơ sức khỏe -->
+                    <h5 class="fw-bold text-success mb-3"><i class="bi bi-heart-pulse"></i> Lịch sử khám bệnh</h5>
+                    @if (healthRecords.Any())
+                    {
+                        <div class="accordion mb-4" id="healthAccordion">
+                            @foreach (var hr in healthRecords)
+                            {
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="heading_@hr.Id">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_@hr.Id" aria-expanded="false" aria-controls="collapse_@hr.Id">
+                                            Ngày khám: @hr.VisitDate.ToString("dd/MM/yyyy") - Chẩn đoán: @hr.Diagnosis
+                                        </button>
+                                    </h2>
+                                    <div id="collapse_@hr.Id" class="accordion-collapse collapse" aria-labelledby="heading_@hr.Id" data-bs-parent="#healthAccordion">
+                                        <div class="accordion-body">
+                                            <p><strong>Cân nặng:</strong> @(hr.WeightKg.HasValue ? $"{hr.WeightKg} kg" : "N/A") | <strong>Nhiệt độ:</strong> @(hr.Temperature.HasValue ? $"{hr.Temperature} °C" : "N/A")</p>
+                                            <p><strong>Phương pháp điều trị:</strong> @hr.Treatment</p>
+                                            <p><strong>Bác sĩ khám:</strong> @(hr.Veterinarian?.User?.FullName ?? "N/A")</p>
+                                            @if (hr.MedicalPrescriptions != null && hr.MedicalPrescriptions.Any())
+                                            {
+                                                <span class="fw-bold small text-muted">Đơn thuốc:</span>
+                                                <ul class="small mb-0">
+                                                    @foreach (var pres in hr.MedicalPrescriptions)
+                                                    {
+                                                        <li>@pres.MedicationName - Liều dùng: @pres.Dosage, Tần suất: @pres.Frequency (@pres.DurationDays ngày)</li>
+                                                    }
+                                                </ul>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted fst-italic mb-4">Thú cưng chưa có lịch sử khám bệnh nào.</p>
+                    }
+
+                    <!-- Lịch sử tiêm phòng -->
+                    <h5 class="fw-bold text-success mb-3"><i class="bi bi-shield-check"></i> Sổ tiêm vắc-xin</h5>
+                    @if (vaccinationRecords.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Vắc-xin</th>
+                                        <th>Số lô</th>
+                                        <th>Ngày tiêm</th>
+                                        <th>Mũi nhắc tiếp theo</th>
+                                        <th>Bác sĩ tiêm</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var vr in vaccinationRecords)
+                                    {
+                                        <tr>
+                                            <td><strong>@vr.VaccineName</strong></td>
+                                            <td>@(vr.BatchNumber ?? "N/A")</td>
+                                            <td>@vr.AdministeredDate.ToString("dd/MM/yyyy")</td>
+                                            <td class="text-danger fw-bold">@vr.NextDueDate.ToString("dd/MM/yyyy")</td>
+                                            <td>@(vr.Veterinarian?.User?.FullName ?? "N/A")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted fst-italic">Thú cưng chưa có lịch sử tiêm phòng nào.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,6 @@
+@model int
+<a class="btn btn-light rounded-circle position-relative" asp-controller="Cart" asp-action="Index"
+   aria-label="Giỏ hàng" title="Giỏ hàng">
+    <i class="bi bi-cart3 fs-5"></i>
+    <span id="cartBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger @(Model == 0 ? "d-none" : "")">@(Model > 99 ? "99+" : Model.ToString())</span>
+</a>

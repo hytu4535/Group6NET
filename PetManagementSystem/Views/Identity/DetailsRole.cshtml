@@ -1,0 +1,93 @@
+@model PetManagementSystem.ViewModels.Identity.RoleDetailsViewModel
+@{
+    Layout = "_AdminLayout";
+    var role = Model.Role;
+    var matrix = Model.PermissionMatrix;
+}
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">Chi tiết vai trò</h5>
+            <small class="text-muted">Thông tin vai trò và phân quyền linh động</small>
+        </div>
+        <a class="btn btn-sm btn-primary" asp-action="EditRole" asp-route-id="@role.Id">Chỉnh sửa thông tin</a>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Tên vai trò</label>
+                <p class="form-control-plaintext">@role.Name</p>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Trạng thái</label>
+                <p class="form-control-plaintext">@(role.Status == "active" ? "Hoạt động" : role.Status == "inactive" ? "Khóa" : role.Status == "deleted" ? "Đã xóa" : role.Status)</p>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Ngày tạo</label>
+                <p class="form-control-plaintext">@role.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+            </div>
+            <div class="col-md-8">
+                <label class="form-label">Mô tả</label>
+                <p class="form-control-plaintext">@(role.Description ?? "-")</p>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Ngày cập nhật</label>
+                <p class="form-control-plaintext">@(role.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "-")</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white">
+        <h6 class="mb-0">Ma trận phân quyền</h6>
+    </div>
+    <div class="card-body">
+        <form asp-action="RolePermissions" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="RoleId" value="@matrix.RoleId" />
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th class="text-start">Chức năng</th>
+                            <th>Xem</th>
+                            <th>Thêm</th>
+                            <th>Sửa</th>
+                            <th>Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var row in matrix.Rows)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@row.DisplayName</div>
+                                <small class="text-muted">@row.Module</small>
+                            </td>
+                            @foreach (var cell in new[] { row.View, row.Create, row.Update, row.Delete })
+                            {
+                                <td class="text-center">
+                                    @if (cell.PermissionId > 0)
+                                    {
+                                        <input class="form-check-input" type="checkbox" name="SelectedPermissionIds" value="@cell.PermissionId" checked="@(cell.IsGranted ? "checked" : null)" />
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <a class="btn btn-outline-secondary" asp-action="Roles">Quay lại danh sách</a>
+                <button type="submit" class="btn btn-primary">Lưu phân quyền</button>
+            </div>
+        </form>
+    </div>
+</div>

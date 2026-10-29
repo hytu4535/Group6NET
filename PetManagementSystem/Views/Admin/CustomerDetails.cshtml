@@ -1,0 +1,23 @@
+@model PetManagementSystem.ViewModels.CustomerDetailViewModel
+@using PetManagementSystem.Models
+@{
+    Layout = "_AdminLayout";
+    var customer = Model.Customer;
+    var active = string.Equals(customer.Status, "active", StringComparison.OrdinalIgnoreCase);
+}
+<div class="d-flex justify-content-between align-items-center mb-3"><h4>Chi tiết khách hàng</h4><a asp-action="Customers" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Quay lại</a></div>
+@if (TempData["SuccessMessage"] is string successMessage) { <div class="alert alert-success">@successMessage</div> }
+<div class="card shadow-sm border-0 mb-4"><div class="card-header bg-white"><h5 class="mb-0">Thông tin cá nhân</h5></div><div class="card-body"><div class="row g-3">
+    <div class="col-md-4"><strong>Họ tên</strong><div>@(customer.FullName ?? "-")</div></div>
+    <div class="col-md-4"><strong>Username</strong><div>@customer.Username</div></div>
+    <div class="col-md-4"><strong>Email</strong><div>@(customer.Email ?? "-")</div></div>
+    <div class="col-md-4"><strong>Số điện thoại</strong><div>@(customer.PhoneNumber ?? "-")</div></div>
+    <div class="col-md-4"><strong>Địa chỉ</strong><div>@(customer.Address ?? "-")</div></div>
+    <div class="col-md-4"><strong>Trạng thái</strong><div><span class="badge @(active ? "text-bg-success" : "text-bg-secondary")">@(active ? "Hoạt động" : "Đã khóa")</span></div></div>
+    <div class="col-md-4"><strong>Ngày tạo</strong><div>@customer.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div></div>
+</div></div></div>
+<div class="row g-4">
+    <div class="col-lg-5"><div class="card shadow-sm border-0 h-100"><div class="card-header bg-white"><h5 class="mb-0">Thú cưng (@Model.Pets.Count)</h5></div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Tên</th><th>Loài / giống</th><th>Trạng thái</th></tr></thead><tbody>@if (Model.Pets.Count == 0) { <tr><td colspan="3" class="text-muted text-center">Chưa có thú cưng.</td></tr> } else { foreach (var pet in Model.Pets) { <tr><td><a asp-controller="Pets" asp-action="Details" asp-route-id="@pet.Id">@pet.Name</a></td><td>@pet.Species / @(pet.Breed ?? "-")</td><td><span class="badge text-bg-success">Đang hoạt động</span></td></tr> } }</tbody></table></div></div></div>
+    <div class="col-lg-7"><div class="card shadow-sm border-0 h-100"><div class="card-header bg-white"><h5 class="mb-0">Lịch sử lịch hẹn (@Model.Appointments.Count)</h5></div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Ngày giờ</th><th>Thú cưng</th><th>Trạng thái</th></tr></thead><tbody>@if (Model.Appointments.Count == 0) { <tr><td colspan="3" class="text-muted text-center">Chưa có lịch hẹn.</td></tr> } else { foreach (var appointment in Model.Appointments) { <tr><td>@appointment.AppointmentDate.ToString("dd/MM/yyyy") @appointment.AppointmentTime.ToString(@"hh\:mm")</td><td>@(appointment.Pet?.Name ?? $"Pet #{appointment.PetId}")</td><td>@appointment.Status</td></tr> } }</tbody></table></div></div></div>
+    <div class="col-12"><div class="card shadow-sm border-0"><div class="card-header bg-white"><h5 class="mb-0">Lịch sử đơn hàng (@Model.Orders.Count)</h5></div><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Mã đơn</th><th>Ngày đặt</th><th>Tổng tiền</th><th>Trạng thái</th></tr></thead><tbody>@if (Model.Orders.Count == 0) { <tr><td colspan="4" class="text-muted text-center">Chưa có đơn hàng.</td></tr> } else { foreach (var order in Model.Orders) { <tr><td>#@order.Id</td><td>@order.OrderDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td><td>@order.TotalAmount.ToString("N0") đ</td><td>@order.Status</td></tr> } }</tbody></table></div></div></div>
+</div>

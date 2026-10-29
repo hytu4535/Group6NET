@@ -1,0 +1,36 @@
+@model PetManagementSystem.Models.Veterinarian
+@{
+    Layout = "_AdminLayout";
+    var user = Model.User;
+}
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div><h5 class="mb-0">Chi tiết bác sĩ thú y</h5><small class="text-muted">Thông tin tài khoản và hồ sơ chuyên môn</small></div>
+        <a class="btn btn-sm btn-primary" asp-action="EditVeterinarian" asp-route-id="@Model.Id">Chỉnh sửa</a>
+    </div>
+    <div class="card-body">
+        <h6 class="border-bottom pb-2">Thông tin người dùng</h6>
+        <div class="row g-3 mb-4">
+            <div class="col-md-6"><label class="form-label">Tên tài khoản</label><p class="form-control-plaintext">@(user?.Username ?? "-")</p></div>
+            <div class="col-md-6"><label class="form-label">Họ và tên</label><p class="form-control-plaintext">@(user?.FullName ?? "-")</p></div>
+            <div class="col-md-6"><label class="form-label">Email</label><p class="form-control-plaintext">@(user?.Email ?? "-")</p></div>
+            <div class="col-md-6"><label class="form-label">Số điện thoại</label><p class="form-control-plaintext">@(user?.PhoneNumber ?? "-")</p></div>
+            <div class="col-md-6"><label class="form-label">Địa chỉ</label><p class="form-control-plaintext">@(user?.Address ?? "-")</p></div>
+            <div class="col-md-6"><label class="form-label">Vai trò</label><p class="form-control-plaintext">@(user?.Role?.Name ?? "-")</p></div>
+        </div>
+        <h6 class="border-bottom pb-2">Thông tin bác sĩ thú y</h6>
+        <div class="row g-3">
+            <div class="col-md-4"><label class="form-label">Chuyên môn</label><p class="form-control-plaintext">@(Model.Specialty ?? "-")</p></div>
+            <div class="col-md-4"><label class="form-label">Số chứng chỉ</label><p class="form-control-plaintext">@(Model.LicenseNo ?? "-")</p></div>
+            <div class="col-md-4"><label class="form-label">Kinh nghiệm</label><p class="form-control-plaintext">@(Model.YearsOfExperience.HasValue ? $"{Model.YearsOfExperience} năm" : "-")</p></div>
+            <div class="col-md-4"><label class="form-label">Trạng thái hồ sơ</label><p class="form-control-plaintext">@(Model.Status == "active" ? "Hoạt động" : Model.Status == "inactive" ? "Khóa" : Model.Status == "deleted" ? "Đã xóa" : Model.Status)</p></div>
+            <div class="col-md-4"><label class="form-label">Ngày tạo</label><p class="form-control-plaintext">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p></div>
+            <div class="col-md-4"><label class="form-label">Ngày cập nhật</label><p class="form-control-plaintext">@(Model.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "-")</p></div>
+        </div>
+    </div>
+    <div class="card-footer d-flex justify-content-end gap-2">
+        @if (user is not null) { <a class="btn btn-outline-primary" asp-action="DetailsUser" asp-route-id="@user.Id">Xem tài khoản</a> }
+        <a class="btn btn-outline-secondary" asp-action="Veterinarians">Quay lại danh sách</a>
+    </div>
+</div>

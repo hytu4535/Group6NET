@@ -1,0 +1,98 @@
+@using PetManagementSystem.Helpers
+@model PetManagementSystem.ViewModels.Shop.CartViewModel
+@{
+    ViewData["Title"] = "Giỏ hàng";
+}
+
+<link rel="stylesheet" href="~/css/shop.css" asp-append-version="true" />
+
+<h2 class="mb-4">Giỏ hàng của tôi</h2>
+
+<partial name="Shop/_Alerts" />
+
+@if (Model.Items.Count == 0)
+{
+    <div class="alert alert-info">
+        Giỏ hàng của bạn đang trống. <a asp-controller="Product" asp-action="Index">Tiếp tục mua sắm</a>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm rounded-4">
+    <div class="table-responsive">
+            <table id="cart-table" class="table align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Sản phẩm</th>
+                        <th class="text-end">Đơn giá</th>
+                        <th style="width:130px;">Số lượng</th>
+                        <th class="text-end">Thành tiền</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                    @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="shop-thumb-sm">
+                                        <img src="@ProductImages.Src(item.ImageUrl)" alt="@item.ProductName"
+                                             onerror="@ProductImages.OnError" referrerpolicy="no-referrer" />
+                                    </div>
+                                <div>
+                                        <a asp-controller="Product" asp-action="Details" asp-route-id="@item.ProductId" class="fw-semibold text-dark text-decoration-none">@item.ProductName</a>
+                                        @if (!string.IsNullOrEmpty(item.Unit))
+                                        {
+                                            <div class="small text-muted">@item.Unit</div>
+                                        }
+                                        @if (item.Issue is not null)
+                                        {
+                                            <div class="small text-danger line-issue"><i class="bi bi-exclamation-triangle me-1"></i>@item.Issue</div>
+                                        }
+                                </div>
+                            </div>
+                        </td>
+                            <td class="text-end">@CommerceFormat.Money(item.UnitPrice)</td>
+                        <td>
+                                <input type="number" class="form-control form-control-sm qty-input" value="@item.Quantity" data-prev="@item.Quantity"
+                                       min="1" max="@(item.StockQuantity > 0 ? Math.Min(item.StockQuantity, 9999) : 9999)" data-stock="@item.StockQuantity" data-item-id="@item.ItemId" aria-label="Số lượng @item.ProductName" />
+                        </td>
+                            <td class="text-end line-total">@CommerceFormat.Money(item.LineTotal)</td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-item" data-item-id="@item.ItemId" aria-label="Xóa @item.ProductName">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+                <tfoot>
+                <tr class="table-light">
+                        <td colspan="3" class="text-end fw-bold">Tổng cộng (<span id="cart-count">@Model.TotalQuantity</span> sản phẩm)</td>
+                        <td id="cart-total" class="text-end fw-bold shop-price">@CommerceFormat.Money(Model.TotalAmount)</td>
+                    <td></td>
+                </tr>
+                </tfoot>
+        </table>
+    </div>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+        <a asp-controller="Product" asp-action="Index" class="btn btn-outline-secondary rounded-pill">Tiếp tục mua sắm</a>
+        <div class="text-end">
+            <a id="checkout-btn" asp-controller="Checkout" asp-action="Index"
+               class="btn btn-shop px-4 @(Model.HasIssues ? "disabled" : "")"
+               aria-disabled="@(Model.HasIssues ? "true" : "false")">Tiến hành thanh toán</a>
+            <div id="checkout-hint" class="small text-danger mt-1 @(Model.HasIssues ? "" : "d-none")">
+                Vui lòng điều chỉnh hoặc xóa các sản phẩm đang báo lỗi để tiếp tục.
+            </div>
+        </div>
+    </div>
+}
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script src="~/js/shop.js" asp-append-version="true"></script>
+}

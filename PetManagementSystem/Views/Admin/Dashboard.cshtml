@@ -1,0 +1,333 @@
+@using PetManagementSystem.Helpers
+@model PetManagementSystem.ViewModels.DashboardViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "";
+    ViewData["Active"] = "Dashboard";
+    ViewData["ActiveParent"] = "";
+}
+
+<!-- Nhúng trực tiếp CDN để đảm bảo không bị vỡ giao diện -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+<style>
+    /* Custom style tinh chỉnh riêng cho Dashboard PetCare */
+    .content-wrapper { background-color: #f4f6f9 !important; }
+    .stat-card { transition: transform .2s ease, box-shadow .2s ease; border-radius: 8px; overflow: hidden; }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.1) !important; }
+    .stat-icon { position: absolute; top: 15px; right: 15px; font-size: 2.5rem; opacity: 0.3; }
+    .bg-gradient-pet { background: linear-gradient(45deg, #fd7e14, #ff922b); color: white; }
+    .badge-soft-primary { background-color: #e7f1ff; color: #0d6efd; }
+    .badge-soft-success { background-color: #e6f4ea; color: #198754; }
+    .badge-soft-warning { background-color: #fff3cd; color: #ffc107; }
+    .badge-soft-danger { background-color: #f8d7da; color: #dc3545; }
+    .timeline-item-custom { border-left: 2px solid #e9ecef; padding-left: 15px; position: relative; margin-bottom: 15px; }
+    .timeline-item-custom::before { content: ''; position: absolute; left: -6px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background-color: #fd7e14; }
+</style>
+
+<!-- Content Header (Page header) -->
+<div class="content-header pt-3 pb-2">
+    <div class="container-fluid">
+        <div class="row align-items-center mb-2">
+            <div class="col-sm-6">
+                <h3 class="m-0 font-weight-bold text-dark" style="font-size: 1.5rem;">
+                    <i class="fas fa-paw text-warning mr-2"></i>Tổng quan hệ thống
+                </h3>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right bg-transparent p-0 m-0 text-sm">
+                    <li class="breadcrumb-item"><a asp-controller="Admin" asp-action="Dashboard" class="text-orange">Trang chủ</a></li>
+                    <li class="breadcrumb-item active">Dashboard</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+
+        <!-- 4 thẻ thống kê: số liệu thật từ cơ sở dữ liệu -->
+        <div class="row">
+            <div class="col-xl-3 col-md-6 col-12 mb-3">
+                <a asp-controller="Admin" asp-action="Pets" class="text-decoration-none">
+                    <div class="card stat-card border-0 shadow-sm bg-white h-100 position-relative p-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted font-weight-bold text-uppercase text-xs">Thú cưng quản lý</span>
+                                <h2 class="font-weight-bold text-dark my-1">@Model.PetCount.ToString("N0")</h2>
+                                <span class="text-muted text-xs">@Model.CustomerCount.ToString("N0") khách hàng đang hoạt động</span>
+                            </div>
+                            <div class="stat-icon text-primary"><i class="fas fa-dog"></i></div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-xl-3 col-md-6 col-12 mb-3">
+                <a asp-controller="Admin" asp-action="Appointments" class="text-decoration-none">
+                    <div class="card stat-card border-0 shadow-sm bg-white h-100 position-relative p-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted font-weight-bold text-uppercase text-xs">Lịch hẹn chờ xác nhận</span>
+                                <h2 class="font-weight-bold @(Model.PendingAppointments > 0 ? "text-warning" : "text-dark") my-1">@Model.PendingAppointments.ToString("N0")</h2>
+                                <span class="text-muted text-xs">Hôm nay: @Model.TodayAppointmentCount lịch</span>
+                            </div>
+                            <div class="stat-icon text-warning"><i class="fas fa-calendar-check"></i></div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-xl-3 col-md-6 col-12 mb-3">
+                <a asp-controller="Commerce" asp-action="Orders" asp-route-status="pending" class="text-decoration-none">
+                    <div class="card stat-card border-0 shadow-sm bg-white h-100 position-relative p-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted font-weight-bold text-uppercase text-xs">Đơn hàng chờ xác nhận</span>
+                                <h2 class="font-weight-bold @(Model.PendingOrders > 0 ? "text-success" : "text-dark") my-1">@Model.PendingOrders.ToString("N0")</h2>
+                                <span class="text-muted text-xs">Đơn mới hôm nay: @Model.OrdersToday</span>
+                            </div>
+                            <div class="stat-icon text-success"><i class="fas fa-shopping-bag"></i></div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-xl-3 col-md-6 col-12 mb-3">
+                <a asp-controller="Admin" asp-action="Feedbacks" class="text-decoration-none">
+                    <div class="card stat-card border-0 shadow-sm bg-white h-100 position-relative p-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted font-weight-bold text-uppercase text-xs">Phản hồi chờ xử lý</span>
+                                <h2 class="font-weight-bold @(Model.PendingFeedbacks > 0 ? "text-danger" : "text-dark") my-1">@Model.PendingFeedbacks.ToString("N0")</h2>
+                                @if (Model.PendingFeedbacks > 0)
+                                {
+                                    <span class="text-danger text-xs font-weight-bold"><i class="fas fa-exclamation-circle"></i> Cần phản hồi</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted text-xs">Không có phản hồi tồn đọng</span>
+                                }
+                            </div>
+                            <div class="stat-icon text-danger"><i class="fas fa-headset"></i></div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                @if (User.HasPermission("payments.view"))
+                {
+                    <!-- Doanh thu theo tháng: tổng các giao dịch thanh toán đã hoàn tất -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                            <div>
+                                <h6 class="font-weight-bold text-dark m-0">
+                                    <i class="fas fa-chart-area text-orange mr-2"></i>Doanh thu bán hàng (@Model.RevenueYear)
+                                </h6>
+                                <small class="text-muted">Tổng cả năm: <strong>@CommerceFormat.Money(Model.YearRevenue)</strong> (từ các thanh toán đã hoàn tất)</small>
+                            </div>
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Chọn kỳ thống kê">
+                                <button type="button" class="btn btn-outline-secondary active" data-period="month">Tháng</button>
+                                <button type="button" class="btn btn-outline-secondary" data-period="quarter">Quý</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 280px; position: relative;">
+                                <canvas id="revenueChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (User.HasPermission("orders.view"))
+                {
+                    <!-- Đơn hàng gần đây từ bảng orders -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                            <h6 class="font-weight-bold text-dark m-0">
+                                <i class="fas fa-list-alt text-primary mr-2"></i>Đơn hàng gần đây
+                            </h6>
+                            <a asp-controller="Commerce" asp-action="Orders" class="btn btn-xs btn-light font-weight-bold">Xem tất cả</a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light text-muted text-xs text-uppercase">
+                                    <tr>
+                                        <th class="border-0">Mã ĐH</th>
+                                        <th class="border-0">Khách hàng</th>
+                                        <th class="border-0">Trạng thái</th>
+                                        <th class="border-0">Tổng tiền</th>
+                                        <th class="border-0 text-right">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm">
+                                    @if (Model.RecentOrders.Count == 0)
+                                    {
+                                        <tr><td colspan="5" class="text-center text-muted py-4">Chưa có đơn hàng nào</td></tr>
+                                    }
+                                    @foreach (var order in Model.RecentOrders)
+                                    {
+                                        <tr>
+                                            <td class="font-weight-bold">
+                                                <a asp-controller="Commerce" asp-action="OrderDetails" asp-route-id="@order.Id" class="text-dark">#@order.Id</a>
+                                            </td>
+                                            <td>@order.CustomerName</td>
+                                            <td><span class="badge @OrderStatuses.Badge(order.Status) px-2 py-1">@OrderStatuses.Label(order.Status)</span></td>
+                                            <td class="font-weight-bold text-dark">@CommerceFormat.Money(order.TotalAmount)</td>
+                                            <td class="text-right">
+                                                <a asp-controller="Commerce" asp-action="OrderDetails" asp-route-id="@order.Id" class="btn btn-xs btn-light" aria-label="Xem đơn #@order.Id"><i class="fas fa-eye"></i></a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Lịch hẹn hôm nay -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                        <h6 class="font-weight-bold text-dark m-0">
+                            <i class="fas fa-calendar-alt text-warning mr-2"></i>Lịch hẹn hôm nay
+                        </h6>
+                        <span class="badge badge-warning text-white">@Model.TodayAppointmentCount lịch</span>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.TodayAppointments.Count == 0)
+                        {
+                            <p class="text-muted text-sm mb-0">Hôm nay chưa có lịch hẹn nào.</p>
+                        }
+                        @for (var i = 0; i < Model.TodayAppointments.Count; i++)
+                        {
+                            var item = Model.TodayAppointments[i];
+                            <div class="timeline-item-custom @(i == Model.TodayAppointments.Count - 1 ? "mb-0" : "")">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="font-weight-bold text-sm text-dark">@item.ServiceText</span>
+                                    <span class="badge badge-light text-xs">@item.Time.ToString(@"hh\:mm")</span>
+                                </div>
+                                <p class="text-muted text-xs mb-0">
+                                    @item.PetName - Chủ: @item.OwnerName
+                                    @if (item.Status == 1) { <span class="badge badge-soft-warning ml-1">Chờ xác nhận</span> }
+                                </p>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-footer bg-white border-0 text-center pt-0 pb-3">
+                        <a asp-controller="Admin" asp-action="Appointments" class="text-sm text-orange font-weight-bold">Xem toàn bộ lịch hẹn <i class="fas fa-arrow-right ml-1"></i></a>
+                    </div>
+                </div>
+
+                <!-- Tác vụ nhanh -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h6 class="font-weight-bold text-dark m-0">
+                            <i class="fas fa-bolt text-danger mr-2"></i>Tác vụ nhanh
+                        </h6>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div class="row">
+                            <div class="col-6 mb-2">
+                                <a asp-controller="Admin" asp-action="Pets" class="btn btn-light btn-block text-left text-sm py-2 font-weight-bold text-dark">
+                                    <i class="fas fa-plus-circle text-primary mr-1"></i> Thêm Thú Cưng
+                                </a>
+                            </div>
+                            @if (User.HasPermission("products.create"))
+                            {
+                                <div class="col-6 mb-2">
+                                    <a asp-controller="Commerce" asp-action="CreateProduct" class="btn btn-light btn-block text-left text-sm py-2 font-weight-bold text-dark">
+                                        <i class="fas fa-box text-success mr-1"></i> Thêm Sản Phẩm
+                                    </a>
+                                </div>
+                            }
+                            <div class="col-6 mb-2">
+                                <a asp-controller="Admin" asp-action="Appointments" class="btn btn-light btn-block text-left text-sm py-2 font-weight-bold text-dark">
+                                    <i class="fas fa-calendar-plus text-warning mr-1"></i> Tạo Lịch Hẹn
+                                </a>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <a asp-controller="Admin" asp-action="Feedbacks" class="btn btn-light btn-block text-left text-sm py-2 font-weight-bold text-dark">
+                                    <i class="fas fa-comments text-danger mr-1"></i> Xem Phản Hồi
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+@section Scripts {
+    @if (User.HasPermission("payments.view"))
+    {
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                var canvas = document.getElementById('revenueChart');
+                if (!canvas || typeof Chart === 'undefined') { return; }
+
+                // Doanh thu 12 tháng (VNĐ) do server tính từ các thanh toán đã hoàn tất.
+                var monthly = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyRevenue));
+                var monthLabels = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
+                var quarterLabels = ['Quý 1', 'Quý 2', 'Quý 3', 'Quý 4'];
+                var quarterly = [0, 1, 2, 3].map(function (q) { return monthly[q * 3] + monthly[q * 3 + 1] + monthly[q * 3 + 2]; });
+
+                function toMillions(values) { return values.map(function (v) { return Math.round(v / 10000) / 100; }); }
+
+                var ctx = canvas.getContext('2d');
+                var gradient = ctx.createLinearGradient(0, 0, 0, 250);
+                gradient.addColorStop(0, 'rgba(253, 126, 20, 0.4)');
+                gradient.addColorStop(1, 'rgba(253, 126, 20, 0.0)');
+
+                var chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [{
+                            label: 'Doanh thu (triệu VNĐ)',
+                            data: toMillions(monthly),
+                            borderColor: '#fd7e14',
+                            borderWidth: 3,
+                            backgroundColor: gradient,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#fd7e14',
+                            pointRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: function (c) { return c.parsed.y.toLocaleString('vi-VN') + ' triệu VNĐ'; } } }
+                        },
+                        scales: {
+                            x: { grid: { display: false } },
+                            y: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { callback: function (value) { return value + ' Tr'; } } }
+                        }
+                    }
+                });
+
+                document.querySelectorAll('[data-period]').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        var quarter = button.getAttribute('data-period') === 'quarter';
+                        chart.data.labels = quarter ? quarterLabels : monthLabels;
+                        chart.data.datasets[0].data = toMillions(quarter ? quarterly : monthly);
+                        chart.update();
+                        document.querySelectorAll('[data-period]').forEach(function (b) { b.classList.toggle('active', b === button); });
+                    });
+                });
+            });
+        </script>
+    }
+}

@@ -1,0 +1,44 @@
+@{
+    ViewData["Title"] = "Đặt lịch";
+}
+
+<h2 class="mb-4">Đặt lịch chăm sóc thú cưng</h2>
+<div class="card p-4 border-0 shadow-sm">
+    <form>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Họ tên chủ nuôi</label>
+                <input type="text" class="form-control" placeholder="Nhập họ tên" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Số điện thoại</label>
+                <input type="text" class="form-control" placeholder="Nhập số điện thoại" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Tên thú cưng</label>
+                <input type="text" class="form-control" placeholder="Ví dụ: Milo" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Dịch vụ</label>
+                <select class="form-select">
+                    <option>Gói tắm cơ bản</option>
+                    <option>Gói spa cao cấp</option>
+                    <option>Khám định kỳ</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Ngày hẹn</label>
+                <input type="date" class="form-control" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Giờ hẹn</label>
+                <input type="time" class="form-control" />
+            </div>
+            <div class="col-12">
+                <label class="form-label">Ghi chú</label>
+                <textarea class="form-control" rows="3" placeholder="Mô tả thêm về tình trạng thú cưng"></textarea>
+            </div>
+        </div>
+        <button type="button" class="btn btn-warning text-white mt-3">Gửi yêu cầu đặt lịch</button>
+    </form>
+</div>

@@ -1,0 +1,10 @@
+# Runtime dependencies for the ONNX + FAISS FastAPI service (CPU-only).
+# Build/test/demo dependencies, including the optional CPU PyTorch stack, are in
+# requirements-dev.txt and are deliberately excluded from the service image.
+faiss-cpu>=1.8,<2
+numpy>=1.26,<3
+onnxruntime>=1.18,<2
+opencv-python-headless>=4.10,<5
+fastapi>=0.111,<1
+uvicorn[standard]>=0.30,<1
+python-multipart>=0.0.9,<1

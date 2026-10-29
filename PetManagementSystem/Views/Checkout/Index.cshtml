@@ -1,0 +1,120 @@
+@using PetManagementSystem.Helpers
+@model PetManagementSystem.ViewModels.Shop.CheckoutViewModel
+@{
+    ViewData["Title"] = "Thanh toán";
+}
+
+<link rel="stylesheet" href="~/css/shop.css" asp-append-version="true" />
+
+<h2 class="mb-4">Thanh toán</h2>
+
+<partial name="Shop/_Alerts" />
+
+<form id="checkout-form" asp-controller="Checkout" asp-action="Place" method="post">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                    <h5 class="fw-bold mb-0">Thông tin giao hàng</h5>
+                    <a asp-controller="Account" asp-action="EditProfile" class="small text-decoration-none text-nowrap">Cập nhật hồ sơ</a>
+                </div>
+                <p class="small text-muted mb-3">Thông tin được điền sẵn từ hồ sơ cá nhân của bạn. Bạn có thể sửa lại hoặc chọn/nhập địa chỉ giao khác cho đơn hàng này (hồ sơ không bị thay đổi).</p>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Input.FullName" class="form-label">Họ và tên người nhận <span class="text-danger">*</span></label>
+                        <input asp-for="Input.FullName" class="form-control" maxlength="150" autocomplete="name" required />
+                        <span asp-validation-for="Input.FullName" class="text-danger small"></span>
+                </div>
+                    <div class="col-md-6">
+                        <label asp-for="Input.Phone" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                        <input asp-for="Input.Phone" class="form-control" type="tel" inputmode="tel" maxlength="15" autocomplete="tel"
+                               placeholder="0912345678" required />
+                    <span asp-validation-for="Input.Phone" class="text-danger small"></span>
+                </div>
+                    <div class="col-12">
+                        <label asp-for="Input.Email" class="form-label">Email <span class="text-danger">*</span></label>
+                        <input asp-for="Input.Email" class="form-control" type="email" maxlength="150" autocomplete="email" required />
+                        <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Input.ShippingAddress" class="form-label">Địa chỉ nhận hàng <span class="text-danger">*</span></label>
+                        @if (Model.SavedAddresses.Count > 0)
+                        {
+                            var matched = Model.SavedAddresses.FindIndex(a => string.Equals(a.Address, Model.Input.ShippingAddress?.Trim(), StringComparison.OrdinalIgnoreCase));
+                            <div id="address-picker" class="mb-2">
+                                @for (var i = 0; i < Model.SavedAddresses.Count; i++)
+                                {
+                                    var saved = Model.SavedAddresses[i];
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="address-choice" id="addr-@i" value="@saved.Address" checked="@(i == matched)" />
+                                        <label class="form-check-label" for="addr-@i">
+                                            <span class="badge text-bg-light border me-1">@saved.Source</span>@saved.Address
+                                        </label>
+                                    </div>
+                                }
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="address-choice" id="addr-new" value="" data-new="true" checked="@(matched < 0)" />
+                                    <label class="form-check-label" for="addr-new">Nhập địa chỉ giao mới</label>
+                                </div>
+                            </div>
+                        }
+                        <input asp-for="Input.ShippingAddress" class="form-control" maxlength="255" autocomplete="street-address"
+                               placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố" required />
+                        <span asp-validation-for="Input.ShippingAddress" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12">
+                    <label asp-for="Input.Note" class="form-label">Ghi chú (không bắt buộc)</label>
+                        <textarea asp-for="Input.Note" class="form-control" rows="2" maxlength="255"
+                                  placeholder="Ví dụ: giao giờ hành chính, gọi trước khi giao..."></textarea>
+                    <span asp-validation-for="Input.Note" class="text-danger small"></span>
+                </div>
+            </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <h5 class="fw-bold mb-3">Phương thức thanh toán</h5>
+                @foreach (var option in Model.PaymentOptions)
+                {
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="Input.PaymentMethod" id="pm-@option.Value" value="@option.Value"
+                               checked="@(Model.Input.PaymentMethod == option.Value)" />
+                        <label class="form-check-label" for="pm-@option.Value">
+                            <strong>@option.Label</strong>
+                            <span class="d-block small text-muted">@option.Description</span>
+                        </label>
+                    </div>
+                }
+                <span asp-validation-for="Input.PaymentMethod" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <h5 class="fw-bold mb-3">Đơn hàng của bạn</h5>
+                @foreach (var item in Model.Cart.Items)
+                {
+                    <div class="d-flex justify-content-between small mb-2">
+                        <span>@item.ProductName <span class="text-muted">x @item.Quantity</span></span>
+                        <span>@CommerceFormat.Money(item.LineTotal)</span>
+                    </div>
+                }
+                <hr />
+                <div class="d-flex justify-content-between fw-bold fs-5">
+                    <span>Tổng cộng</span>
+                    <span class="shop-price">@CommerceFormat.Money(Model.Cart.TotalAmount)</span>
+                </div>
+                <p class="small text-muted mt-2 mb-3">Giá và tồn kho sẽ được kiểm tra lại khi đặt hàng.</p>
+                <button type="submit" class="btn btn-shop w-100 py-2">Đặt hàng</button>
+                <a asp-controller="Cart" asp-action="Index" class="btn btn-link w-100 mt-1">Quay lại giỏ hàng</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/shop.js" asp-append-version="true"></script>
+}

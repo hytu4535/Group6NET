@@ -1,0 +1,37 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using PetManagementSystem.Models;
+using PetManagementSystem.Services;
+
+namespace PetManagementSystem.Controllers.Api;
+
+[ApiController]
+[Authorize]
+[Route("api/main/chat-conversations")]
+public class ChatConversationsApiController(IChatConversationService chatConversationService) : ControllerBase
+{
+    [HttpGet]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<ChatConversation>>>> Get(
+        [FromQuery] string? search,
+        [FromQuery] DateTime? fromDate,
+        [FromQuery] DateTime? toDate,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        if (!IsValidPage(page, pageSize, out var error))
+        {
+            return BadRequest(ApiResponse<IReadOnlyList<ChatConversation>>.Fail(error));
+        }
+
+        var result = await chatConversationService.GetPagedAsync(search, fromDate, toDate, page, pageSize);
+        return Ok(ApiResponse<IReadOnlyList<ChatConversation>>.Ok(
+            result.Items, "Lấy danh sách lịch sử chat thành công.", result.Page, result.PageSize, result.TotalItems));
+    }
+
+    private static bool IsValidPage(int page, int pageSize, out string error)
+    {
+        error = page < 1 ? "page phải lớn hơn hoặc bằng 1." :
+            pageSize is < 1 or > 100 ? "pageSize phải trong khoảng từ 1 đến 100." : string.Empty;
+        return error.Length == 0;
+    }
+}
