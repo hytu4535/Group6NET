@@ -21,6 +21,10 @@ public class AppointmentController(
         var userId = GetCurrentUserId();
         ViewBag.Pets = await appointmentService.GetPetsByUserAsync(userId);
         ViewBag.Services = await appointmentService.GetActiveServicesAsync();
+        ViewBag.Veterinarians = await dbContext.Veterinarians
+            .Include(v => v.User)
+            .AsNoTracking()
+            .ToListAsync();
 
         var model = new BookingInputModel();
         if (serviceId.HasValue)
@@ -56,6 +60,10 @@ public class AppointmentController(
         {
             ViewBag.Pets = await appointmentService.GetPetsByUserAsync(userId);
             ViewBag.Services = await appointmentService.GetActiveServicesAsync();
+            ViewBag.Veterinarians = await dbContext.Veterinarians
+                .Include(v => v.User)
+                .AsNoTracking()
+                .ToListAsync();
             return View(model);
         }
 
@@ -65,6 +73,10 @@ public class AppointmentController(
             ModelState.AddModelError(result.Field ?? string.Empty, result.Error ?? "Không thể đặt lịch hẹn.");
             ViewBag.Pets = await appointmentService.GetPetsByUserAsync(userId);
             ViewBag.Services = await appointmentService.GetActiveServicesAsync();
+            ViewBag.Veterinarians = await dbContext.Veterinarians
+                .Include(v => v.User)
+                .AsNoTracking()
+                .ToListAsync();
             return View(model);
         }
 

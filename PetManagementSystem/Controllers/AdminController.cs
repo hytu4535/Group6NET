@@ -538,7 +538,52 @@ namespace PetManagementSystem.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Appointments(int? petId)
+        public async Task<IActionResult> GetPetPackageDetails(int id)
+        {
+            var pp = await context.PetPackages
+                .Include(x => x.Pet)
+                    .ThenInclude(p => p!.User)
+                .Include(x => x.ServicePackage)
+                    .ThenInclude(sp => sp!.ServicePackageServices)
+                        .ThenInclude(sps => sps.Service)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (pp == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy gói dịch vụ thú cưng." });
+            }
+
+            var services = pp.ServicePackage?.ServicePackageServices?
+                .Where(sps => sps.Service != null)
+                .Select(sps => new {
+                    name = sps.Service!.Name,
+                    duration = sps.Service.DurationMinutes,
+                    price = sps.Service.Price
+                }).ToList() ?? new();
+
+            string statusText = pp.Status switch
+            {
+                1 => "Hoạt động",
+                0 => "Chờ xác nhận",
+                _ => "Hết hạn / Ngừng"
+            };
+
+            return Json(new {
+                success = true,
+                petName = pp.Pet?.Name ?? "N/A",
+                species = pp.Pet?.Species ?? "N/A",
+                ownerName = pp.Pet?.User?.FullName ?? pp.Pet?.User?.Username ?? "N/A",
+                packageName = pp.ServicePackage?.Name ?? "N/A",
+                status = statusText,
+                startDate = pp.StartDate.ToString("dd/MM/yyyy"),
+                endDate = pp.EndDate.ToString("dd/MM/yyyy"),
+                services = services
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Appointments(int? petId, int? status, string? search)
         {
             SetNav("Quản lý Lịch hẹn", "Appointments", "ServiceMedical");
             var pets = await context.Pets
@@ -550,7 +595,7 @@ namespace PetManagementSystem.Controllers
                 return NotFound();
             }
 
-            var appointments = await context.Appointments
+            var query = context.Appointments
                 .Include(a => a.Pet)
                     .ThenInclude(p => p!.User)
                 .Include(a => a.Veterinarian)
@@ -558,14 +603,67 @@ namespace PetManagementSystem.Controllers
                 .Include(a => a.AppointmentServices)
                     .ThenInclude(aps => aps.Service)
                 .AsNoTracking()
+                .AsQueryable();
+
+            if (petId.HasValue)
+            {
+                query = query.Where(a => a.PetId == petId.Value);
+            }
+
+            if (status.HasValue)
+            {
+                query = query.Where(a => a.Status == status.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                query = query.Where(a =>
+                    (a.Pet != null && a.Pet.Name.ToLower().Contains(s)) ||
+                    (a.Pet != null && a.Pet.User != null && ((a.Pet.User.FullName != null && a.Pet.User.FullName.ToLower().Contains(s)) || a.Pet.User.Username.ToLower().Contains(s))) ||
+                    (a.Reason != null && a.Reason.ToLower().Contains(s))
+                );
+            }
+
+            var appointments = await query
+                .OrderByDescending(a => a.AppointmentDate)
+                .ThenByDescending(a => a.AppointmentTime)
                 .ToListAsync();
 
             ViewBag.Pets = pets;
             ViewBag.SelectedPetId = petId;
+            ViewBag.SelectedStatus = status;
+            ViewBag.Search = search;
             ViewBag.Veterinarians = await context.Veterinarians.Include(v => v.User).AsNoTracking().ToListAsync();
             ViewBag.ServicePackages = await context.ServicePackages.AsNoTracking().ToListAsync();
             ViewBag.Services = await context.Services.AsNoTracking().ToListAsync();
             return View(appointments);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangeAppointmentStatus(int id, byte status)
+        {
+            var appt = await context.Appointments.FindAsync(id);
+            if (appt == null)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = "Không tìm thấy lịch hẹn." });
+                }
+                TempData["Error"] = "Không tìm thấy lịch hẹn.";
+                return RedirectToAction(nameof(Appointments));
+            }
+
+            appt.Status = status;
+            await context.SaveChangesAsync();
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = true, message = "Cập nhật trạng thái lịch hẹn thành công!" });
+            }
+            TempData["Success"] = "Cập nhật trạng thái lịch hẹn thành công!";
+            return RedirectToAction(nameof(Appointments));
         }
 
         [HttpPost]

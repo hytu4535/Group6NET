@@ -60,7 +60,8 @@
                 </div>
                 <div class="card-body">
                     @{
-                        var activePp = ViewBag.ActivePetPackage as PetManagementSystem.Models.PetPackage;
+                        var activePp = ViewBag.ActivePetPackage as PetManagementSystem.Models.PetPackage 
+                                       ?? Model.PetPackages?.FirstOrDefault(pp => pp.Status == 1 && pp.EndDate >= DateTime.Now);
                     }
                     @if (activePp != null && activePp.ServicePackage != null)
                     {
@@ -100,6 +101,56 @@
                         <div class="text-center py-2 text-muted small">
                             <p class="mb-2">Thú cưng chưa có gói dịch vụ nào active.</p>
                             <a asp-controller="Service" asp-action="Index" class="btn btn-outline-primary btn-sm rounded-pill px-3">Xem danh sách gói</a>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Danh sách gói dịch vụ đã mua -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-secondary text-white fw-bold">
+                    <span><i class="bi bi-collection me-2"></i> Lịch sử gói dịch vụ đã mua</span>
+                </div>
+                <div class="card-body">
+                    @if (Model.PetPackages != null && Model.PetPackages.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var pp in Model.PetPackages.OrderByDescending(x => x.Id))
+                            {
+                                <div class="list-group-item px-0 py-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <h6 class="fw-bold text-dark mb-0">@(pp.ServicePackage?.Name ?? "Gói dịch vụ")</h6>
+                                        @if (pp.Status == 1)
+                                        {
+                                            <span class="badge bg-success">Hoạt động</span>
+                                        }
+                                        else if (pp.Status == 0)
+                                        {
+                                            <span class="badge bg-warning text-dark">Chờ xác nhận</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Hết hạn / Ngừng</span>
+                                        }
+                                    </div>
+                                    <p class="text-muted small mb-1">@pp.StartDate.ToString("dd/MM/yyyy") &rarr; @pp.EndDate.ToString("dd/MM/yyyy")</p>
+                                    @if (pp.ServicePackage?.ServicePackageServices != null && pp.ServicePackage.ServicePackageServices.Any())
+                                    {
+                                        <div class="d-flex flex-wrap gap-1 mt-2">
+                                            @foreach (var sps in pp.ServicePackage.ServicePackageServices)
+                                            {
+                                                <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.75rem;">@sps.Service?.Name</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-2 text-muted small">
+                            <p class="mb-0">Chưa có lịch sử mua gói dịch vụ nào.</p>
                         </div>
                     }
                 </div>

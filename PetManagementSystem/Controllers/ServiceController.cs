@@ -79,19 +79,28 @@ public class ServiceController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        byte initialStatus = (paymentMethod?.Equals("Cash", StringComparison.OrdinalIgnoreCase) == true) ? (byte)0 : (byte)1;
+
         var petPackage = new PetPackage
         {
             PetId = petId,
             PackageId = packageId,
             StartDate = DateTime.Now,
             EndDate = DateTime.Now.AddDays(package.ValidityDays),
-            Status = 1
+            Status = initialStatus
         };
 
         _dbContext.PetPackages.Add(petPackage);
         await _dbContext.SaveChangesAsync();
 
-        TempData["SuccessMessage"] = $"Đăng ký gói dịch vụ '{package.Name}' thành công cho thú cưng {pet.Name}!";
+        if (initialStatus == 0)
+        {
+            TempData["SuccessMessage"] = $"Đăng ký gói dịch vụ '{package.Name}' thành công cho thú cưng {pet.Name}! Vui lòng thanh toán tiền mặt tại cửa hàng (Trạng thái: Chờ nhân viên xác nhận).";
+        }
+        else
+        {
+            TempData["SuccessMessage"] = $"Đăng ký gói dịch vụ '{package.Name}' thành công cho thú cưng {pet.Name}!";
+        }
         return RedirectToAction("Details", "Pets", new { id = petId });
     }
 }

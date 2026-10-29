@@ -7,10 +7,43 @@
     var services = ViewBag.Services as List<PetManagementSystem.Models.Service> ?? new();
 }
 
-<div class="d-flex justify-content-end mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold mb-0">Quản lý Lịch hẹn</h4>
     <button type="button" class="btn btn-primary rounded-3 px-3 py-2" data-bs-toggle="modal" data-bs-target="#appointmentModal" onclick="resetAppointmentForm()">
         <i class="bi bi-plus-circle me-1"></i> Tạo lịch hẹn
     </button>
+</div>
+
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <input type="text" name="search" value="@ViewBag.Search" class="form-control" placeholder="Tìm theo tên thú cưng, chủ nuôi, ghi chú..." />
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    <option value="0" selected="@(ViewBag.SelectedStatus is int st && st == 0)">Chờ xác nhận</option>
+                    <option value="1" selected="@(ViewBag.SelectedStatus is int st1 && st1 == 1)">Đã xác nhận</option>
+                    <option value="2" selected="@(ViewBag.SelectedStatus is int st2 && st2 == 2)">Đã hoàn thành</option>
+                    <option value="3" selected="@(ViewBag.SelectedStatus is int st3 && st3 == 3)">Đã hủy</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="petId" class="form-select">
+                    <option value="">-- Tất cả thú cưng --</option>
+                    @foreach (var p in pets)
+                    {
+                        <option value="@p.Id" selected="@(ViewBag.SelectedPetId is int pId && pId == p.Id)">@p.Name (@p.Species)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-outline-primary flex-grow-1"><i class="bi bi-search"></i> Lọc</button>
+                <a asp-action="Appointments" class="btn btn-outline-secondary" title="Đặt lại"><i class="bi bi-arrow-counterclockwise"></i></a>
+            </div>
+        </form>
+    </div>
 </div>
 
 <div class="card shadow-sm border-0">
@@ -19,6 +52,13 @@
         {
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 @success
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["Error"] is string errorMsg)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @errorMsg
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         }
@@ -59,13 +99,17 @@
                                 </td>
                                 <td>@item.AppointmentTime.ToString(@"hh\:mm") - @item.AppointmentDate.ToString("dd/MM/yyyy")</td>
                                 <td>
-                                    @if (item.Status == 1)
+                                    @if (item.Status == 0)
                                     {
                                         <span class="badge bg-warning text-dark">Chờ xác nhận</span>
                                     }
-                                    else if (item.Status == 2)
+                                    else if (item.Status == 1)
                                     {
                                         <span class="badge bg-success">Đã xác nhận</span>
+                                    }
+                                    else if (item.Status == 2)
+                                    {
+                                        <span class="badge bg-info text-dark">Đã hoàn thành</span>
                                     }
                                     else if (item.Status == 3)
                                     {
@@ -77,7 +121,25 @@
                                     }
                                 </td>
                                 <td class="text-end">
-                                    <div class="d-flex gap-1 justify-content-end">
+                                    <div class="d-flex gap-1 justify-content-end align-items-center">
+                                        @if (item.Status == 0)
+                                        {
+                                            <form asp-action="ChangeAppointmentStatus" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <input type="hidden" name="status" value="1" />
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Xác nhận"><i class="bi bi-check-lg"></i></button>
+                                            </form>
+                                        }
+                                        @if (item.Status == 1)
+                                        {
+                                            <form asp-action="ChangeAppointmentStatus" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <input type="hidden" name="status" value="2" />
+                                                <button type="submit" class="btn btn-sm btn-outline-info" title="Hoàn thành"><i class="bi bi-check2-all"></i></button>
+                                            </form>
+                                        }
                                         <button class="btn btn-sm btn-outline-primary btn-edit-appointment" data-id="@item.Id" title="Sửa"><i class="bi bi-pencil-square"></i></button>
                                         <button class="btn btn-sm btn-outline-danger btn-delete-appointment" data-id="@item.Id" title="Xóa"><i class="bi bi-trash"></i></button>
                                     </div>
@@ -181,8 +243,9 @@
                     <div class="mb-3">
                         <label class="form-label">Trạng thái</label>
                         <select class="form-select" id="AppointmentStatus" name="Status">
-                            <option value="1">Chờ xác nhận</option>
-                            <option value="2">Đã xác nhận</option>
+                            <option value="0">Chờ xác nhận</option>
+                            <option value="1">Đã xác nhận</option>
+                            <option value="2">Đã hoàn thành</option>
                             <option value="3">Đã hủy</option>
                         </select>
                     </div>
@@ -215,7 +278,7 @@
             $('#AppointmentDate').val(new Date().toISOString().split('T')[0]);
             $('#AppointmentTime').val('09:00');
             $('#AppointmentPackageId').prop('disabled', true).val('');
-            $('#AppointmentStatus').val('1');
+            $('#AppointmentStatus').val('0');
             $('.service-checkbox').prop('checked', false).prop('disabled', false);
             $('#appointmentForm button[type="submit"]').prop('disabled', false);
             $('[data-valmsg-for="PackageId"]').text('');

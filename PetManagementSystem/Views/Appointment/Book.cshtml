@@ -3,6 +3,7 @@
     ViewData["Title"] = "Đặt lịch chăm sóc thú cưng";
     var pets = ViewBag.Pets as IEnumerable<PetManagementSystem.Models.Pet> ?? Enumerable.Empty<PetManagementSystem.Models.Pet>();
     var services = ViewBag.Services as IEnumerable<PetManagementSystem.Models.Service> ?? Enumerable.Empty<PetManagementSystem.Models.Service>();
+    var veterinarians = ViewBag.Veterinarians as IEnumerable<PetManagementSystem.Models.Veterinarian> ?? Enumerable.Empty<PetManagementSystem.Models.Veterinarian>();
 }
 
 <div class="container py-4">
@@ -80,6 +81,18 @@
                         <span asp-validation-for="AppointmentTime" class="text-danger small"></span>
                     </div>
 
+                    <div class="col-md-6">
+                        <label asp-for="VetId" class="form-label fw-semibold">Chọn bác sĩ phụ trách (Tùy chọn)</label>
+                        <select asp-for="VetId" class="form-select">
+                            <option value="">-- Chọn bác sĩ (Mặc định tự động phân công) --</option>
+                            @foreach (var vet in veterinarians)
+                            {
+                                <option value="@vet.Id" selected="@(Model.VetId == vet.Id ? "selected" : null)">@(vet.User?.FullName ?? vet.User?.Username ?? $"Bác sĩ #{vet.Id}") (@(vet.Specialty ?? "Thú y chung"))</option>
+                            }
+                        </select>
+                        <span asp-validation-for="VetId" class="text-danger small"></span>
+                    </div>
+
                     <div class="col-12">
                         <label asp-for="Reason" class="form-label fw-semibold">Lý do / Triệu chứng / Ghi chú</label>
                         <textarea asp-for="Reason" class="form-control" rows="3" placeholder="Mô tả triệu chứng hoặc yêu cầu đặc biệt..."></textarea>
@@ -100,14 +113,21 @@
     <partial name="_ValidationScriptsPartial" />
     <script>
         $(document).ready(function() {
+            let initialServiceIds = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ServiceIds ?? new List<int>()));
+
             $('#PetId').on('change', function() {
                 let petId = $(this).val();
                 $('#petPackageContainer').hide();
                 $('#petPackagesList').empty();
                 $('#ServicePackageId').val('');
                 
-                // Reset service checkboxes
+                // Preserve initial pre-selected service IDs (e.g. passed via query string)
                 $('.service-checkbox').prop('checked', false);
+                if (initialServiceIds && initialServiceIds.length > 0) {
+                    initialServiceIds.forEach(function(sId) {
+                        $('#service_' + sId).prop('checked', true);
+                    });
+                }
 
                 if (!petId) return;
 
