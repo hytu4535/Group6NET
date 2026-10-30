@@ -132,10 +132,23 @@
                         <a asp-action="Details" asp-route-id="@product.Id"
                            class="d-flex align-items-center justify-content-center bg-light position-relative p-3"
                            style="height: 210px;" aria-label="Xem @product.Name">
+<<<<<<< HEAD
                             <img src="@ProductImages.Src(product.ImageUrl)" alt="@product.Name"
                                  onerror="@ProductImages.OnError" referrerpolicy="no-referrer"
                                  class="img-fluid" loading="lazy"
                                  style="max-height: 100%; object-fit: contain;" />
+=======
+                            @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
+                            {
+                                <img src="@product.ImageUrl" alt="@product.Name"
+                                     class="img-fluid" loading="lazy"
+                                     style="max-height: 100%; object-fit: contain;" />
+                            }
+                            else
+                            {
+                                <i class="bi bi-box-seam text-muted" style="font-size: 3rem;" aria-hidden="true"></i>
+                            }
+>>>>>>> origin/main
                             <span class="badge position-absolute top-0 end-0 m-3 @(product.InStock ? "text-bg-success" : "text-bg-secondary")">
                                 @(product.InStock ? $"Còn {product.StockQuantity}" : "Hết hàng")
                             </span>

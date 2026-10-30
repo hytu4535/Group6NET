@@ -12,8 +12,11 @@ public interface IInvoiceRepository
 
     Task<bool> ExistsForOrderAsync(int orderId, int? excludeInvoiceId = null);
     Task AddAsync(Invoice invoice);
+<<<<<<< HEAD
 
     /// <summary>Thêm hóa đơn; trả về false (và không ném lỗi) nếu đơn hàng đã có hóa đơn do lập đồng thời.</summary>
     Task<bool> TryAddAsync(Invoice invoice);
+=======
+>>>>>>> origin/main
     Task UpdateAsync(Invoice invoice);
 }

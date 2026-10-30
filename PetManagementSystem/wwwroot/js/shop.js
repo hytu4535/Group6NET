@@ -104,6 +104,7 @@
             if (hint) { hint.classList.toggle('d-none', !hasIssue); }
         }
 
+<<<<<<< HEAD
         // Các lần lưu số lượng đang chạy; nút "Tiến hành thanh toán" chờ chúng xong rồi mới chuyển trang.
         var pending = [];
         function track(promise) {
@@ -143,17 +144,38 @@
 
             if (quantity === previous) {
                 return { ok: true, adjusted: adjusted };
+=======
+        cartTable.addEventListener('change', async function (event) {
+            var input = event.target.closest('.qty-input');
+            if (!input) { return; }
+
+            var row = input.closest('tr');
+            var previous = input.getAttribute('data-prev');
+            var quantity = parseInt(input.value, 10);
+            if (!quantity || quantity < 1) {
+                input.value = previous;
+                showToast('Số lượng phải lớn hơn 0.', 'danger');
+                return;
+>>>>>>> origin/main
             }
 
             input.disabled = true;
             var result = await callApi('PUT', '/api/client/cart/items/' + input.getAttribute('data-item-id'), { quantity: quantity });
             input.disabled = false;
+<<<<<<< HEAD
             if (result === null) { return { ok: false, adjusted: true }; }
+=======
+            if (result === null) { return; }
+>>>>>>> origin/main
 
             if (!result.success) {
                 input.value = previous;
                 showToast((result.errors && result.errors[0]) || result.message, 'danger');
+<<<<<<< HEAD
                 return { ok: false, adjusted: true };
+=======
+                return;
+>>>>>>> origin/main
             }
 
             input.setAttribute('data-prev', result.data.quantity);
@@ -163,6 +185,7 @@
             if (issue) { issue.remove(); }
             applySummary(result.data);
             refreshCheckoutState();
+<<<<<<< HEAD
             return { ok: true, adjusted: adjusted };
         }
 
@@ -202,6 +225,10 @@
             });
         }
 
+=======
+        });
+
+>>>>>>> origin/main
         cartTable.addEventListener('click', async function (event) {
             var button = event.target.closest('.remove-item');
             if (!button) { return; }

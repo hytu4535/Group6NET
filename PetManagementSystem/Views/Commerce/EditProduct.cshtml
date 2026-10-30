@@ -6,7 +6,11 @@
 <div class="card shadow-sm border-0">
     <div class="card-header bg-white"><h5 class="mb-0">Cập nhật sản phẩm</h5></div>
     <div class="card-body">
+<<<<<<< HEAD
         <form asp-action="EditProduct" method="post" enctype="multipart/form-data" novalidate>
+=======
+        <form asp-action="EditProduct" method="post" novalidate>
+>>>>>>> origin/main
             @Html.AntiForgeryToken()
             <input asp-for="Id" type="hidden" />
             <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
@@ -49,7 +53,15 @@
                     <input asp-for="StockQuantity" class="form-control" type="number" min="0" />
                     <span asp-validation-for="StockQuantity" class="text-danger"></span>
                 </div>
+<<<<<<< HEAD
                 <partial name="_ProductImageFields" model="Model" />
+=======
+                <div class="col-md-8">
+                    <label asp-for="ImageUrl" class="form-label">Đường dẫn ảnh</label>
+                    <input asp-for="ImageUrl" class="form-control" placeholder="https://..." />
+                    <span asp-validation-for="ImageUrl" class="text-danger"></span>
+                </div>
+>>>>>>> origin/main
                 <div class="col-md-4">
                     <label asp-for="Status" class="form-label">Trạng thái</label>
                     <select asp-for="Status" class="form-select">

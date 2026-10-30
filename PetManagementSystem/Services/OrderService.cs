@@ -8,8 +8,12 @@ namespace PetManagementSystem.Services;
 public class OrderService(
     IOrderRepository orderRepository,
     IProductRepository productRepository,
+<<<<<<< HEAD
     IUserRepository userRepository,
     IOrderBillingService billingService) : IOrderService
+=======
+    IUserRepository userRepository) : IOrderService
+>>>>>>> origin/main
 {
     public async Task<OrderListViewModel> GetListAsync(string? search, string? status, DateTime? from, DateTime? to, int page)
     {
@@ -267,6 +271,7 @@ public class OrderService(
                     product.UpdatedAt = DateTime.Now;
                 }
             }
+<<<<<<< HEAD
 
             // Đơn đã hủy thì không còn thu tiền: các giao dịch đang chờ chuyển sang "Thất bại" (giống khi khách tự hủy).
             foreach (var payment in order.Payments.Where(p => p.Status == PaymentStatuses.Pending))
@@ -304,10 +309,13 @@ public class OrderService(
                 payment.Status = PaymentStatuses.Completed;
                 payment.PaymentDate = DateTime.Now;
             }
+=======
+>>>>>>> origin/main
         }
 
         order.Status = newStatus;
         await orderRepository.UpdateAsync(order);
+<<<<<<< HEAD
 
         if (newStatus == OrderStatuses.Completed)
         {
@@ -315,6 +323,8 @@ public class OrderService(
             await billingService.EnsureInvoiceAsync(order.Id);
         }
 
+=======
+>>>>>>> origin/main
         return ServiceResult.Ok();
     }
 }

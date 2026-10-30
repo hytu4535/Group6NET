@@ -135,8 +135,13 @@ public class ClientOrderService(
             InvoiceId = invoice.Id,
             OrderId = invoice.OrderId,
             InvoiceDate = invoice.InvoiceDate,
+<<<<<<< HEAD
             CustomerName = invoice.Order.ReceiverName.TrimToNull() ?? CommerceFormat.DisplayName(invoice.Order.User),
             Email = invoice.Order.ReceiverEmail.TrimToNull() ?? invoice.Order.User?.Email,
+=======
+            CustomerName = CommerceFormat.DisplayName(invoice.Order.User),
+            Email = invoice.Order.User?.Email,
+>>>>>>> origin/main
             Phone = invoice.Order.Phone,
             ShippingAddress = invoice.Order.ShippingAddress,
             TotalAmount = invoice.TotalAmount,

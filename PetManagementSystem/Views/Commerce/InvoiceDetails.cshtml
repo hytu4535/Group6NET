@@ -26,6 +26,7 @@
             <dt class="col-sm-2">Đơn hàng</dt>
             <dd class="col-sm-4">#@Model.OrderId</dd>
             <dt class="col-sm-2">Khách hàng</dt>
+<<<<<<< HEAD
             <dd class="col-sm-4">
                 @Model.CustomerName
                 @if (!string.Equals(Model.CustomerName, Model.AccountName, StringComparison.OrdinalIgnoreCase))
@@ -33,6 +34,9 @@
                     <div class="small text-muted">Tài khoản: @Model.AccountName</div>
                 }
             </dd>
+=======
+            <dd class="col-sm-4">@Model.CustomerName</dd>
+>>>>>>> origin/main
 
             <dt class="col-sm-2">Email</dt>
             <dd class="col-sm-4">@(Model.Email ?? "-")</dd>

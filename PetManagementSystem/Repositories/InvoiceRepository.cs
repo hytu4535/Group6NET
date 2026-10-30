@@ -22,8 +22,12 @@ public class InvoiceRepository(AppDbContext dbContext) : IInvoiceRepository
             var hasId = int.TryParse(keyword.TrimStart('#'), out var number);
             query = query.Where(x => (hasId && (x.Id == number || x.OrderId == number))
                                      || x.Order!.User!.Username.Contains(keyword)
+<<<<<<< HEAD
                                      || (x.Order.User.FullName != null && x.Order.User.FullName.Contains(keyword))
                                      || (x.Order.ReceiverName != null && x.Order.ReceiverName.Contains(keyword)));
+=======
+                                     || (x.Order.User.FullName != null && x.Order.User.FullName.Contains(keyword)));
+>>>>>>> origin/main
         }
 
         if (from.HasValue)
@@ -73,6 +77,7 @@ public class InvoiceRepository(AppDbContext dbContext) : IInvoiceRepository
         await dbContext.SaveChangesAsync();
     }
 
+<<<<<<< HEAD
     public async Task<bool> TryAddAsync(Invoice invoice)
     {
         try
@@ -89,6 +94,8 @@ public class InvoiceRepository(AppDbContext dbContext) : IInvoiceRepository
         }
     }
 
+=======
+>>>>>>> origin/main
     public async Task UpdateAsync(Invoice invoice)
     {
         // Entity đã được theo dõi thì chỉ cần SaveChanges; tránh Update() lan sang các entity liên quan.

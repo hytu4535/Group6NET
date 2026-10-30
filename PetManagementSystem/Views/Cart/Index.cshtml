@@ -37,8 +37,19 @@ else
                         <td>
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="shop-thumb-sm">
+<<<<<<< HEAD
                                         <img src="@ProductImages.Src(item.ImageUrl)" alt="@item.ProductName"
                                              onerror="@ProductImages.OnError" referrerpolicy="no-referrer" />
+=======
+                                        @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                        {
+                                            <img src="@item.ImageUrl" alt="@item.ProductName" />
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-box-seam text-muted"></i>
+                                        }
+>>>>>>> origin/main
                                     </div>
                                 <div>
                                         <a asp-controller="Product" asp-action="Details" asp-route-id="@item.ProductId" class="fw-semibold text-dark text-decoration-none">@item.ProductName</a>
@@ -56,7 +67,11 @@ else
                             <td class="text-end">@CommerceFormat.Money(item.UnitPrice)</td>
                         <td>
                                 <input type="number" class="form-control form-control-sm qty-input" value="@item.Quantity" data-prev="@item.Quantity"
+<<<<<<< HEAD
                                        min="1" max="@(item.StockQuantity > 0 ? Math.Min(item.StockQuantity, 9999) : 9999)" data-stock="@item.StockQuantity" data-item-id="@item.ItemId" aria-label="Số lượng @item.ProductName" />
+=======
+                                       min="1" max="9999" data-item-id="@item.ItemId" aria-label="Số lượng @item.ProductName" />
+>>>>>>> origin/main
                         </td>
                             <td class="text-end line-total">@CommerceFormat.Money(item.LineTotal)</td>
                             <td class="text-end">
