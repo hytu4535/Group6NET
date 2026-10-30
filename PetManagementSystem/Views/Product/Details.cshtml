@@ -24,19 +24,10 @@
     <div class="row g-4">
         <div class="col-md-5">
             <div class="shop-thumb rounded-4" style="height:340px;">
-<<<<<<< HEAD
+
                 <img src="@ProductImages.Src(Model.ImageUrl)" alt="@Model.Name"
                      onerror="@ProductImages.OnError" referrerpolicy="no-referrer" />
-=======
-                @if (!string.IsNullOrEmpty(Model.ImageUrl))
-                {
-                    <img src="@Model.ImageUrl" alt="@Model.Name" />
-                }
-                else
-                {
-                    <i class="bi bi-box-seam text-muted" style="font-size:5rem;"></i>
-                }
->>>>>>> origin/main
+
             </div>
         </div>
         <div class="col-md-7">

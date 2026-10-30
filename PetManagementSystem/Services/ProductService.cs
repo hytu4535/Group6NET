@@ -8,12 +8,10 @@ namespace PetManagementSystem.Services;
 
 public class ProductService(
     IProductRepository productRepository,
-<<<<<<< HEAD
+
     ICategoryRepository categoryRepository,
     IProductImageStorage imageStorage) : IProductService
-=======
-    ICategoryRepository categoryRepository) : IProductService
->>>>>>> origin/main
+
 {
     public async Task<ProductListViewModel> GetListAsync(string? search, int? categoryId, string? status, int page)
     {
@@ -95,7 +93,7 @@ public class ProductService(
             return check;
         }
 
-<<<<<<< HEAD
+
         var upload = await ApplyImageUploadAsync(model);
         if (!upload.Success)
         {
@@ -107,7 +105,7 @@ public class ProductService(
 
         try
         {
-            await productRepository.AddAsync(product);
+        await productRepository.AddAsync(product);
         }
         catch
         {
@@ -120,12 +118,7 @@ public class ProductService(
             throw;
         }
 
-=======
-        var product = new Product { CreatedAt = DateTime.Now };
-        Apply(product, model);
 
-        await productRepository.AddAsync(product);
->>>>>>> origin/main
         return ServiceResult.Ok();
     }
 
@@ -148,7 +141,7 @@ public class ProductService(
             return check;
         }
 
-<<<<<<< HEAD
+
         var previousImage = product.ImageUrl;
 
         // Ưu tiên: ảnh mới chọn từ máy > bỏ ảnh > giữ/đổi đường dẫn nhập tay.
@@ -163,7 +156,7 @@ public class ProductService(
 
         try
         {
-            await productRepository.UpdateAsync(product);
+        await productRepository.UpdateAsync(product);
         }
         catch
         {
@@ -181,12 +174,7 @@ public class ProductService(
             imageStorage.DeleteIfManaged(previousImage);
         }
 
-=======
-        Apply(product, model);
-        product.UpdatedAt = DateTime.Now;
 
-        await productRepository.UpdateAsync(product);
->>>>>>> origin/main
         return ServiceResult.Ok();
     }
 
@@ -220,13 +208,11 @@ public class ProductService(
             return ServiceResult.Fail("Sản phẩm đã phát sinh phiếu nhập, giỏ hàng hoặc đơn hàng nên không thể xóa. Hãy chuyển sang \"Ngừng bán\".");
         }
 
-<<<<<<< HEAD
+
         var imageUrl = product.ImageUrl;
         await productRepository.DeleteAsync(product);
         imageStorage.DeleteIfManaged(imageUrl);
-=======
-        await productRepository.DeleteAsync(product);
->>>>>>> origin/main
+
         return ServiceResult.Ok();
     }
 
@@ -242,7 +228,7 @@ public class ProductService(
             return ServiceResult.Fail("Đã có sản phẩm cùng tên trong danh mục này", nameof(model.ProductName));
         }
 
-<<<<<<< HEAD
+
         var imageUrl = model.ImageUrl.TrimToNull();
         if (model.ImageFile is null && imageUrl is not null && !IsAcceptableImageUrl(imageUrl))
         {
@@ -276,8 +262,7 @@ public class ProductService(
             model.ImageUrl = null;
         }
 
-=======
->>>>>>> origin/main
+
         return ServiceResult.Ok();
     }
 

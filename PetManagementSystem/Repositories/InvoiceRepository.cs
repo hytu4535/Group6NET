@@ -22,12 +22,10 @@ public class InvoiceRepository(AppDbContext dbContext) : IInvoiceRepository
             var hasId = int.TryParse(keyword.TrimStart('#'), out var number);
             query = query.Where(x => (hasId && (x.Id == number || x.OrderId == number))
                                      || x.Order!.User!.Username.Contains(keyword)
-<<<<<<< HEAD
+
                                      || (x.Order.User.FullName != null && x.Order.User.FullName.Contains(keyword))
                                      || (x.Order.ReceiverName != null && x.Order.ReceiverName.Contains(keyword)));
-=======
-                                     || (x.Order.User.FullName != null && x.Order.User.FullName.Contains(keyword)));
->>>>>>> origin/main
+
         }
 
         if (from.HasValue)
@@ -82,8 +80,8 @@ public class InvoiceRepository(AppDbContext dbContext) : IInvoiceRepository
     {
         try
         {
-            await dbContext.Invoices.AddAsync(invoice);
-            await dbContext.SaveChangesAsync();
+        await dbContext.Invoices.AddAsync(invoice);
+        await dbContext.SaveChangesAsync();
             return true;
         }
         catch (DbUpdateException)
@@ -91,7 +89,7 @@ public class InvoiceRepository(AppDbContext dbContext) : IInvoiceRepository
             // Hai yêu cầu cùng lập hóa đơn cho một đơn (order_id là duy nhất): bỏ bản ghi vừa thêm, giữ bản đã có.
             dbContext.Entry(invoice).State = EntityState.Detached;
             return false;
-        }
+    }
     }
 
 =======

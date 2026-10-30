@@ -55,10 +55,9 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
-<<<<<<< HEAD
+
                         <th>Ảnh</th>
-=======
->>>>>>> origin/main
+
                         <th>Tên sản phẩm</th>
                         <th>Danh mục</th>
                         <th>Đơn vị</th>
@@ -72,11 +71,9 @@
                 <tbody>
                     @if (!Model.Items.Any())
                     {
-<<<<<<< HEAD
+
                         <tr><td colspan="10" class="text-center text-muted py-4">Chưa có sản phẩm nào</td></tr>
-=======
-                        <tr><td colspan="9" class="text-center text-muted py-4">Chưa có sản phẩm nào</td></tr>
->>>>>>> origin/main
+
                     }
                     else
                     {
@@ -84,14 +81,13 @@
                         {
                             <tr>
                                 <td>@item.Id</td>
-<<<<<<< HEAD
+
                                 <td>
                                     <img src="@ProductImages.Src(item.ImageUrl)" alt="@item.ProductName" onerror="@ProductImages.OnError"
                                          referrerpolicy="no-referrer" class="rounded border bg-light"
                                          style="width:44px;height:44px;object-fit:cover;" />
                                 </td>
-=======
->>>>>>> origin/main
+
                                 <td>@item.ProductName</td>
                                 <td>@item.CategoryName</td>
                                 <td>@(item.Unit ?? "-")</td>

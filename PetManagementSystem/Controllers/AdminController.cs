@@ -17,12 +17,9 @@ namespace PetManagementSystem.Controllers
       IPetService petService,
       IFeedbackService feedbackService,
       IUserRepository userRepository,
-<<<<<<< HEAD
       ICustomerService customerService,
       IDashboardService dashboardService) : Controller
-=======
-      ICustomerService customerService) : Controller
->>>>>>> origin/main
+
     {
         private const long MaximumAvatarRequestBytes =
             RecognitionImageFileAttribute.MaximumFileSizeBytes + 64 * 1024;
@@ -32,17 +29,11 @@ namespace PetManagementSystem.Controllers
         private readonly IFeedbackService _feedbackService = feedbackService;
         private readonly IUserRepository _userRepository = userRepository;
         private readonly ICustomerService _customerService = customerService;
-<<<<<<< HEAD
         public async Task<IActionResult> Dashboard()
         {
             SetNav("Dashboard", "Dashboard", string.Empty);
             return View(await dashboardService.GetAsync());
-=======
-        public IActionResult Dashboard()
-        {
-            SetNav("Dashboard", "Dashboard", string.Empty);
-            return View();
->>>>>>> origin/main
+
         }
 
         public async Task<IActionResult> Pets(string? searchKeyword, int page = 1, int pageSize = 10)
@@ -293,21 +284,6 @@ namespace PetManagementSystem.Controllers
 
 
 
-<<<<<<< HEAD
-=======
-        public IActionResult Products()
-        {
-            SetNav("Quản lý Sản phẩm", "Products", "Commerce");
-            return View();
-        }
-
-        public IActionResult Orders()
-        {
-            SetNav("Quản lý Đơn hàng", "Orders", "Commerce");
-            return View();
-        }
-
->>>>>>> origin/main
        
 
         // Identity

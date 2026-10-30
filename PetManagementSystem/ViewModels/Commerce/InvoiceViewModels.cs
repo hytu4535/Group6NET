@@ -42,11 +42,9 @@ public class InvoiceUpsertViewModel
     /// <summary>Chỉ để hiển thị: tổng tiền của hóa đơn lấy theo đơn hàng.</summary>
     public decimal TotalAmount { get; set; }
 
-<<<<<<< HEAD
+
     public string? OrderText { get; set; }
-=======
-    public string OrderText { get; set; } = string.Empty;
->>>>>>> origin/main
+
 
     public List<OrderOptionViewModel> OrderOptions { get; set; } = [];
 }
@@ -55,13 +53,11 @@ public class InvoiceDetailsViewModel
 {
     public int Id { get; set; }
     public int OrderId { get; set; }
-<<<<<<< HEAD
+
     /// <summary>Tên người nhận hàng (ưu tiên), dự phòng là tên tài khoản.</summary>
     public string CustomerName { get; set; } = string.Empty;
     public string AccountName { get; set; } = string.Empty;
-=======
-    public string CustomerName { get; set; } = string.Empty;
->>>>>>> origin/main
+
     public string? Email { get; set; }
     public string Phone { get; set; } = string.Empty;
     public string ShippingAddress { get; set; } = string.Empty;

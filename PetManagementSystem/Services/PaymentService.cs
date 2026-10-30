@@ -7,12 +7,10 @@ namespace PetManagementSystem.Services;
 
 public class PaymentService(
     IPaymentRepository paymentRepository,
-<<<<<<< HEAD
+
     IOrderRepository orderRepository,
     IOrderBillingService billingService) : IPaymentService
-=======
-    IOrderRepository orderRepository) : IPaymentService
->>>>>>> origin/main
+
 {
     public async Task<PaymentListViewModel> GetListAsync(string? search, string? status, string? method, int page)
     {
@@ -122,15 +120,13 @@ public class PaymentService(
             TransactionCode = code
         });
 
-<<<<<<< HEAD
+
         if (model.Status == PaymentStatuses.Completed)
         {
             // Đơn đã thu đủ tiền thì hóa đơn được lập tự động.
             await billingService.EnsureInvoiceAsync(order.Id);
         }
 
-=======
->>>>>>> origin/main
         return ServiceResult.Ok();
     }
 
@@ -153,14 +149,13 @@ public class PaymentService(
             return ServiceResult.Fail("Đơn hàng của giao dịch không còn tồn tại");
         }
 
-<<<<<<< HEAD
+
         if (order.Status == OrderStatuses.Cancelled && model.Status == PaymentStatuses.Completed)
         {
             return ServiceResult.Fail("Không thể đánh dấu \"Đã thanh toán\" cho đơn hàng đã hủy", nameof(model.Status));
         }
 
-=======
->>>>>>> origin/main
+
         var amount = Math.Round(model.Amount, 2);
         var check = await ValidateAmountAsync(order, amount, model.Status, payment.Id);
         if (!check.Success)
@@ -182,7 +177,7 @@ public class PaymentService(
         payment.TransactionCode = code;
 
         await paymentRepository.UpdateAsync(payment);
-<<<<<<< HEAD
+
 
         if (payment.Status == PaymentStatuses.Completed)
         {
@@ -190,8 +185,7 @@ public class PaymentService(
             await billingService.EnsureInvoiceAsync(order.Id);
         }
 
-=======
->>>>>>> origin/main
+
         return ServiceResult.Ok();
     }
 

@@ -25,19 +25,13 @@ public class InvoiceService(
             {
                 Id = x.Id,
                 OrderId = x.OrderId,
-<<<<<<< HEAD
+
                 CustomerName = x.Order?.ReceiverName.TrimToNull() ?? CommerceFormat.DisplayName(x.Order?.User),
                 InvoiceDate = x.InvoiceDate,
                 TotalAmount = x.TotalAmount,
                 TaxAmount = x.TaxAmount,
                 IssuedByName = IssuerName(x)
-=======
-                CustomerName = CommerceFormat.DisplayName(x.Order?.User),
-                InvoiceDate = x.InvoiceDate,
-                TotalAmount = x.TotalAmount,
-                TaxAmount = x.TaxAmount,
-                IssuedByName = x.IssuedByUser is null ? "-" : CommerceFormat.DisplayName(x.IssuedByUser)
->>>>>>> origin/main
+
             }).ToList()
         };
     }

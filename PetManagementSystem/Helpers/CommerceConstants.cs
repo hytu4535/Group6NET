@@ -99,7 +99,7 @@ public static class PaymentMethods
     };
 }
 
-<<<<<<< HEAD
+
 /// <summary>Thiết lập mặc định khi hệ thống tự lập hóa đơn.</summary>
 public static class InvoiceDefaults
 {
@@ -107,8 +107,7 @@ public static class InvoiceDefaults
     public const decimal TaxRate = 0.10m;
 }
 
-=======
->>>>>>> origin/main
+
 public static class PaymentStatuses
 {
     public const string Pending = "pending";
