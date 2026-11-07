@@ -69,10 +69,7 @@ builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
-<<<<<<< HEAD
 builder.Services.AddScoped<IProductImageStorage, ProductImageStorage>();
-=======
->>>>>>> origin/main
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IImportReceiptService, ImportReceiptService>();
 builder.Services.AddScoped<ICartService, CartService>();

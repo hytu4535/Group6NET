@@ -36,13 +36,10 @@ public class InvoiceService(
         };
     }
 
-<<<<<<< HEAD
     /// <summary>Hóa đơn không có người lập là hóa đơn do hệ thống tự lập khi đơn đã thu đủ tiền.</summary>
     private static string IssuerName(Invoice invoice) =>
         invoice.IssuedByUser is null ? "Hệ thống (tự động)" : CommerceFormat.DisplayName(invoice.IssuedByUser);
 
-=======
->>>>>>> origin/main
     public async Task<InvoiceDetailsViewModel?> GetDetailsAsync(int id)
     {
         var invoice = await invoiceRepository.GetByIdAsync(id);
@@ -55,25 +52,16 @@ public class InvoiceService(
         {
             Id = invoice.Id,
             OrderId = invoice.OrderId,
-<<<<<<< HEAD
             // Ưu tiên người nhận khách nhập khi đặt hàng; tài khoản chỉ là dự phòng (đơn cũ / đơn tạo thủ công).
             CustomerName = invoice.Order?.ReceiverName.TrimToNull() ?? CommerceFormat.DisplayName(invoice.Order?.User),
             AccountName = CommerceFormat.DisplayName(invoice.Order?.User),
             Email = invoice.Order?.ReceiverEmail.TrimToNull() ?? invoice.Order?.User?.Email,
-=======
-            CustomerName = CommerceFormat.DisplayName(invoice.Order?.User),
-            Email = invoice.Order?.User?.Email,
->>>>>>> origin/main
             Phone = invoice.Order?.Phone ?? string.Empty,
             ShippingAddress = invoice.Order?.ShippingAddress ?? string.Empty,
             InvoiceDate = invoice.InvoiceDate,
             TotalAmount = invoice.TotalAmount,
             TaxAmount = invoice.TaxAmount,
-<<<<<<< HEAD
             IssuedByName = IssuerName(invoice),
-=======
-            IssuedByName = invoice.IssuedByUser is null ? "-" : CommerceFormat.DisplayName(invoice.IssuedByUser),
->>>>>>> origin/main
             Items = invoice.Order?.Items.OrderBy(x => x.Id).Select(x => x.ToRow()).ToList() ?? []
         };
     }

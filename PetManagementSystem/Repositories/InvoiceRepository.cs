@@ -75,13 +75,12 @@ public class InvoiceRepository(AppDbContext dbContext) : IInvoiceRepository
         await dbContext.SaveChangesAsync();
     }
 
-<<<<<<< HEAD
     public async Task<bool> TryAddAsync(Invoice invoice)
     {
         try
         {
-        await dbContext.Invoices.AddAsync(invoice);
-        await dbContext.SaveChangesAsync();
+            await dbContext.Invoices.AddAsync(invoice);
+            await dbContext.SaveChangesAsync();
             return true;
         }
         catch (DbUpdateException)
@@ -89,11 +88,9 @@ public class InvoiceRepository(AppDbContext dbContext) : IInvoiceRepository
             // Hai yêu cầu cùng lập hóa đơn cho một đơn (order_id là duy nhất): bỏ bản ghi vừa thêm, giữ bản đã có.
             dbContext.Entry(invoice).State = EntityState.Detached;
             return false;
-    }
+        }
     }
 
-=======
->>>>>>> origin/main
     public async Task UpdateAsync(Invoice invoice)
     {
         // Entity đã được theo dõi thì chỉ cần SaveChanges; tránh Update() lan sang các entity liên quan.
