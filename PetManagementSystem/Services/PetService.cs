@@ -298,7 +298,7 @@ public class PetService(
         catch (Exception ex)
         {
             logger.LogError(ex, "Lỗi hệ thống khi xóa thú cưng ID: {PetId}", id);
-            return (false, "Không thể xóa thú cưng do lỗi hệ thống.");
+            return (false, "Không thể xóa thú cưng vì còn ràng buộc.");
         }
     }
 
