@@ -8,7 +8,9 @@ namespace PetManagementSystem.Services;
 public class OrderService(
     IOrderRepository orderRepository,
     IProductRepository productRepository,
-    IUserRepository userRepository) : IOrderService
+    IUserRepository userRepository,
+    IOrderBillingService billingService) : IOrderService
+
 {
     public async Task<OrderListViewModel> GetListAsync(string? search, string? status, DateTime? from, DateTime? to, int page)
     {
@@ -266,10 +268,58 @@ public class OrderService(
                     product.UpdatedAt = DateTime.Now;
                 }
             }
+
+
+            // Đơn đã hủy thì không còn thu tiền: các giao dịch đang chờ chuyển sang "Thất bại" (giống khi khách tự hủy).
+            foreach (var payment in order.Payments.Where(p => p.Status == PaymentStatuses.Pending))
+            {
+                payment.Status = PaymentStatuses.Failed;
+            }
+        }
+
+        if (newStatus == OrderStatuses.Completed)
+        {
+            var paid = order.Payments.Where(p => p.Status == PaymentStatuses.Completed).Sum(p => p.Amount);
+
+            // Tiền mặt (COD) được thu khi giao hàng: đơn hoàn thành thì giao dịch tiền mặt đang chờ tự chuyển thành "Đã thanh toán".
+            var cashToCollect = new List<Payment>();
+            foreach (var payment in order.Payments
+                         .Where(p => p.Status == PaymentStatuses.Pending && p.PaymentMethod == PaymentMethods.Cash)
+                         .OrderBy(p => p.Id))
+            {
+                if (paid + payment.Amount <= order.TotalAmount)
+                {
+                    cashToCollect.Add(payment);
+                    paid += payment.Amount;
+                }
+            }
+
+            // Chuyển khoản / ví điện tử chưa được xác nhận nhận tiền thì chưa thể hoàn thành đơn.
+            if (paid < order.TotalAmount
+                && order.Payments.Any(p => p.Status == PaymentStatuses.Pending && p.PaymentMethod != PaymentMethods.Cash))
+            {
+                return ServiceResult.Fail("Đơn hàng thanh toán bằng chuyển khoản/ví điện tử chưa được xác nhận đã nhận tiền. Hãy cập nhật giao dịch sang \"Đã thanh toán\" ở mục Thanh toán trước khi hoàn thành đơn.");
+            }
+
+            foreach (var payment in cashToCollect)
+            {
+                payment.Status = PaymentStatuses.Completed;
+                payment.PaymentDate = DateTime.Now;
+            }
+
         }
 
         order.Status = newStatus;
         await orderRepository.UpdateAsync(order);
+
+
+        if (newStatus == OrderStatuses.Completed)
+        {
+            // Đơn đã thu đủ tiền thì hóa đơn được lập tự động, không cần lập thủ công.
+            await billingService.EnsureInvoiceAsync(order.Id);
+        }
+
+
         return ServiceResult.Ok();
     }
 }

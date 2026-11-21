@@ -8,7 +8,10 @@ namespace PetManagementSystem.Services;
 
 public class ProductService(
     IProductRepository productRepository,
-    ICategoryRepository categoryRepository) : IProductService
+
+    ICategoryRepository categoryRepository,
+    IProductImageStorage imageStorage) : IProductService
+
 {
     public async Task<ProductListViewModel> GetListAsync(string? search, int? categoryId, string? status, int page)
     {
@@ -90,10 +93,32 @@ public class ProductService(
             return check;
         }
 
+
+        var upload = await ApplyImageUploadAsync(model);
+        if (!upload.Success)
+        {
+            return upload;
+        }
+
         var product = new Product { CreatedAt = DateTime.Now };
         Apply(product, model);
 
+        try
+        {
         await productRepository.AddAsync(product);
+        }
+        catch
+        {
+            // Lưu sản phẩm thất bại thì không để lại file ảnh mồ côi.
+            if (model.ImageFile is not null)
+            {
+                imageStorage.DeleteIfManaged(model.ImageUrl);
+            }
+
+            throw;
+        }
+
+
         return ServiceResult.Ok();
     }
 
@@ -116,10 +141,40 @@ public class ProductService(
             return check;
         }
 
+
+        var previousImage = product.ImageUrl;
+
+        // Ưu tiên: ảnh mới chọn từ máy > bỏ ảnh > giữ/đổi đường dẫn nhập tay.
+        var upload = await ApplyImageUploadAsync(model);
+        if (!upload.Success)
+        {
+            return upload;
+        }
+
         Apply(product, model);
         product.UpdatedAt = DateTime.Now;
 
+        try
+        {
         await productRepository.UpdateAsync(product);
+        }
+        catch
+        {
+            if (model.ImageFile is not null)
+            {
+                imageStorage.DeleteIfManaged(model.ImageUrl);
+            }
+
+            throw;
+        }
+
+        // Đã lưu xong: dọn file ảnh cũ do hệ thống lưu nếu ảnh đã bị thay hoặc bỏ.
+        if (!string.Equals(previousImage, product.ImageUrl, StringComparison.Ordinal))
+        {
+            imageStorage.DeleteIfManaged(previousImage);
+        }
+
+
         return ServiceResult.Ok();
     }
 
@@ -153,7 +208,11 @@ public class ProductService(
             return ServiceResult.Fail("Sản phẩm đã phát sinh phiếu nhập, giỏ hàng hoặc đơn hàng nên không thể xóa. Hãy chuyển sang \"Ngừng bán\".");
         }
 
+
+        var imageUrl = product.ImageUrl;
         await productRepository.DeleteAsync(product);
+        imageStorage.DeleteIfManaged(imageUrl);
+
         return ServiceResult.Ok();
     }
 
@@ -168,6 +227,41 @@ public class ProductService(
         {
             return ServiceResult.Fail("Đã có sản phẩm cùng tên trong danh mục này", nameof(model.ProductName));
         }
+
+
+        var imageUrl = model.ImageUrl.TrimToNull();
+        if (model.ImageFile is null && imageUrl is not null && !IsAcceptableImageUrl(imageUrl))
+        {
+            return ServiceResult.Fail("Đường dẫn ảnh phải bắt đầu bằng http:// hoặc https://", nameof(model.ImageUrl));
+        }
+
+        return ServiceResult.Ok();
+    }
+
+    /// <summary>Chấp nhận link ngoài http/https hoặc ảnh đã tải lên hệ thống (/uploads/products/...).</summary>
+    private bool IsAcceptableImageUrl(string imageUrl) =>
+        imageStorage.IsManaged(imageUrl)
+        || (Uri.TryCreate(imageUrl, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
+
+    /// <summary>Lưu ảnh chọn từ máy (nếu có) và gán đường dẫn vào model; xử lý thêm lựa chọn "bỏ ảnh".</summary>
+    private async Task<ServiceResult> ApplyImageUploadAsync(ProductUpsertViewModel model)
+    {
+        if (model.ImageFile is not null)
+        {
+            var saved = await imageStorage.SaveAsync(model.ImageFile);
+            if (!saved.Success)
+            {
+                return ServiceResult.Fail(saved.Error ?? "Không lưu được ảnh", saved.Field);
+            }
+
+            model.ImageUrl = saved.Data;
+        }
+        else if (model.RemoveImage)
+        {
+            model.ImageUrl = null;
+        }
+
 
         return ServiceResult.Ok();
     }

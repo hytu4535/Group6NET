@@ -48,7 +48,9 @@ public class PaymentUpsertViewModel
     public string? TransactionCode { get; set; }
 
     /// <summary>Chỉ để hiển thị khi sửa (không đổi đơn hàng của một giao dịch).</summary>
-    public string OrderText { get; set; } = string.Empty;
+
+    public string? OrderText { get; set; }
+
 
     public List<OrderOptionViewModel> OrderOptions { get; set; } = [];
 }

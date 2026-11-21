@@ -105,7 +105,9 @@ public class OrderEditViewModel
     public int? Id { get; set; }
 
     /// <summary>Chỉ để hiển thị, không cho sửa khách hàng của đơn.</summary>
-    public string CustomerName { get; set; } = string.Empty;
+
+    public string? CustomerName { get; set; }
+
 
     [Required(ErrorMessage = "Địa chỉ giao hàng là bắt buộc")]
     [StringLength(255, ErrorMessage = "Địa chỉ giao hàng tối đa 255 ký tự")]

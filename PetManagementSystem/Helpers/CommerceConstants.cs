@@ -99,6 +99,15 @@ public static class PaymentMethods
     };
 }
 
+
+/// <summary>Thiết lập mặc định khi hệ thống tự lập hóa đơn.</summary>
+public static class InvoiceDefaults
+{
+    /// <summary>Tỷ lệ thuế tính trên tổng tiền hóa đơn (theo dữ liệu mẫu hiện có: 10%). Đặt 0 nếu không tính thuế.</summary>
+    public const decimal TaxRate = 0.10m;
+}
+
+
 public static class PaymentStatuses
 {
     public const string Pending = "pending";

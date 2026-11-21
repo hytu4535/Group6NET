@@ -25,14 +25,20 @@ public class InvoiceService(
             {
                 Id = x.Id,
                 OrderId = x.OrderId,
-                CustomerName = CommerceFormat.DisplayName(x.Order?.User),
+
+                CustomerName = x.Order?.ReceiverName.TrimToNull() ?? CommerceFormat.DisplayName(x.Order?.User),
                 InvoiceDate = x.InvoiceDate,
                 TotalAmount = x.TotalAmount,
                 TaxAmount = x.TaxAmount,
-                IssuedByName = x.IssuedByUser is null ? "-" : CommerceFormat.DisplayName(x.IssuedByUser)
+                IssuedByName = IssuerName(x)
+
             }).ToList()
         };
     }
+
+    /// <summary>Hóa đơn không có người lập là hóa đơn do hệ thống tự lập khi đơn đã thu đủ tiền.</summary>
+    private static string IssuerName(Invoice invoice) =>
+        invoice.IssuedByUser is null ? "Hệ thống (tự động)" : CommerceFormat.DisplayName(invoice.IssuedByUser);
 
     public async Task<InvoiceDetailsViewModel?> GetDetailsAsync(int id)
     {
@@ -46,14 +52,16 @@ public class InvoiceService(
         {
             Id = invoice.Id,
             OrderId = invoice.OrderId,
-            CustomerName = CommerceFormat.DisplayName(invoice.Order?.User),
-            Email = invoice.Order?.User?.Email,
+            // Ưu tiên người nhận khách nhập khi đặt hàng; tài khoản chỉ là dự phòng (đơn cũ / đơn tạo thủ công).
+            CustomerName = invoice.Order?.ReceiverName.TrimToNull() ?? CommerceFormat.DisplayName(invoice.Order?.User),
+            AccountName = CommerceFormat.DisplayName(invoice.Order?.User),
+            Email = invoice.Order?.ReceiverEmail.TrimToNull() ?? invoice.Order?.User?.Email,
             Phone = invoice.Order?.Phone ?? string.Empty,
             ShippingAddress = invoice.Order?.ShippingAddress ?? string.Empty,
             InvoiceDate = invoice.InvoiceDate,
             TotalAmount = invoice.TotalAmount,
             TaxAmount = invoice.TaxAmount,
-            IssuedByName = invoice.IssuedByUser is null ? "-" : CommerceFormat.DisplayName(invoice.IssuedByUser),
+            IssuedByName = IssuerName(invoice),
             Items = invoice.Order?.Items.OrderBy(x => x.Id).Select(x => x.ToRow()).ToList() ?? []
         };
     }

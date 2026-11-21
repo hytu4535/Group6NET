@@ -49,9 +49,17 @@ public class ProductUpsertViewModel
     [Range(0, int.MaxValue, ErrorMessage = "Số lượng tồn phải từ 0 trở lên")]
     public int StockQuantity { get; set; }
 
+
+    /// <summary>Ảnh hiện tại: link ngoài (http/https) hoặc đường dẫn ảnh đã tải lên (/uploads/products/...).</summary>
     [StringLength(1000, ErrorMessage = "Đường dẫn ảnh tối đa 1000 ký tự")]
-    [Url(ErrorMessage = "Đường dẫn ảnh phải bắt đầu bằng http:// hoặc https://")]
     public string? ImageUrl { get; set; }
+
+    /// <summary>Ảnh chọn từ máy; nếu có thì thay thế ảnh hiện tại.</summary>
+    public IFormFile? ImageFile { get; set; }
+
+    /// <summary>Tích để bỏ ảnh hiện tại (khi không chọn ảnh mới).</summary>
+    public bool RemoveImage { get; set; }
+
 
     [Required(ErrorMessage = "Trạng thái là bắt buộc")]
     [RegularExpression("^(active|inactive)$", ErrorMessage = "Trạng thái chỉ nhận active hoặc inactive")]

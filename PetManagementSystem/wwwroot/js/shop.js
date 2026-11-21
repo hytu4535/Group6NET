@@ -104,28 +104,62 @@
             if (hint) { hint.classList.toggle('d-none', !hasIssue); }
         }
 
-        cartTable.addEventListener('change', async function (event) {
-            var input = event.target.closest('.qty-input');
-            if (!input) { return; }
 
+        // Các lần lưu số lượng đang chạy; nút "Tiến hành thanh toán" chờ chúng xong rồi mới chuyển trang.
+        var pending = [];
+        function track(promise) {
+            pending.push(promise);
+            var done = function () { pending = pending.filter(function (p) { return p !== promise; }); };
+            promise.then(done, done);
+            return promise;
+        }
+
+        // Lưu số lượng của một dòng. Vượt tồn kho thì tự điều chỉnh về số tối đa còn lại và LƯU luôn số đó,
+        // để số hiển thị trên màn hình luôn đúng bằng số sẽ được đặt.
+        // Trả về { ok: đã lưu thành công, adjusted: số lượng bị đổi so với số khách nhập }.
+        async function commitQuantity(input) {
             var row = input.closest('tr');
-            var previous = input.getAttribute('data-prev');
+            var previous = parseInt(input.getAttribute('data-prev'), 10);
+            var stock = parseInt(input.getAttribute('data-stock'), 10);
             var quantity = parseInt(input.value, 10);
+
             if (!quantity || quantity < 1) {
                 input.value = previous;
                 showToast('Số lượng phải lớn hơn 0.', 'danger');
-                return;
+                return { ok: false, adjusted: true };
+            }
+
+            var adjusted = false;
+            if (!isNaN(stock) && quantity > stock) {
+                if (stock < 1) {
+                    input.value = previous;
+                    showToast('Sản phẩm này đã hết hàng.', 'danger');
+                    return { ok: false, adjusted: true };
+                }
+                quantity = stock;
+                input.value = stock;
+                adjusted = true;
+                showToast('Chỉ còn ' + stock + ' sản phẩm trong kho, số lượng đã được điều chỉnh về ' + stock + '.', 'warning');
+            }
+
+            if (quantity === previous) {
+                return { ok: true, adjusted: adjusted };
+
             }
 
             input.disabled = true;
             var result = await callApi('PUT', '/api/client/cart/items/' + input.getAttribute('data-item-id'), { quantity: quantity });
             input.disabled = false;
-            if (result === null) { return; }
+
+            if (result === null) { return { ok: false, adjusted: true }; }
+
 
             if (!result.success) {
                 input.value = previous;
                 showToast((result.errors && result.errors[0]) || result.message, 'danger');
-                return;
+
+                return { ok: false, adjusted: true };
+
             }
 
             input.setAttribute('data-prev', result.data.quantity);
@@ -135,7 +169,46 @@
             if (issue) { issue.remove(); }
             applySummary(result.data);
             refreshCheckoutState();
+
+            return { ok: true, adjusted: adjusted };
+        }
+
+        cartTable.addEventListener('change', function (event) {
+            var input = event.target.closest('.qty-input');
+            if (!input) { return; }
+            track(commitQuantity(input));
         });
+
+        // Bấm "Tiến hành thanh toán": lưu nốt mọi số lượng chưa lưu, chỉ chuyển trang khi giỏ hàng khớp với những gì khách thấy.
+        var checkoutBtn = document.getElementById('checkout-btn');
+        if (checkoutBtn) {
+            checkoutBtn.addEventListener('click', async function (event) {
+                event.preventDefault();
+                if (checkoutBtn.classList.contains('disabled')) { return; }
+
+                var changed = false;
+                (await Promise.all(pending.slice())).forEach(function (r) {
+                    if (r && (!r.ok || r.adjusted)) { changed = true; }
+                });
+
+                var inputs = cartTable.querySelectorAll('.qty-input');
+                for (var i = 0; i < inputs.length; i++) {
+                    var input = inputs[i];
+                    if (parseInt(input.value, 10) !== parseInt(input.getAttribute('data-prev'), 10)) {
+                        var r = await track(commitQuantity(input));
+                        if (!r.ok || r.adjusted) { changed = true; }
+                    }
+                }
+
+                if (changed || cartTable.querySelector('.line-issue')) {
+                    showToast('Số lượng trong giỏ hàng đã được cập nhật theo tồn kho. Vui lòng kiểm tra lại rồi bấm "Tiến hành thanh toán".', 'warning');
+                    return;
+                }
+
+                window.location.href = checkoutBtn.href;
+            });
+        }
+
 
         cartTable.addEventListener('click', async function (event) {
             var button = event.target.closest('.remove-item');
