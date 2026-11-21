@@ -56,6 +56,10 @@ public class PetRepository(AppDbContext dbContext) : IPetRepository
         return await dbContext.Pets
             .Include(x => x.User)
             .Include(x => x.PetImages)
+            .Include(x => x.PetPackages)
+                .ThenInclude(pp => pp.ServicePackage)
+                    .ThenInclude(sp => sp!.ServicePackageServices)
+                        .ThenInclude(sps => sps.Service)
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 

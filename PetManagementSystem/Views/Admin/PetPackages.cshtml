@@ -53,6 +53,10 @@
                                     {
                                         <span class="badge bg-success">Hoạt động</span>
                                     }
+                                    else if (item.Status == 0)
+                                    {
+                                        <span class="badge bg-warning text-dark">Chờ xác nhận</span>
+                                    }
                                     else
                                     {
                                         <span class="badge bg-secondary">Hết hạn / Ngừng</span>
@@ -139,7 +143,8 @@
                         <label class="form-label">Trạng thái</label>
                         <select class="form-select" id="PetPackageStatus" name="Status">
                             <option value="1">Hoạt động</option>
-                            <option value="0">Hết hạn / Ngừng</option>
+                            <option value="0">Chờ xác nhận</option>
+                            <option value="2">Hết hạn / Ngừng</option>
                         </select>
                     </div>
                 </div>

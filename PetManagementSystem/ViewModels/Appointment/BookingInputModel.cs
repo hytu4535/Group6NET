@@ -12,6 +12,8 @@ public class BookingInputModel
 
     public int? ServicePackageId { get; set; }
 
+    public int? VetId { get; set; }
+
     [Required(ErrorMessage = "Vui lòng chọn ngày hẹn.")]
     [DataType(DataType.Date)]
     public DateTime AppointmentDate { get; set; } = DateTime.Today.AddDays(1);

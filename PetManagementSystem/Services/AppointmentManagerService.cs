@@ -111,10 +111,11 @@ public class AppointmentManagerService(
                 {
                     PetId = model.PetId,
                     UserId = userId,
+                    VetId = model.VetId,
                     AppointmentDate = model.AppointmentDate.Date,
                     AppointmentTime = model.AppointmentTime,
                     Reason = model.Reason,
-                    Status = 1 // Pending (Chờ xác nhận)
+                    Status = 0 // Pending (Chờ xác nhận)
                 };
 
                 dbContext.Appointments.Add(appointment);
