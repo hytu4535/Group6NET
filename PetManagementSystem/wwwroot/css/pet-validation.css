@@ -1,0 +1,23 @@
+.pet-validation-message {
+    display: block;
+    min-height: 1.25rem;
+    margin-top: 0.35rem;
+    color: #dc3545;
+    font-size: 0.875rem;
+    line-height: 1.25;
+}
+
+.pet-validation-message:empty {
+    display: none;
+}
+
+.pet-form-field.is-invalid,
+.pet-form-field.input-validation-error {
+    border-color: #dc3545;
+}
+
+.pet-form-field.is-invalid:focus,
+.pet-form-field.input-validation-error:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}

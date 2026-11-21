@@ -247,9 +247,9 @@ public class ClientPetsApiController(IPetService petService) : ControllerBase
 
     private List<string> GetValidationErrors()
     {
-        return ModelState.Values
-            .SelectMany(value => value.Errors)
-            .Select(error => string.IsNullOrWhiteSpace(error.ErrorMessage) ? "Dữ liệu không hợp lệ." : error.ErrorMessage)
+        return ModelState
+            .SelectMany(entry => entry.Value?.Errors.Select(error =>
+                $"{entry.Key}: {(!string.IsNullOrWhiteSpace(error.ErrorMessage) ? error.ErrorMessage : "Dữ liệu không hợp lệ.")}") ?? [])
             .ToList();
     }
 

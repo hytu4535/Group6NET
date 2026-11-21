@@ -1,5 +1,7 @@
 @model PetManagementSystem.ViewModels.Pets.MyPetsPageViewModel
 
+<link rel="stylesheet" href="~/css/pet-validation.css" asp-append-version="true" />
+
 @{
     ViewData["Title"] = "Thú cưng của tôi";
 }
@@ -34,7 +36,7 @@
 <div class="modal fade" id="petModal" tabindex="-1" aria-labelledby="petModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form id="petForm" enctype="multipart/form-data">
+            <form id="petForm" enctype="multipart/form-data" novalidate>
                 <div class="modal-header">
                     <h2 class="modal-title fs-5" id="petModalTitle">Thêm thú cưng</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
@@ -43,32 +45,42 @@
                     <input id="petId" type="hidden">
                     <div class="mb-3">
                         <label for="petName" class="form-label">Tên thú cưng</label>
-                        <input id="petName" name="Name" class="form-control" maxlength="100" required>
+                        <input id="petName" name="Name" class="form-control pet-form-field" maxlength="100" required
+                               data-pet-field data-pet-whitespace="true" data-pet-required-message="Vui lòng nhập tên thú cưng.">
+                        <span class="pet-validation-message" data-pet-error-for="petName"></span>
                     </div>
                     <div class="mb-3">
                         <label for="petSpecies" class="form-label">Loài</label>
-                        <input id="petSpecies" name="Species" class="form-control" maxlength="50" required>
+                        <input id="petSpecies" name="Species" class="form-control pet-form-field" maxlength="50" required
+                               data-pet-field data-pet-whitespace="true" data-pet-required-message="Vui lòng nhập loài thú cưng.">
+                        <span class="pet-validation-message" data-pet-error-for="petSpecies"></span>
                     </div>
                     <div class="mb-3">
                         <label for="petBreed" class="form-label">Giống</label>
-                        <input id="petBreed" name="Breed" class="form-control" maxlength="80">
+                        <input id="petBreed" name="Breed" class="form-control pet-form-field" maxlength="80" data-pet-field>
+                        <span class="pet-validation-message" data-pet-error-for="petBreed"></span>
                     </div>
                     <div class="mb-3">
                         <label for="petGender" class="form-label">Giới tính</label>
-                        <select id="petGender" name="Gender" class="form-select" required>
+                        <select id="petGender" name="Gender" class="form-select pet-form-field" required
+                                data-pet-field data-pet-required-message="Vui lòng chọn giới tính.">
                             <option value="">Chọn giới tính</option>
                             <option value="Male">Đực</option>
                             <option value="Female">Cái</option>
                         </select>
+                        <span class="pet-validation-message" data-pet-error-for="petGender"></span>
                     </div>
                     <div class="mb-3">
                         <label for="petWeight" class="form-label">Cân nặng (kg)</label>
-                        <input id="petWeight" name="WeightKg" type="number" class="form-control"
-                               min="0.01" max="999.99" step="0.01">
+                        <input id="petWeight" name="WeightKg" type="number" class="form-control pet-form-field"
+                               min="0.01" max="999.99" step="0.01" data-pet-field
+                               data-pet-range-message="Cân nặng phải lớn hơn 0.">
+                        <span class="pet-validation-message" data-pet-error-for="petWeight"></span>
                     </div>
                     <div>
                         <label for="petImage" class="form-label">Ảnh đại diện</label>
-                        <input id="petImage" name="Image" type="file" class="form-control" accept="image/*">
+                        <input id="petImage" name="Image" type="file" class="form-control pet-form-field" accept="image/*" data-pet-field>
+                        <span class="pet-validation-message" data-pet-error-for="petImage"></span>
                         <div class="form-text">Ảnh tùy chọn, dung lượng tối đa 6 MB.</div>
                     </div>
                     <div id="petFormError" class="alert alert-danger d-none mt-3 mb-0" role="alert"></div>
@@ -83,6 +95,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/pet-form-validation.js" asp-append-version="true"></script>
     <script>
         (() => {
             const apiUrl = '/api/client/pets';
@@ -99,6 +112,7 @@
             const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
             const formError = document.getElementById('petFormError');
             const saveButton = document.getElementById('savePetButton');
+            PetFormValidation.setup(form);
             let currentPage = @Model.Page;
             let totalItems = 0;
             let petsOnPage = [];
@@ -136,9 +150,11 @@
 
                 if (!response.ok || !result.success) {
                     const errors = Array.isArray(result.errors)
-                        ? [...new Set(result.errors.filter(Boolean))].join(' ')
-                        : '';
-                    throw new Error(errors || result.message || 'Không thể thực hiện yêu cầu.');
+                        ? [...new Set(result.errors.filter(Boolean))]
+                        : [];
+                    const error = new Error(errors.join(' ') || result.message || 'Không thể thực hiện yêu cầu.');
+                    error.errors = errors;
+                    throw error;
                 }
                 return result;
             }
@@ -267,6 +283,11 @@
                 document.getElementById('petId').value = '';
                 document.getElementById('petModalTitle').textContent = 'Thêm thú cưng';
                 formError.classList.add('d-none');
+                form.querySelectorAll('.pet-form-field').forEach(control => {
+                    control.classList.remove('is-invalid');
+                    control.setAttribute('aria-invalid', 'false');
+                });
+                form.querySelectorAll('[data-pet-error-for]').forEach(error => error.textContent = '');
                 modal.show();
             }
 
@@ -283,6 +304,11 @@
                     document.getElementById('petImage').value = '';
                     document.getElementById('petModalTitle').textContent = 'Cập nhật thú cưng';
                     formError.classList.add('d-none');
+                    form.querySelectorAll('.pet-form-field').forEach(control => {
+                        control.classList.remove('is-invalid');
+                        control.setAttribute('aria-invalid', 'false');
+                    });
+                    form.querySelectorAll('[data-pet-error-for]').forEach(error => error.textContent = '');
                     modal.show();
                 } catch (error) {
                     showAlert(error.message, true);
@@ -318,7 +344,7 @@
 
             form.addEventListener('submit', async event => {
                 event.preventDefault();
-                if (!form.reportValidity()) return;
+                if (!PetFormValidation.validateForm(form)) return;
 
                 formError.classList.add('d-none');
                 saveButton.disabled = true;
@@ -335,8 +361,11 @@
                     const page = petId ? currentPage : 1;
                     if (await loadPets(page)) showAlert(result.message);
                 } catch (error) {
-                    formError.textContent = error.message;
-                    formError.classList.remove('d-none');
+                    PetFormValidation.showServerErrors(form, error.errors);
+                    if (!error.errors?.length) {
+                        formError.textContent = error.message;
+                        formError.classList.remove('d-none');
+                    }
                 } finally {
                     saveButton.disabled = false;
                 }

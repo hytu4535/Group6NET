@@ -1,5 +1,6 @@
 @model IEnumerable<PetManagementSystem.Models.Pet>
 @using PetManagementSystem.Models
+<link rel="stylesheet" href="~/css/pet-validation.css" asp-append-version="true" />
 
 @{
     Layout = "_AdminLayout";
@@ -301,7 +302,7 @@
     <div class="modal fade" id="createPetModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form id="createPetForm" asp-action="CreatePet" method="post" enctype="multipart/form-data">
+                <form id="createPetForm" asp-action="CreatePet" method="post" enctype="multipart/form-data" novalidate>
                     <input type="hidden" name="searchKeyword" value="@searchKeyword" />
                     <input type="hidden" name="pageSize" value="@pageSize" />
                     <div class="modal-header">
@@ -324,49 +325,56 @@
                         </div>
                         <div class="mb-3">
                             <label for="petOwnerId" class="form-label">Chủ nuôi</label>
-                            <select id="petOwnerId" name="UserId" class="form-select" required>
+                            <select id="petOwnerId" name="UserId" class="form-select pet-form-field" required
+                                    data-pet-field data-pet-required-message="Vui lòng chọn chủ nuôi.">
                                 <option value="">-- Chọn chủ nuôi --</option>
                                 @foreach (var user in petOwners)
                                 {
                                     <option value="@user.Id" selected="@(createPetOpenModal && createPetUserId == user.Id)">@(user.FullName ?? user.Username) (@user.Username)</option>
                                 }
                             </select>
-                            <span class="text-danger small">@TempData["CreatePetUserIdError"]</span>
+                            <span class="pet-validation-message" data-pet-error-for="petOwnerId">@TempData["CreatePetUserIdError"]</span>
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="createPetName">Tên thú cưng</label>
-                            <input id="createPetName" name="Name" value="@createPetName" class="form-control"
-                                   maxlength="100" required />
-                            <span class="text-danger small">@TempData["CreatePetNameError"]</span>
+                            <input id="createPetName" name="Name" value="@createPetName" class="form-control pet-form-field"
+                                   maxlength="100" required data-pet-field data-pet-whitespace="true"
+                                   data-pet-required-message="Vui lòng nhập tên thú cưng." />
+                            <span class="pet-validation-message" data-pet-error-for="createPetName">@TempData["CreatePetNameError"]</span>
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="createPetSpecies">Loài</label>
-                            <input id="createPetSpecies" name="Species" value="@createPetSpecies" class="form-control"
-                                   placeholder="Chó, Mèo..." maxlength="50" required />
-                            <span class="text-danger small">@TempData["CreatePetSpeciesError"]</span>
+                            <input id="createPetSpecies" name="Species" value="@createPetSpecies" class="form-control pet-form-field"
+                                   placeholder="Chó, Mèo..." maxlength="50" required data-pet-field data-pet-whitespace="true"
+                                   data-pet-required-message="Vui lòng nhập loài thú cưng." />
+                            <span class="pet-validation-message" data-pet-error-for="createPetSpecies">@TempData["CreatePetSpeciesError"]</span>
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="createPetBreed">Giống</label>
-                            <input id="createPetBreed" name="Breed" value="@createPetBreed" class="form-control"
-                                   maxlength="80" required />
-                            <span class="text-danger small">@TempData["CreatePetBreedError"]</span>
+                            <input id="createPetBreed" name="Breed" value="@createPetBreed" class="form-control pet-form-field"
+                                   maxlength="80" required data-pet-field data-pet-whitespace="true"
+                                   data-pet-required-message="Vui lòng nhập giống thú cưng." />
+                            <span class="pet-validation-message" data-pet-error-for="createPetBreed">@TempData["CreatePetBreedError"]</span>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Giới tính</label>
-                            <select name="Gender" class="form-select" required>
+                            <select id="createPetGender" name="Gender" class="form-select pet-form-field" required
+                                    data-pet-field data-pet-required-message="Vui lòng chọn giới tính.">
                                 <option value="Male" selected="@(createPetGender == "Male")">Male</option>
                                 <option value="Female" selected="@(createPetGender == "Female")">Female</option>
                             </select>
-                            <span class="text-danger small">@TempData["CreatePetGenderError"]</span>
+                            <span class="pet-validation-message" data-pet-error-for="createPetGender">@TempData["CreatePetGenderError"]</span>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Cân nặng (kg)</label>
-                            <input name="WeightKg" type="number" step="0.1" value="@(createPetOpenModal ? createPetWeightKg : null)"
-                                   min="0.01" max="500" class="form-control" />
-                            <span class="text-danger small">@TempData["CreatePetWeightKgError"]</span>
+                            <input id="createPetWeightKg" name="WeightKg" type="number" step="0.1" value="@(createPetOpenModal ? createPetWeightKg : null)"
+                                   min="0.01" max="500" class="form-control pet-form-field" data-pet-field
+                                   data-pet-range-message="Cân nặng phải lớn hơn 0 và không quá 500 kg." />
+                            <span class="pet-validation-message" data-pet-error-for="createPetWeightKg">@TempData["CreatePetWeightKgError"]</span>
                         </div>
                     </div>
 
+                    <script src="~/js/pet-form-validation.js" asp-append-version="true"></script>
                     <script>
                         document.querySelectorAll(".pet-avatar-input").forEach(input => {
                             input.addEventListener("change", () => {
@@ -386,28 +394,9 @@
                         });
 
                         const createPetForm = document.getElementById("createPetForm");
-                        const requiredTextFields = ["createPetName", "createPetSpecies", "createPetBreed"];
-
-                        requiredTextFields.forEach(fieldId => {
-                            const field = document.getElementById(fieldId);
-                            field.addEventListener("input", () => {
-                                field.setCustomValidity("");
-                            });
-                        });
-
+                        PetFormValidation.setup(createPetForm);
                         createPetForm.addEventListener("submit", event => {
-                            let isValid = true;
-                            requiredTextFields.forEach(fieldId => {
-                                const field = document.getElementById(fieldId);
-                                const trimmedValue = field.value.trim();
-                                field.value = trimmedValue;
-                                if (!trimmedValue) {
-                                    field.setCustomValidity("Vui lòng nhập thông tin này, không chỉ gồm khoảng trắng.");
-                                    isValid = false;
-                                }
-                            });
-
-                            if (!isValid) {
+                            if (!PetFormValidation.validateForm(createPetForm)) {
                                 event.preventDefault();
                                 event.stopPropagation();
                             }
